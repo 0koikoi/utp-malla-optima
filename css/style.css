@@ -1,0 +1,181 @@
+/* css/styles.css */
+:root {
+    --color-fuente: #1e1e27;
+    --color-principal: #df0139; /* Rojo UTP */
+    --color-fondo: #e2e2e2;
+    --color-secundario: #28242a;
+    --color-blanco: #ffffff;
+}
+
+* { 
+    border-radius: 4px; /* Un redondeo sutil de 4px es más elegante que 0px */
+    box-sizing: border-box;
+}
+
+body { 
+    background-color: var(--color-fondo); 
+    color: var(--color-fuente); 
+    font-family: 'Roboto', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Panel Superior */
+.panel-financiero { 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    background-color: var(--color-secundario); 
+    border-bottom: 4px solid var(--color-principal); 
+}
+
+.input-oscuro {
+    background-color: #3b363d !important;
+    color: var(--color-fondo) !important;
+    border: 1px solid #555 !important;
+}
+
+.text-secundario { color: var(--color-secundario); }
+
+/* Pozo de Cursos */
+.columna-pozo {
+    height: calc(100vh - 140px);
+    position: sticky;
+    top: 110px;
+}
+.pozo-cursos { 
+    height: 100%; 
+    overflow-y: auto; 
+    background-color: var(--color-blanco); 
+    border: 1px solid #ccc; 
+    padding: 10px;
+}
+.pozo-cursos::-webkit-scrollbar { width: 6px; }
+.pozo-cursos::-webkit-scrollbar-thumb { background: var(--color-secundario); border-radius: 4px;}
+
+/* Filas de Malla */
+.tier-row { 
+    display: flex; 
+    min-height: 120px; 
+    margin-bottom: 12px; 
+    background-color: var(--color-blanco); 
+    border: 1px solid #d1d1d1; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.tier-label { 
+    width: 100px; 
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center; 
+    font-weight: 900; 
+    background-color: var(--color-secundario); 
+    color: var(--color-blanco); 
+    text-align: center; 
+    padding: 10px;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+.tier-label.peligro { background-color: var(--color-principal) !important; }
+
+.tier-dropzone { 
+    flex-grow: 1; 
+    padding: 15px; 
+    display: flex; 
+    flex-wrap: wrap; /* MODO CUADRÍCULA ACTIVO */
+    gap: 12px; 
+    align-content: flex-start;
+}
+
+/* Tarjetas (Cuadros Uniformes) */
+.curso-card { 
+    background-color: var(--color-fondo); 
+    border: 1px solid #ccc; 
+    border-top: 4px solid var(--color-secundario); 
+    padding: 10px; 
+    cursor: grab; 
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 175px; /* ANCHO FIJO: evita deformaciones */
+    height: 115px; /* ALTO FIJO: uniformidad visual */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.1s;
+}
+.curso-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.curso-card:active { cursor: grabbing; }
+
+/* Colores por Tipo (Prioriza Obligatorio) */
+.curso-card.obligatorio { border-top-color: var(--color-principal); }
+.curso-card.electivo { border-top-color: #0d6efd; } /* Azul para diferenciar */
+
+.curso-card.aprobado { opacity: 0.4; filter: grayscale(100%); pointer-events: none;}
+.curso-card.convalidado { opacity: 0.4; filter: grayscale(100%); pointer-events: none;}
+
+/* Control de Textos Largos */
+.curso-titulo {
+    font-weight: 900;
+    font-size: 0.85rem;
+    color: var(--color-fuente);
+    line-height: 1.2;
+    /* Truco para limitar a 2 líneas exactas con puntos suspensivos */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Propiedad estándar para compatibilidad */
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: auto; /* Empuja el subinfo hacia abajo */
+    padding-right: 18px; /* Deja espacio para el ícono */
+}
+
+.curso-subinfo {
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.4;
+    border-top: 1px solid #d1d1d1;
+    padding-top: 5px;
+    margin-top: 5px;
+}
+.curso-subinfo b { color: var(--color-fuente); }
+
+/* Separadores en el Pozo */
+.separador-ciclo {
+    width: 100%;
+    background: #e9ecef;
+    color: var(--color-secundario);
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    text-align: center;
+    border-radius: 4px;
+}
+
+/* Tooltip e Ícono */
+.btn-info-flotante {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #888;
+    cursor: help;
+    font-size: 1rem;
+}
+.btn-info-flotante:hover { color: var(--color-principal); }
+
+.tooltip-dependencias {
+    display: none;
+    position: fixed;
+    background: var(--color-secundario);
+    border: 1px solid #000;
+    color: var(--color-blanco);
+    padding: 12px;
+    width: 240px;
+    font-size: 0.75rem;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    pointer-events: none;
+    border-radius: 6px;
+}
+.tooltip-dependencias b { color: #ffc107; }
