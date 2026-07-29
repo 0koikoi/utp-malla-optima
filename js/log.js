@@ -1,8 +1,21 @@
-// js/config.js
+// Tarifario UTP — Sede Ate · 2025
+// Estructura de costos para ciclo regular y verano, con descuentos por convenio bancario.
+// Los rangos se basan en horas semanales de carga académica (no en créditos).
+// Autor: sixseven
+//
+// TODO (futura implementación): Ampliar con tarifarios de otras sedes (Lima Norte, SJL, provincias)
+//   y otras facultades (Salud, Comunicación) cuando se tenga el dato oficial actualizado.
+//   Actualmente solo se validan dos grupos tarifarios: ingeniería y gestión.
+const COSTOS_FIJOS = {
+    matriculaRegular: 398.00,
+    matriculaVerano: 190.00,
+    limiteCreditosVerano: 11
+};
+
 const ESTRUCTURA_TARIFARIA = {
     "ingenieria": {
         nombre: "Ingeniería y Arquitectura",
-        precioBase: 815.00, // Precio tope regular
+        precioBase: 815.00,
         horaExtra: 38.81,
         limiteHoras: 22,
         rangos: [
@@ -28,6 +41,6 @@ const ESTRUCTURA_TARIFARIA = {
 
 const DESCUENTOS = {
     "ninguno": 0.0,
-    "bcp": 0.025,       // 2.5%
-    "scotiabank": 0.05  // 5%
+    "bcp": 0.025,
+    "scotiabank": 0.05
 };
