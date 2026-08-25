@@ -42,5 +42,7 @@ const ESTRUCTURA_TARIFARIA = {
 const DESCUENTOS = {
     "ninguno": 0.0,
     "bcp": 0.025,
-    "scotiabank": 0.05
+    "interbank": 0.025,
+    "scotiabank": 0.05,
+    "BBVA": 0.05
 };

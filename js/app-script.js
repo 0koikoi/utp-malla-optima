@@ -92,6 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (evt.to === pozoCursos) ordenarPozo();
                     actualizarContadorPozo();
                     recalcularFinanzas();
+                    // Cierra el drawer de pendientes en móvil al soltar en un ciclo
+                    if (evt.to !== pozoCursos) {
+                        document.dispatchEvent(new Event('sortable-end-mob'));
+                    }
                 }
             }));
         });
@@ -518,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (horas > 0) {
                 if (costoVal) costoVal.textContent = `S/ ${costoFinal.toFixed(2)}`;
-                if (matTag)   matTag.textContent   = `+S/${matActual.toFixed(0)} mat.`;
+                if (matTag)   matTag.textContent   = `+S/${matActual.toFixed(0)} matrícula`;
             } else {
                 if (costoVal) costoVal.textContent = 'S/ 0.00';
                 if (matTag)   matTag.textContent   = '';
@@ -536,5 +540,34 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cost-note').textContent    =
             cuotaMax > 0 ? 'Cuota más alta entre ciclos visibles' : 'Sin cursos asignados';
     }
+
+    // ── Interactividad móvil: toggle del panel de pendientes ──────────
+    (function initMobileAside() {
+        const panelPendientes = document.getElementById('panel-pendientes');
+        const asideHead       = panelPendientes ? panelPendientes.querySelector('.aside-head') : null;
+
+        function isMobile() { return window.matchMedia('(max-width: 640px)').matches; }
+
+        if (!asideHead) return;
+
+        asideHead.addEventListener('click', () => {
+            if (!isMobile()) return;
+            panelPendientes.classList.toggle('mob-open');
+        });
+
+        // Cerrar el drawer al soltar un curso en un ciclo
+        document.addEventListener('dragend', () => {
+            if (isMobile()) {
+                panelPendientes.classList.remove('mob-open');
+            }
+        });
+
+        // SortableJS no usa eventos de drag nativos, escuchar onEnd
+        document.addEventListener('sortable-end-mob', () => {
+            if (isMobile()) {
+                panelPendientes.classList.remove('mob-open');
+            }
+        });
+    })();
 
 });
