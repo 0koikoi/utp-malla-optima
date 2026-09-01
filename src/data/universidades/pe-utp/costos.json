@@ -1,0 +1,29 @@
+{
+  "universidadId": "pe-utp-sistemas-2024",
+  "moneda": "PEN",
+  "modalidadPrincipal": "POR_CREDITO",
+  "cuotasPorCiclo": 5,
+  "semanasPorCiclo": 16,
+  "disciplinas": {
+    "Ingeniería y Tecnología": {
+      "costoMatriculaRegular": 350.00,
+      "costoPorCredito": 135.00,
+      "costoPorHora": 28.00,
+      "costoPorCurso": 0.00,
+      "costoFijoLaboratorio": 80.00,
+      "recargoRepitenciaPorcentaje": 15.0
+    },
+    "Gestión y Humanidades": {
+      "costoMatriculaRegular": 320.00,
+      "costoPorCredito": 115.00,
+      "costoPorHora": 24.00,
+      "costoPorCurso": 0.00,
+      "costoFijoLaboratorio": 40.00,
+      "recargoRepitenciaPorcentaje": 10.0
+    }
+  },
+  "limitesAcademicos": {
+    "creditosMinimos": 12,
+    "creditosMaximos": 22
+  }
+}

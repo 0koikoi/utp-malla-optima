@@ -1,0 +1,87 @@
+{
+  "id": "pe-utp-2026",
+  "universidad": "Universidad Tecnológica del Perú",
+  "carrera": "Ingeniería de Software",
+  "pais": "PER",
+  "versionPlan": "2026",
+  "totalCiclos": 10,
+  "cursos": [
+    {
+      "codigo": "100000I01N",
+      "nombre": "Comprensión y Redacción de Textos I",
+      "ciclo": 1,
+      "creditos": 4,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": [],
+      "esLaboratorio": false,
+      "estado": "APROBADO"
+    },
+    {
+      "codigo": "100000I02N",
+      "nombre": "Matemática Básica",
+      "ciclo": 1,
+      "creditos": 5,
+      "horasSemanales": 6,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": [],
+      "esLaboratorio": false,
+      "estado": "CONVALIDADO"
+    },
+    {
+      "codigo": "SI0601",
+      "nombre": "Curso Integrador I",
+      "ciclo": 6,
+      "creditos": 3,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": ["SI0501", "SI0502"],
+      "esLaboratorio": true,
+      "estado": "EN_CURSO"
+    },
+    {
+      "codigo": "SI0602",
+      "nombre": "Análisis y Diseño de Sistemas de Información",
+      "ciclo": 6,
+      "creditos": 4,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": ["SI0503"],
+      "esLaboratorio": false,
+      "estado": "EN_CURSO"
+    },
+    {
+      "codigo": "SI0701",
+      "nombre": "Desarrollo Web Integrado",
+      "ciclo": 7,
+      "creditos": 3,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": ["SI0602"],
+      "esLaboratorio": true,
+      "estado": "EN_CURSO"
+    },
+    {
+      "codigo": "SI0702",
+      "nombre": "Desarrollo de Software",
+      "ciclo": 7,
+      "creditos": 4,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": ["SI0601"],
+      "esLaboratorio": false,
+      "estado": "PENDIENTE"
+    },
+    {
+      "codigo": "SI0801",
+      "nombre": "Inteligencia Artificial",
+      "ciclo": 8,
+      "creditos": 3,
+      "horasSemanales": 4,
+      "tipo": "OBLIGATORIO",
+      "prerrequisitos": ["SI0702"],
+      "esLaboratorio": false,
+      "estado": "PENDIENTE"
+    }
+  ]
+}
