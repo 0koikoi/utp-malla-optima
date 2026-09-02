@@ -13,9 +13,6 @@ export default function App() {
 
   return (
     <>
-      {/* Tooltip global (posicionado por CursoCard) */}
-      <div id="tooltip-global" />
-
       {/* Modal de bienvenida */}
       <BienvenidaModal />
 

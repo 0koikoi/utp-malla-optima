@@ -1,13 +1,14 @@
-// CursoCard — tarjeta de curso arrastrable
-// En Fase 0: muestra la información. DnD se activa en Fase 3.
+// CursoCard — tarjeta de curso con tooltip en portal
+// En Fase 0: muestra la información y tooltips limpios sin colisiones de coordenadas CSS
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Curso } from '@/types/malla';
 import { useMallaStore } from '@/store/mallaStore';
 
 interface CursoCardProps {
   curso: Curso;
-  compacto?: boolean; // reservado para Fase 3 (compacto en el pozo)
+  compacto?: boolean;
 }
 
 export function CursoCard({ curso }: CursoCardProps) {
@@ -21,13 +22,6 @@ export function CursoCard({ curso }: CursoCardProps) {
   const textoT = curso.tipo === 'O' ? 'Obligatorio' : 'Electivo';
   const claseTag = curso.tipo === 'O' ? 'obl' : 'ele';
   const sinSucesores = !esAprobado && curso.habilitaA.length === 0;
-
-  const preReqHTML =
-    curso.prerequisitos.length > 0
-      ? curso.prerequisitos
-          .map((c) => diccionario[c]?.nombre || c)
-          .join(', ')
-      : null;
 
   function handleInfoEnter(e: React.MouseEvent) {
     const rect = (e.target as HTMLElement).getBoundingClientRect();
@@ -74,37 +68,55 @@ export function CursoCard({ curso }: CursoCardProps) {
         />
       </div>
 
-      {/* Tooltip */}
-      {tooltipVisible && (
-        <div
-          id="tooltip-global"
-          style={{ display: 'block', top: tooltipPos.top, left: tooltipPos.left }}
-        >
-          <div className="tt-req">
-            {preReqHTML ? (
-              <>
-                <b><i className="fas fa-lock" /> Prerrequisitos:</b>
-                <br />
-                {preReqHTML}
-              </>
-            ) : (
-              <><i className="fas fa-lock-open" /> Sin prerrequisitos</>
-            )}
-          </div>
-          <hr />
-          <div className="tt-hab">
-            {curso.habilitaA.length > 0 ? (
-              <>
-                <b><i className="fas fa-key" /> Habilita:</b>
-                <br />
-                {curso.habilitaA.join(', ')}
-              </>
-            ) : (
-              <><i className="fas fa-ban" /> No es prerrequisito de ningún otro curso</>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Tooltip renderizado en document.body via Portal para evitar problemas de transform */}
+      {tooltipVisible &&
+        createPortal(
+          <div
+            id="tooltip-global"
+            style={{
+              display: 'block',
+              position: 'fixed',
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+              zIndex: 99999,
+            }}
+          >
+            <div className="tt-req">
+              {curso.prerequisitos.length > 0 ? (
+                <>
+                  <b>
+                    <i className="fas fa-lock" /> Prerrequisitos:
+                  </b>
+                  {curso.prerequisitos.map((c) => (
+                    <div key={c}>{diccionario[c]?.nombre || c}</div>
+                  ))}
+                </>
+              ) : (
+                <div>
+                  <i className="fas fa-lock-open" /> Sin prerrequisitos
+                </div>
+              )}
+            </div>
+            <hr />
+            <div className="tt-hab">
+              {curso.habilitaA.length > 0 ? (
+                <>
+                  <b>
+                    <i className="fas fa-key" /> Habilita:
+                  </b>
+                  {curso.habilitaA.map((h, idx) => (
+                    <div key={idx}>{h}</div>
+                  ))}
+                </>
+              ) : (
+                <div>
+                  <i className="fas fa-ban" /> No es prerrequisito de ningún otro curso
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 }

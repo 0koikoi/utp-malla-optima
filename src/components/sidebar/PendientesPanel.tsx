@@ -1,7 +1,7 @@
 // Panel lateral de cursos pendientes (pozo)
-// En Fase 0: muestra las tarjetas agrupadas por ciclo de origen
-// DnD desde/hacia este panel se activa en Fase 3
+// Agrupados por ciclo de origen, con toggle de drawer para pantallas móviles (<= 640px)
 
+import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import { useContadorPozo } from '@/store/selectors';
 import { CursoCard } from '@/components/planner/CursoCard';
@@ -10,6 +10,7 @@ import type { Curso } from '@/types/malla';
 export function PendientesPanel() {
   const { cursos, asignaciones } = useMallaStore();
   const totalPendientes = useContadorPozo();
+  const [mobOpen, setMobOpen] = useState(false);
 
   // Cursos en el pozo agrupados por cicloOrigen
   const cursosPozo = Object.values(cursos)
@@ -24,9 +25,19 @@ export function PendientesPanel() {
 
   const hayMalla = Object.keys(cursos).length > 0;
 
+  function handleHeaderClick() {
+    if (window.matchMedia('(max-width: 640px)').matches) {
+      setMobOpen((prev) => !prev);
+    }
+  }
+
   return (
-    <aside id="panel-pendientes" aria-label="Cursos pendientes">
-      <div className="aside-head">
+    <aside
+      id="panel-pendientes"
+      className={mobOpen ? 'mob-open' : ''}
+      aria-label="Cursos pendientes"
+    >
+      <div className="aside-head" onClick={handleHeaderClick}>
         <span className="aside-head-title">
           <i className="fas fa-inbox" style={{ color: '#E8002D' }} /> Pendientes
         </span>
@@ -34,7 +45,11 @@ export function PendientesPanel() {
       </div>
       <p className="aside-hint">Arrastra cursos a los ciclos del planificador</p>
 
-      <div className="tier-dropzone" id="pozo-cursos" style={{ flexDirection: 'column', flexWrap: 'nowrap', gap: '3px', padding: '4px 8px 16px' }}>
+      <div
+        className="tier-dropzone"
+        id="pozo-cursos"
+        style={{ flexDirection: 'column', flexWrap: 'nowrap', gap: '3px', padding: '4px 8px 16px' }}
+      >
         {!hayMalla && (
           <div className="pozo-empty" id="pozo-empty">
             <i className="fas fa-file-upload" />

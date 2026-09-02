@@ -1,5 +1,7 @@
-// Dropdowns de Facultad y Pago — controles de configuración del simulador
+// Dropdowns de Facultad y Pago — controles de configuración del simulador con estado React puro
+// Elimina problemas de listeners de Bootstrap en React SPA y cierra automáticamente al seleccionar/hacer click fuera
 
+import { useState, useEffect, useRef } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
 
@@ -32,7 +34,24 @@ const FACULTADES: FacultadOption[] = [
 
 export function FacultadDropdown() {
   const { facultad, setFacultad } = useMallaStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const current = FACULTADES.find((f) => f.value === facultad) ?? FACULTADES[0];
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
     <div className="nav-group">
@@ -40,13 +59,17 @@ export function FacultadDropdown() {
         <i className="fas fa-graduation-cap" /> Facultad
       </span>
       <div className="nav-group-body">
-        <div className="dropdown nav-dropdown" id="dd-facultad">
+        <div
+          ref={dropdownRef}
+          className={`dropdown nav-dropdown${isOpen ? ' show' : ''}`}
+          id="dd-facultad"
+        >
           <button
             className="dropdown-toggle"
             type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
+            aria-expanded={isOpen}
             id="btn-facultad"
+            onClick={() => setIsOpen((prev) => !prev)}
           >
             <span className="dd-icon">
               <i className={`fas ${current.icon}`} />
@@ -55,12 +78,19 @@ export function FacultadDropdown() {
               {current.shortLabel}
             </span>
           </button>
-          <ul className="dropdown-menu">
+          <ul
+            className={`dropdown-menu${isOpen ? ' show' : ''}`}
+            style={{ display: isOpen ? 'block' : 'none' }}
+          >
             {FACULTADES.map((f) => (
               <li key={f.value}>
                 <button
+                  type="button"
                   className={`dropdown-item${facultad === f.value ? ' active' : ''}`}
-                  onClick={() => setFacultad(f.value)}
+                  onClick={() => {
+                    setFacultad(f.value);
+                    setIsOpen(false);
+                  }}
                 >
                   <i className={`fas ${f.icon}`} /> {f.label}
                   <span className="dd-badge">{f.precio}</span>
@@ -101,7 +131,24 @@ const PAGOS: PagoOption[] = [
 
 export function PagoDropdown() {
   const { descuento, setDescuento } = useMallaStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[2];
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
     <div className="nav-group">
@@ -109,13 +156,17 @@ export function PagoDropdown() {
         <i className="fas fa-credit-card" /> Método de Pago
       </span>
       <div className="nav-group-body">
-        <div className="dropdown nav-dropdown" id="dd-pago">
+        <div
+          ref={dropdownRef}
+          className={`dropdown nav-dropdown${isOpen ? ' show' : ''}`}
+          id="dd-pago"
+        >
           <button
             className="dropdown-toggle"
             type="button"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
+            aria-expanded={isOpen}
             id="btn-pago"
+            onClick={() => setIsOpen((prev) => !prev)}
           >
             <span className="dd-icon">
               <i className={`fas ${current.icon}`} />
@@ -124,12 +175,19 @@ export function PagoDropdown() {
               {current.shortLabel}
             </span>
           </button>
-          <ul className="dropdown-menu">
+          <ul
+            className={`dropdown-menu${isOpen ? ' show' : ''}`}
+            style={{ display: isOpen ? 'block' : 'none' }}
+          >
             {PAGOS.map((p) => (
               <li key={p.value}>
                 <button
+                  type="button"
                   className={`dropdown-item${descuento === p.value ? ' active' : ''}`}
-                  onClick={() => setDescuento(p.value)}
+                  onClick={() => {
+                    setDescuento(p.value);
+                    setIsOpen(false);
+                  }}
                 >
                   <i className={`fas ${p.icon}`} /> {p.label}
                   <span className="dd-badge">{p.porcentaje}</span>

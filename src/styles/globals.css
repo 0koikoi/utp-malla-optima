@@ -1,10 +1,10 @@
-﻿/* Estilos Base */
+/* Estilos Base */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
 
 /* Variables (Colores y Dimensiones) */
 :root {
-  --bg-page:     #f8f8fa;        /* fondo de p├ígina */
+  --bg-page:     #f8f8fa;        /* fondo de página */
   --bg-surface:  #ffffff;        /* tarjetas, modal */
   --bg-aside:    #e3e9ed;        /* panel pendientes */
   --bg-bar:      #2b2d42;        /* topbar */
@@ -24,11 +24,11 @@
   --t-light:     #8d99ae;
 
   --c-tertiary:  #60519b;        /* detalles resaltantes */
-  --c-details:   #bdc2c7;        /* peque├▒as cosas */
+  --c-details:   #bdc2c7;        /* pequeñas cosas */
   --c-aprobado:  #84b5be;        /* ciclo aprobado */
   --c-adelantado:#9972e9;        /* ciclo adelantado */
 
-  --r: 2px;          /* radio general ÔÇö plano */
+  --r: 2px;          /* radio general — plano */
   --r-card: 2px;     /* cards */
   --r-modal: 6px;    /* modal */
 
@@ -88,7 +88,7 @@ body {
   color: var(--t-muted);
 }
 
-/* Barra de Navegaci├│n (Controles) */
+/* Barra de Navegación (Controles) */
 #app-nav {
   position: sticky;
   top: var(--topbar-h);
@@ -185,12 +185,12 @@ body {
 }
 
 /* Facultad/pago */
-/* Bot├│n principal del dropdown ÔÇö tama├▒o FIJO */
+/* Botón principal del dropdown — tamaño FIJO */
 .nav-dropdown .dropdown-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 172px;           /* FIJO ÔÇö no cambia con el contenido */
+  width: 172px;           /* FIJO — no cambia con el contenido */
   padding: 5px 10px;
   background: var(--bg-nav-item);
   border: 1px solid rgba(255,255,255,0.1);
@@ -228,7 +228,7 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Men├║ dropdown */
+/* Menú dropdown */
 .nav-dropdown .dropdown-menu {
   background: #252742;
   border: 1px solid rgba(255,255,255,0.08);
@@ -276,7 +276,7 @@ body {
   margin: 3px 0;
 }
 
-/* ÔöÇÔöÇ Inputs num├®ricos (ciclos) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Inputs numéricos (ciclos) ──────────────────────────────────── */
 .ciclo-inputs {
   display: flex;
   align-items: center;
@@ -316,7 +316,7 @@ body {
   font-weight: 600;
 }
 
-/* ÔöÇÔöÇ Toggle Verano ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Toggle Verano ──────────────────────────────────────────────── */
 .verano-row {
   display: flex;
   align-items: center;
@@ -400,7 +400,7 @@ body {
   opacity: 0.8;
 }
 
-/* ÔöÇÔöÇ Botones de acci├│n ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Botones de acción ──────────────────────────────────────────── */
 .nav-btn {
   display: flex;
   align-items: center;
@@ -428,7 +428,7 @@ body {
 }
 .nav-btn-export:hover { background: rgba(79,142,247,0.2); color: #bfdbfe; }
 
-/* ÔöÇÔöÇ Costo global ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Costo global ───────────────────────────────────────────────── */
 .nav-cost {
   margin-left: auto;
   flex-shrink: 0;
@@ -463,7 +463,7 @@ body {
   min-height: calc(100vh - var(--chrome-h));
 }
 
-/* ÔöÇÔöÇ Aside ÔÇö Pendientes ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Aside — Pendientes ─────────────────────────────────────────── */
 #panel-pendientes {
   width: var(--aside-w);
   flex-shrink: 0;
@@ -506,7 +506,7 @@ body {
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ├ürea scroll del pozo ÔÇö SIEMPRE vertical */
+/* Área scroll del pozo — SIEMPRE vertical */
 #pozo-cursos {
   flex: 1;
   overflow-y: auto;
@@ -546,7 +546,7 @@ body {
   background: rgba(0,0,0,0.07);
 }
 
-/* Estado vac├¡o */
+/* Estado vacío */
 .pozo-empty {
   display: flex;
   flex-direction: column;
@@ -560,7 +560,7 @@ body {
 .pozo-empty i { font-size: 1.6rem; opacity: 0.35; }
 .pozo-empty p { font-size: 0.7rem; line-height: 1.5; }
 
-/* ÔöÇÔöÇ Panel Planificador ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ── Panel Planificador ─────────────────────────────────────────── */
 #panel-planificador {
   flex: 1;
   padding: 18px 18px 48px;
@@ -599,7 +599,7 @@ body {
 #contenedor-verano-master { margin-top: 24px; }
 
 /* Filas de ciclos (Regulares y Verano) */
-/* TODO: Ajustar estilos de los bloques de ciclos aqu├¡ */
+/* TODO: Ajustar estilos de los bloques de ciclos aquí */
 .tier-row {
   display: flex;
   min-height: 108px;
@@ -674,7 +674,7 @@ body {
   display: block;
 }
 
-/* Peligro ÔÇö exceso de horas */
+/* Peligro — exceso de horas */
 .tier-label.peligro { background: #FFF1F3; }
 .tier-label.peligro .tier-num { color: var(--accent); opacity: 0.25; }
 .tier-label.peligro .tier-name { color: var(--accent); }
@@ -702,7 +702,7 @@ body {
 .tier-row[data-tipo="verano"] .tier-num   { color: #B45309; opacity: 0.85; }
 .tier-row[data-tipo="verano"] .tier-name  { color: #B45309; }
 
-/* Zona drop ÔÇö en ciclos: horizontal wrap */
+/* Zona drop — en ciclos: horizontal wrap */
 .tier-dropzone {
   flex: 1;
   padding: 8px 10px;
@@ -712,7 +712,7 @@ body {
   align-content: flex-start;
   min-height: 108px;
 }
-/* El pozo es la excepci├│n: vertical */
+/* El pozo es la excepción: vertical */
 #pozo-cursos.tier-dropzone {
   flex-direction: column;
   flex-wrap: nowrap;
@@ -721,8 +721,8 @@ body {
 }
 
 /* Tarjetas de curso */
-/* TODO: Modificar bordes, colores o tama├▒o de las tarjetas de cursos */
-/* Tarjeta: border IZQUIERDO para diferenciaci├│n de color */
+/* TODO: Modificar bordes, colores o tamaño de las tarjetas de cursos */
+/* Tarjeta: border IZQUIERDO para diferenciación de color */
 .curso-card {
   background: var(--bg-surface);
   border-left: 3px solid #D1D5DB;
@@ -764,7 +764,7 @@ body {
   box-shadow: none;
 }
 
-/* T├¡tulo */
+/* Título */
 .curso-titulo {
   font-size: 0.75rem;
   font-weight: 700;
@@ -782,7 +782,7 @@ body {
 /* Si la card tiene marcador de no-habilita, espacio a la izquierda no necesario
    ya que el borde izquierdo ya ocupa el espacio de color */
 
-/* Marcador de curso sin sucesores (no abre ning├║n otro curso) */
+/* Marcador de curso sin sucesores (no abre ningún otro curso) */
 .no-hab-mark {
   position: absolute;
   bottom: 5px;
@@ -833,7 +833,7 @@ body {
 }
 .btn-info-flotante:hover { color: var(--accent); }
 
-/* ÔöÇÔöÇÔöÇ Tooltip ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+/* ─── Tooltip ────────────────────────────────────────────────────── */
 #tooltip-global {
   display: none;
   position: fixed;
@@ -952,9 +952,9 @@ body {
 .btn-start:hover { background: var(--accent-hov); }
 .btn-start:active { transform: scale(0.99); }
 
-/* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+/* ═══════════════════════════════════════════════════════════════════
    DRAG & DROP FEEDBACK
-   ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+   ═══════════════════════════════════════════════════════════════════ */
 .sortable-ghost {
   opacity: 0.4;
   background: var(--bg-aside) !important;
@@ -965,9 +965,9 @@ body {
   transform: scale(1.02);
 }
 
-/* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-   RESPONSIVE ÔÇö TABLET (Ôëñ 900px)
-   ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 900px)
+   ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
 
   /* Nav: scroll horizontal compacto */
@@ -992,28 +992,28 @@ body {
   :root { --aside-w: 220px; }
 }
 
-/* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-   RESPONSIVE ÔÇö M├ôVIL (Ôëñ 640px)
-   ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL (≤ 640px)
+   ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 640px) {
 
-  /* ÔöÇÔöÇ Variables m├│vil ÔöÇÔöÇ */
+  /* ── Variables móvil ── */
   :root {
     --topbar-h: 40px;
     --nav-h:    auto;
-    --chrome-h: 40px; /* solo topbar, nav no es sticky en m├│vil */
+    --chrome-h: 40px; /* solo topbar, nav no es sticky en móvil */
     --aside-w:  100%;
   }
 
-  /* ÔöÇÔöÇ TopBar ÔöÇÔöÇ */
+  /* ── TopBar ── */
   #app-topbar {
     height: var(--topbar-h);
     padding: 0 14px;
     gap: 8px;
   }
-  .topbar-note { display: none; } /* ocultar nota secundaria en pantallas peque├▒as */
+  .topbar-note { display: none; } /* ocultar nota secundaria en pantallas pequeñas */
 
-  /* ÔöÇÔöÇ Nav: scroll horizontal sin sticky ÔöÇÔöÇ */
+  /* ── Nav: scroll horizontal sin sticky ── */
   #app-nav {
     position: relative;          /* deja de ser sticky */
     top: unset;
@@ -1024,12 +1024,12 @@ body {
     overflow-y: visible;
     flex-wrap: nowrap;
     scrollbar-width: none;
-    /* L├¡nea separadora inferior */
+    /* Línea separadora inferior */
     border-bottom: 1px solid rgba(255,255,255,0.07);
   }
   #app-nav::-webkit-scrollbar { display: none; }
 
-  /* Grupos de nav: m├ís compactos */
+  /* Grupos de nav: más compactos */
   .nav-group {
     padding: 0 4px;
     gap: 2px;
@@ -1040,7 +1040,7 @@ body {
     letter-spacing: 0.4px;
   }
 
-  /* Bot├│n dropdown: ancho fijo reducido */
+  /* Botón dropdown: ancho fijo reducido */
   .nav-dropdown .dropdown-toggle {
     width: 130px;
     padding: 4px 8px;
@@ -1066,13 +1066,13 @@ body {
     font-size: 0.9rem;
   }
 
-  /* ÔöÇÔöÇ Layout principal: columna ÔöÇÔöÇ */
+  /* ── Layout principal: columna ── */
   #app-main {
     flex-direction: column;
     min-height: unset;
   }
 
-  /* ÔöÇÔöÇ Aside Pendientes: colapsable desde abajo ÔöÇÔöÇ */
+  /* ── Aside Pendientes: colapsable desde abajo ── */
   #panel-pendientes {
     position: fixed;
     bottom: 0;
@@ -1096,16 +1096,16 @@ body {
     overflow-y: auto;
   }
 
-  /* Header del aside: act├║a como handle de drag */
+  /* Header del aside: actúa como handle de drag */
   .aside-head {
     cursor: pointer;
     padding: 10px 14px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
     flex-shrink: 0;
   }
-  /* Indicador de expansi├│n */
+  /* Indicador de expansión */
   .aside-head::after {
-    content: 'Ôû▓';
+    content: '▲';
     font-size: 0.6rem;
     color: var(--t-light);
     margin-left: auto;
@@ -1121,11 +1121,11 @@ body {
   }
 
   #pozo-cursos {
-    overflow-y: hidden; /* se activa solo cuando est├í abierto */
-    padding: 4px 10px 80px; /* padding extra para que el ├║ltimo card no quede tapado */
+    overflow-y: hidden; /* se activa solo cuando está abierto */
+    padding: 4px 10px 80px; /* padding extra para que el último card no quede tapado */
   }
 
-  /* ÔöÇÔöÇ Planificador: ocupa todo el ancho ÔöÇÔöÇ */
+  /* ── Planificador: ocupa todo el ancho ── */
   #panel-planificador {
     padding: 12px 10px 120px; /* 120px de margen inferior para que no quede tapado por el aside */
     overflow-y: unset;
@@ -1133,7 +1133,7 @@ body {
     min-height: 100vh;
   }
 
-  /* ÔöÇÔöÇ Ciclos: layout compacto ÔöÇÔöÇ */
+  /* ── Ciclos: layout compacto ── */
   .tier-row {
     min-height: 90px;
     flex-direction: column;      /* etiqueta arriba, cards abajo */
@@ -1162,7 +1162,7 @@ body {
     min-height: 80px;
     padding: 8px 10px;
     overflow-x: auto;
-    flex-wrap: nowrap;           /* en m├│vil: una sola fila scrolleable */
+    flex-wrap: nowrap;           /* en móvil: una sola fila scrolleable */
     gap: 6px;
     scrollbar-width: none;
   }
@@ -1182,13 +1182,13 @@ body {
     padding: 6px 10px 6px 11px;
   }
 
-  /* ÔöÇÔöÇ Modal: pantalla completa en m├│vil ÔöÇÔöÇ */
+  /* ── Modal: pantalla completa en móvil ── */
   .modal-dialog {
     margin: 0.5rem auto;
     max-width: calc(100% - 1rem);
   }
 
-  /* T├¡tulo del planificador */
+  /* Título del planificador */
   .planner-section-title {
     font-size: 0.6rem;
     gap: 5px;
@@ -1198,7 +1198,7 @@ body {
     font-size: 0.55rem;
   }
 
-  /* Ciclo inputs: m├ís compactos */
+  /* Ciclo inputs: más compactos */
   .ciclo-num {
     width: 38px;
     padding: 4px 2px;
@@ -1206,9 +1206,9 @@ body {
   }
 }
 
-/* ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
-   RESPONSIVE ÔÇö M├ôVIL PEQUE├æO (Ôëñ 380px)
-   ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ */
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL PEQUEÑO (≤ 380px)
+   ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 380px) {
   .nav-dropdown .dropdown-toggle {
     width: 110px;

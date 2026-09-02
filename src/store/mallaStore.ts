@@ -27,6 +27,7 @@ interface MallaState {
 
   // ── Acciones ─────────────────────────────────────────────────────
   setCursos: (cursos: Record<string, Curso>, nombreArchivo: string) => void;
+  restaurarMalla: (cursos: Record<string, Curso>, nombreArchivo: string) => void;
   setAsignacion: (codigoCurso: string, ubicacion: UbicacionCurso) => void;
   moverCurso: (codigoCurso: string, destino: UbicacionCurso) => void;
   resetAsignaciones: () => void;
@@ -55,11 +56,8 @@ export const useMallaStore = create<MallaState>()(
 
       // ── Acciones ────────────────────────────────────────────────
 
-      /** Carga una nueva malla y reinicia todas las asignaciones */
+      /** Carga una nueva malla (subida de nuevo archivo) y reinicia todas las asignaciones */
       setCursos: (cursos, nombreArchivo) => {
-        // Calcular asignaciones iniciales:
-        // Aprobados/Convalidados → su ciclo de origen
-        // Pendientes → pozo
         const asignaciones: Record<string, UbicacionCurso> = {};
         for (const curso of Object.values(cursos)) {
           const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
@@ -68,6 +66,30 @@ export const useMallaStore = create<MallaState>()(
             : 'pozo';
         }
         set({ cursos, asignaciones, nombreArchivoCargado: nombreArchivo });
+      },
+
+      /** Restaura la malla desde localStorage preservando la planificación previa del usuario */
+      restaurarMalla: (cursos, nombreArchivo) => {
+        set((state) => {
+          const asignacionesActuales = state.asignaciones || {};
+          const asignacionesFinales: Record<string, UbicacionCurso> = {};
+
+          for (const curso of Object.values(cursos)) {
+            if (asignacionesActuales[curso.codigo]) {
+              asignacionesFinales[curso.codigo] = asignacionesActuales[curso.codigo];
+            } else {
+              const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
+              asignacionesFinales[curso.codigo] = esAprobado
+                ? (`ciclo-${curso.cicloOrigen}` as UbicacionCurso)
+                : 'pozo';
+            }
+          }
+          return {
+            cursos,
+            asignaciones: asignacionesFinales,
+            nombreArchivoCargado: state.nombreArchivoCargado || nombreArchivo,
+          };
+        });
       },
 
       setAsignacion: (codigoCurso, ubicacion) =>
@@ -106,8 +128,7 @@ export const useMallaStore = create<MallaState>()(
     {
       name: 'malla_asignaciones', // key en localStorage (distinto de 'malla_data')
       storage: createJSONStorage(() => localStorage),
-      // Solo persistir configuración y asignaciones, NO los cursos crudos
-      // (los cursos se restauran desde 'malla_data' al parsear el xlsx)
+      // Persistir configuración, asignaciones y nombre del archivo
       partialize: (state) => ({
         asignaciones: state.asignaciones,
         facultad: state.facultad,
@@ -116,6 +137,7 @@ export const useMallaStore = create<MallaState>()(
         cicloFin: state.cicloFin,
         veranoActivo: state.veranoActivo,
         cantVeranos: state.cantVeranos,
+        nombreArchivoCargado: state.nombreArchivoCargado,
       }),
     }
   )
