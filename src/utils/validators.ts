@@ -6,27 +6,59 @@ import { COSTOS_FIJOS } from '@/data/tarifario';
 
 const ESTADOS_CUMPLIDOS: EstadoCurso[] = ['APROBADO', 'CONVALIDADO'];
 
-/** R1 — Verifica si todos los prerrequisitos de un curso están cumplidos.
- *  Un prerrequisito se considera cumplido si tiene estado APROBADO o CONVALIDADO,
- *  O si está asignado a un ciclo ANTERIOR al ciclo destino en el planificador.
+/**
+ * Extrae el número de ciclo de un id de ubicación.
+ * - "ciclo-5"   → 5
+ * - "verano-2"  → null (verano no se compara numéricamente)
+ * - "pozo"      → null
+ */
+function cicloNumDesde(ubicacion: string): number | null {
+  const match = ubicacion.match(/^ciclo-(\d+)$/);
+  return match ? parseInt(match[1]) : null;
+}
+
+/**
+ * R1 — Verifica si todos los prerrequisitos de un curso están cumplidos.
  *
- *  En Fase 2 se agregará la validación de ciclo anterior.
- *  Por ahora (Fase 0): solo valida estado APROBADO/CONVALIDADO.
+ * Un prerrequisito se considera CUMPLIDO si:
+ *   a) Tiene estado APROBADO o CONVALIDADO, O
+ *   b) Está asignado a un ciclo regular con número MENOR al ciclo destino
+ *      (el usuario lo planificó antes — "lo llevará antes").
+ *
+ * Si el destino es un ciclo de verano, solo se acepta APROBADO/CONVALIDADO,
+ * ya que el verano es un período especial fuera de la secuencia regular.
+ *
+ * @param curso       Curso que se intenta asignar
+ * @param diccionario Todos los cursos de la malla
+ * @param asignaciones Mapa código → ubicación actual de cada curso
+ * @param destinoId   ID del droppable destino (ej: "ciclo-5", "verano-2")
  */
 export function validarPrerequisitos(
   curso: Curso,
-  diccionario: Record<string, Curso>
-): { valido: boolean; faltantes: string[] } {
+  diccionario: Record<string, Curso>,
+  asignaciones: Record<string, string>,
+  destinoId: string
+): { valido: boolean; faltantes: { codigo: string; nombre: string }[] } {
   if (curso.prerequisitos.length === 0) return { valido: true, faltantes: [] };
 
-  const faltantes: string[] = [];
+  const destCicloNum = cicloNumDesde(destinoId);
+  const faltantes: { codigo: string; nombre: string }[] = [];
 
   for (const codigoPre of curso.prerequisitos) {
     const pre = diccionario[codigoPre];
-    if (!pre) continue; // prerrequisito no encontrado en la malla (nivelación, etc.)
-    if (!ESTADOS_CUMPLIDOS.includes(pre.estado)) {
-      faltantes.push(pre.nombre || codigoPre);
+    if (!pre) continue; // no existe en la malla (nivelación, etc.)
+
+    // a) Ya aprobado o convalidado → cumplido
+    if (ESTADOS_CUMPLIDOS.includes(pre.estado)) continue;
+
+    // b) Planificado en un ciclo anterior al destino (solo para destinos regulares)
+    if (destCicloNum !== null) {
+      const preCicloNum = cicloNumDesde(asignaciones[pre.codigo] ?? '');
+      if (preCicloNum !== null && preCicloNum < destCicloNum) continue;
     }
+
+    // No cumplido — registrar con código y nombre para identificación completa
+    faltantes.push({ codigo: pre.codigo, nombre: pre.nombre || codigoPre });
   }
 
   return { valido: faltantes.length === 0, faltantes };

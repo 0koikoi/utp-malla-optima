@@ -1,6 +1,6 @@
 // CicloRow — fila de un ciclo en el planificador con DropZone integrado
 import { useMallaStore } from '@/store/mallaStore';
-import { useFinanzasCiclos } from '@/store/selectors';
+import { useFinanzasCiclos, useCicloActual } from '@/store/selectors';
 import { CursoCard } from './CursoCard';
 import { DropZone } from './DropZone';
 import { formatSoles } from '@/utils/finance';
@@ -13,6 +13,7 @@ interface CicloRowProps {
 export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
   const { cursos, asignaciones } = useMallaStore();
   const finanzasList = useFinanzasCiclos();
+  const cicloActual = useCicloActual();
 
   const cicloId = tipo === 'regular' ? `ciclo-${cicloNum}` : `verano-${cicloNum}`;
   const finanzas = finanzasList.find((f) => f.cicloId === cicloId);
@@ -26,13 +27,16 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
     ['APROBADO', 'CONVALIDADO'].includes(c.estado)
   );
 
-  // Estado visual del label (aprobado/adelantado)
+  const isLocked = tipo === 'regular' && cicloNum < cicloActual;
+
+  // Estado visual del label (aprobado/adelantado/locked)
   const aprobadosCount = cursosAprobados.length;
   const labelClass = [
     'tier-label',
     aprobadosCount >= 3 ? 'ciclo-aprobado' : '',
     aprobadosCount >= 1 && aprobadosCount < 3 ? 'ciclo-adelantado' : '',
     finanzas?.excesoHoras || finanzas?.excesoCreditosVerano ? 'peligro' : '',
+    isLocked ? 'locked' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -59,7 +63,10 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
         className={labelClass}
         id={`label-${tipo === 'regular' ? 'ciclo' : 'verano'}-${cicloNum}`}
       >
-        <span className="tier-num">{cicloNum}</span>
+        <span className="tier-num">
+          {isLocked ? <i className="fas fa-lock" style={{ fontSize: '0.8rem', marginRight: '6px', opacity: 0.6 }} title="Ciclo concluido" /> : null}
+          {cicloNum}
+        </span>
         <span className="tier-name">{nombreCiclo}</span>
         <div className="tier-stats">
           <span className="stat-chip stat-horas">
@@ -78,7 +85,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
       </div>
 
       {/* Zona de drop receptora */}
-      <DropZone id={cicloId} className="tier-dropzone zona-ciclo">
+      <DropZone id={cicloId} className={`tier-dropzone zona-ciclo ${isLocked ? 'locked' : ''}`} disabled={isLocked}>
         {[...cursosAprobados, ...cursosPendientes].map((curso) => (
           <CursoCard key={curso.codigo} curso={curso} />
         ))}

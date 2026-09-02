@@ -26,9 +26,12 @@ export default function App() {
   // Restaurar malla guardada al iniciar
   useMallaRestore();
 
-  const { cursos, moverCurso } = useMallaStore();
+  const { cursos, asignaciones, moverCurso, setDrawerMobOpen } = useMallaStore();
   const [activeCurso, setActiveCurso] = useState<Curso | null>(null);
-  const [blockedInfo, setBlockedInfo] = useState<{ cursoNombre: string; faltantes: string[] } | null>(null);
+  const [blockedInfo, setBlockedInfo] = useState<{
+    cursoNombre: string;
+    faltantes: { codigo: string; nombre: string }[];
+  } | null>(null);
 
   // Configuración de sensores para mouse y touch (con tolerancia para evitar activar drag en simple click)
   const sensors = useSensors(
@@ -64,14 +67,15 @@ export default function App() {
 
     const destino = String(over.id) as UbicacionCurso;
 
-    // Si se devuelve al pozo -> siempre permitido
+    // Si se devuelve al pozo → siempre permitido
     if (destino === 'pozo') {
       moverCurso(codigoCurso, 'pozo');
       return;
     }
 
-    // Si se asigna a un ciclo (regular o verano) -> validar prerrequisitos
-    const { valido, faltantes } = validarPrerequisitos(curso, cursos);
+    // Si se asigna a un ciclo (regular o verano) → validar prerrequisitos
+    // Pasa asignaciones y destinoId para que R1 pueda comparar ciclos
+    const { valido, faltantes } = validarPrerequisitos(curso, cursos, asignaciones, destino);
     if (!valido) {
       setBlockedInfo({
         cursoNombre: curso.nombre,
@@ -82,6 +86,11 @@ export default function App() {
 
     // Mover al destino
     moverCurso(codigoCurso, destino);
+
+    // Cerrar el drawer de pendientes en móvil al soltar en un ciclo
+    if (window.matchMedia('(max-width: 640px)').matches) {
+      setDrawerMobOpen(false);
+    }
   }
 
   return (

@@ -1,5 +1,4 @@
-// Toggle de verano + input de cantidad de veranos
-
+import { useState, useEffect } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 
 function clamp(val: number, min: number, max: number) {
@@ -8,6 +7,44 @@ function clamp(val: number, min: number, max: number) {
 
 export function VeranoToggle() {
   const { veranoActivo, cantVeranos, setVeranoActivo, setCantVeranos } = useMallaStore();
+  const [valVeranos, setValVeranos] = useState(String(cantVeranos));
+
+  useEffect(() => {
+    setValVeranos(String(cantVeranos));
+  }, [cantVeranos]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+      e.preventDefault();
+    }
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    if (raw === '') {
+      setValVeranos('');
+      return;
+    }
+    const num = parseInt(raw, 10);
+    if (isNaN(num)) return;
+
+    const clamped = clamp(num, 1, 5);
+    setValVeranos(String(clamped));
+    setCantVeranos(clamped);
+  }
+
+  function handleBlur() {
+    if (valVeranos === '' || isNaN(parseInt(valVeranos, 10))) {
+      const fallback = clamp(cantVeranos || 3, 1, 5);
+      setValVeranos(String(fallback));
+      setCantVeranos(fallback);
+    } else {
+      const num = parseInt(valVeranos, 10);
+      const clamped = clamp(num, 1, 5);
+      setValVeranos(String(clamped));
+      setCantVeranos(clamped);
+    }
+  }
 
   return (
     <div className="nav-group">
@@ -32,15 +69,13 @@ export function VeranoToggle() {
             type="number"
             className="verano-qty"
             id="cant-veranos"
-            value={cantVeranos}
+            value={valVeranos}
             min={1}
             max={5}
-            title="Cantidad de veranos"
-            onChange={(e) => {
-              const v = parseInt(e.target.value);
-              if (!isNaN(v)) setCantVeranos(clamp(v, 1, 5));
-            }}
-            onBlur={() => setCantVeranos(clamp(cantVeranos, 1, 5))}
+            title="Cantidad de veranos (1 a 5)"
+            onKeyDown={handleKeyDown}
+            onChange={handleChange}
+            onBlur={handleBlur}
           />
           <span className="verano-mat" id="verano-mat-tag">+S/190 matrícula</span>
         </div>

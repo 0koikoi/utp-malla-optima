@@ -25,6 +25,9 @@ interface MallaState {
   /** Nombre del archivo xlsx cargado (para mostrarlo en el botón upload) */
   nombreArchivoCargado: string | null;
 
+  /** Controla el drawer de pendientes en móvil (≤ 640px) */
+  drawerMobOpen: boolean;
+
   // ── Acciones ─────────────────────────────────────────────────────
   setCursos: (cursos: Record<string, Curso>, nombreArchivo: string) => void;
   restaurarMalla: (cursos: Record<string, Curso>, nombreArchivo: string) => void;
@@ -38,6 +41,7 @@ interface MallaState {
   setCicloFin: (ciclo: number) => void;
   setVeranoActivo: (activo: boolean) => void;
   setCantVeranos: (cant: number) => void;
+  setDrawerMobOpen: (open: boolean) => void;
 }
 
 export const useMallaStore = create<MallaState>()(
@@ -53,6 +57,7 @@ export const useMallaStore = create<MallaState>()(
       veranoActivo: false,
       cantVeranos: 3,
       nombreArchivoCargado: null,
+      drawerMobOpen: false,
 
       // ── Acciones ────────────────────────────────────────────────
 
@@ -120,10 +125,11 @@ export const useMallaStore = create<MallaState>()(
 
       setFacultad: (facultad) => set({ facultad }),
       setDescuento: (descuento) => set({ descuento }),
-      setCicloInicio: (ciclo) => set({ cicloInicio: ciclo }),
-      setCicloFin: (ciclo) => set({ cicloFin: ciclo }),
+      setCicloInicio: (ciclo) => set({ cicloInicio: Math.min(12, Math.max(1, ciclo)) }),
+      setCicloFin: (ciclo) => set({ cicloFin: Math.min(12, Math.max(1, ciclo)) }),
       setVeranoActivo: (activo) => set({ veranoActivo: activo }),
-      setCantVeranos: (cant) => set({ cantVeranos: cant }),
+      setCantVeranos: (cant) => set({ cantVeranos: Math.min(5, Math.max(1, cant)) }),
+      setDrawerMobOpen: (open) => set({ drawerMobOpen: open }),
     }),
     {
       name: 'malla_asignaciones', // key en localStorage (distinto de 'malla_data')

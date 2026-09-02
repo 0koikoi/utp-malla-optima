@@ -1,5 +1,4 @@
-// Controles de rango de ciclos (Del ciclo N al M)
-
+import { useState, useEffect } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 
 function clamp(val: number, min: number, max: number) {
@@ -9,16 +8,88 @@ function clamp(val: number, min: number, max: number) {
 export function RangoCiclos() {
   const { cicloInicio, cicloFin, setCicloInicio, setCicloFin } = useMallaStore();
 
-  function handleInicio(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = parseInt(e.target.value);
-    if (!isNaN(v)) setCicloInicio(clamp(v, 1, 12));
+  const [valInicio, setValInicio] = useState(String(cicloInicio));
+  const [valFin, setValFin] = useState(String(cicloFin));
+
+  useEffect(() => {
+    setValInicio(String(cicloInicio));
+  }, [cicloInicio]);
+
+  useEffect(() => {
+    setValFin(String(cicloFin));
+  }, [cicloFin]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Bloquear signos negativos, positivos, decimales y notación exponencial
+    if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+      e.preventDefault();
+    }
   }
 
-  function handleFin(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = parseInt(e.target.value);
-    if (!isNaN(v)) {
-      const fin = clamp(v, 1, 12);
-      setCicloFin(fin < cicloInicio ? cicloInicio : fin);
+  function handleInicioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    if (raw === '') {
+      setValInicio('');
+      return;
+    }
+    const num = parseInt(raw, 10);
+    if (isNaN(num)) return;
+
+    const clamped = clamp(num, 1, 12);
+    setValInicio(String(clamped));
+    setCicloInicio(clamped);
+    if (clamped > cicloFin) {
+      setCicloFin(clamped);
+      setValFin(String(clamped));
+    }
+  }
+
+  function handleInicioBlur() {
+    if (valInicio === '' || isNaN(parseInt(valInicio, 10))) {
+      const fallback = clamp(cicloInicio || 1, 1, 12);
+      setValInicio(String(fallback));
+      setCicloInicio(fallback);
+    } else {
+      const num = parseInt(valInicio, 10);
+      const clamped = clamp(num, 1, 12);
+      setValInicio(String(clamped));
+      setCicloInicio(clamped);
+      if (clamped > cicloFin) {
+        setCicloFin(clamped);
+        setValFin(String(clamped));
+      }
+    }
+  }
+
+  function handleFinChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    if (raw === '') {
+      setValFin('');
+      return;
+    }
+    const num = parseInt(raw, 10);
+    if (isNaN(num)) return;
+
+    const clamped = clamp(num, 1, 12);
+    setValFin(String(clamped));
+    setCicloFin(clamped);
+    if (clamped < cicloInicio) {
+      setCicloInicio(clamped);
+      setValInicio(String(clamped));
+    }
+  }
+
+  function handleFinBlur() {
+    if (valFin === '' || isNaN(parseInt(valFin, 10))) {
+      const fallback = clamp(cicloFin || 12, cicloInicio, 12);
+      setValFin(String(fallback));
+      setCicloFin(fallback);
+    } else {
+      const num = parseInt(valFin, 10);
+      const clamped = clamp(num, 1, 12);
+      const finalFin = clamped < cicloInicio ? cicloInicio : clamped;
+      setValFin(String(finalFin));
+      setCicloFin(finalFin);
     }
   }
 
@@ -33,26 +104,28 @@ export function RangoCiclos() {
           type="number"
           className="ciclo-num"
           id="sim-inicio"
-          value={cicloInicio}
+          value={valInicio}
           min={1}
           max={12}
-          title="Ciclo de inicio"
-          onChange={handleInicio}
-          onBlur={() => setCicloInicio(clamp(cicloInicio, 1, 12))}
+          title="Ciclo de inicio (1 a 12)"
+          onKeyDown={handleKeyDown}
+          onChange={handleInicioChange}
+          onBlur={handleInicioBlur}
         />
         <span className="sep">—</span>
         <input
           type="number"
           className="ciclo-num"
           id="sim-fin"
-          value={cicloFin}
+          value={valFin}
           min={1}
           max={12}
-          title="Ciclo de fin"
-          onChange={handleFin}
-          onBlur={() => setCicloFin(clamp(cicloFin, cicloInicio, 12))}
+          title="Ciclo de fin (1 a 12)"
+          onKeyDown={handleKeyDown}
+          onChange={handleFinChange}
+          onBlur={handleFinBlur}
         />
-        <span className="lbl">de 10</span>
+        <span className="lbl">de 12</span>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ export function useExport() {
 
     wrapper.appendChild(mallaContainer.cloneNode(true));
 
-    if (veranoContainer && veranoContainer.style.display !== 'none') {
+    if (veranoContainer) {
       wrapper.appendChild(veranoContainer.cloneNode(true));
     }
 

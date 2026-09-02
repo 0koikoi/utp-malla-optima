@@ -1,8 +1,2 @@
-/* TopBar — reutiliza variables de globals.css */
-.topbar {
-  /* Los estilos base están en globals.css → #app-topbar */
-}
-.title {}
-.badge {}
-.sep { flex: 1; }
-.note {}
+/* TopBar.module.css — reemplazado por clases planas en globals.css.
+   Este archivo puede eliminarse; se conserva para evitar errores de importación. */

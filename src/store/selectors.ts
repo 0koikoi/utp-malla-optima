@@ -19,6 +19,28 @@ export function useCursosPozo(): Curso[] {
     .sort((a, b) => a.cicloOrigen - b.cicloOrigen);
 }
 
+/** Calcula el ciclo "actual" del estudiante (el menor ciclo que aún tiene cursos pendientes) */
+export function useCicloActual(): number {
+  const cursos = useMallaStore((s) => s.cursos);
+  const cursosArr = Object.values(cursos);
+  
+  if (cursosArr.length === 0) return 1;
+
+  let minCiclo = 12;
+  let hasPending = false;
+
+  for (const curso of cursosArr) {
+    if (curso.estado === 'PENDIENTE') {
+      hasPending = true;
+      if (curso.cicloOrigen < minCiclo) {
+        minCiclo = curso.cicloOrigen;
+      }
+    }
+  }
+  
+  return hasPending ? minCiclo : 12;
+}
+
 /** Finanzas calculadas de todos los ciclos visibles */
 export function useFinanzasCiclos(): FinanzasCiclo[] {
   const { cursos, asignaciones, facultad, descuento, cicloInicio, cicloFin, veranoActivo, cantVeranos } =

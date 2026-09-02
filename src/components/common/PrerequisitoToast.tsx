@@ -1,17 +1,21 @@
 // Toast de notificación cuando un drop es bloqueado por prerrequisitos
+// Muestra el código y nombre de cada curso prerrequisito pendiente
 import { useEffect } from 'react';
+
+interface CursoRef {
+  codigo: string;
+  nombre: string;
+}
 
 interface PrerequisitoToastProps {
   cursoNombre: string;
-  faltantes: string[];
+  faltantes: CursoRef[];
   onClose: () => void;
 }
 
 export function PrerequisitoToast({ cursoNombre, faltantes, onClose }: PrerequisitoToastProps) {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4500);
+    const timer = setTimeout(() => onClose(), 5000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
@@ -21,44 +25,74 @@ export function PrerequisitoToast({ cursoNombre, faltantes, onClose }: Prerequis
         position: 'fixed',
         bottom: '24px',
         right: '24px',
-        backgroundColor: '#252742',
+        backgroundColor: '#1f2139',
         borderLeft: '4px solid #ef233c',
         color: '#ffffff',
-        padding: '12px 18px',
+        padding: '14px 18px',
         borderRadius: '4px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+        boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
         zIndex: 999999,
-        maxWidth: '380px',
+        maxWidth: '400px',
         fontSize: '0.78rem',
-        lineHeight: '1.45',
-        animation: 'slideIn 0.25s ease-out',
+        lineHeight: '1.5',
+        animation: 'slideIn 0.22s ease-out',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-        <i className="fas fa-exclamation-triangle" style={{ color: '#ef233c', fontSize: '0.9rem' }} />
-        <b style={{ color: '#ffffff' }}>Prerrequisitos pendientes</b>
+      {/* Encabezado */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <i className="fas fa-lock" style={{ color: '#ef233c', fontSize: '0.85rem' }} />
+        <b style={{ fontSize: '0.82rem' }}>No se puede matricular este curso</b>
         <button
           onClick={onClose}
           style={{
             marginLeft: 'auto',
             background: 'none',
             border: 'none',
-            color: 'rgba(255,255,255,0.6)',
+            color: 'rgba(255,255,255,0.5)',
             cursor: 'pointer',
-            fontSize: '1rem',
+            fontSize: '1.1rem',
+            lineHeight: 1,
+            padding: 0,
           }}
+          title="Cerrar"
         >
           ×
         </button>
       </div>
-      <div style={{ color: 'rgba(255,255,255,0.85)', marginBottom: '4px' }}>
-        No puedes matricular <b>{cursoNombre}</b> sin haber aprobado:
+
+      {/* Curso bloqueado */}
+      <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '10px' }}>
+        Para matricular <b style={{ color: '#fff' }}>{cursoNombre}</b>, primero
+        debes llevar {faltantes.length === 1 ? 'el siguiente prerequisito' : 'los siguientes prerequisitos'}:
       </div>
-      <ul style={{ margin: '0', paddingLeft: '18px', color: '#FCA5A5' }}>
-        {faltantes.map((f, i) => (
-          <li key={i}>{f}</li>
+
+      {/* Lista de prerrequisitos con código y nombre */}
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {faltantes.map((f) => (
+          <li
+            key={f.codigo}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(239,35,60,0.1)',
+              borderRadius: '3px',
+              padding: '5px 9px',
+            }}
+          >
+            <i className="fas fa-exclamation-circle" style={{ color: '#ef233c', fontSize: '0.7rem', flexShrink: 0 }} />
+            <span style={{ color: '#FCA5A5', fontWeight: 700, fontSize: '0.7rem', flexShrink: 0 }}>
+              {f.codigo}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.85)' }}>{f.nombre}</span>
+          </li>
         ))}
       </ul>
+
+      {/* Sugerencia */}
+      <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem' }}>
+        Asigna {faltantes.length === 1 ? 'ese curso' : 'esos cursos'} a un ciclo anterior y vuelve a intentarlo.
+      </div>
     </div>
   );
 }

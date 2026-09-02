@@ -1,5 +1,4 @@
 // Panel lateral de cursos pendientes (pozo) con DropZone integrado
-import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import { useContadorPozo } from '@/store/selectors';
 import { CursoCard } from '@/components/planner/CursoCard';
@@ -7,9 +6,8 @@ import { DropZone } from '@/components/planner/DropZone';
 import type { Curso } from '@/types/malla';
 
 export function PendientesPanel() {
-  const { cursos, asignaciones } = useMallaStore();
+  const { cursos, asignaciones, drawerMobOpen, setDrawerMobOpen } = useMallaStore();
   const totalPendientes = useContadorPozo();
-  const [mobOpen, setMobOpen] = useState(false);
 
   // Cursos en el pozo agrupados por cicloOrigen
   const cursosPozo = Object.values(cursos)
@@ -26,14 +24,14 @@ export function PendientesPanel() {
 
   function handleHeaderClick() {
     if (window.matchMedia('(max-width: 640px)').matches) {
-      setMobOpen((prev) => !prev);
+      setDrawerMobOpen(!drawerMobOpen);
     }
   }
 
   return (
     <aside
       id="panel-pendientes"
-      className={mobOpen ? 'mob-open' : ''}
+      className={drawerMobOpen ? 'mob-open' : ''}
       aria-label="Cursos pendientes"
     >
       <div className="aside-head" onClick={handleHeaderClick}>
@@ -44,16 +42,8 @@ export function PendientesPanel() {
       </div>
       <p className="aside-hint">Arrastra cursos a los ciclos del planificador</p>
 
-      <DropZone
-        id="pozo"
-        className="tier-dropzone"
-        style={{
-          flexDirection: 'column',
-          flexWrap: 'nowrap',
-          gap: '3px',
-          padding: '4px 8px 16px',
-        }}
-      >
+      {/* htmlId="pozo-cursos" para que apliquen los selectores CSS de globals.css */}
+      <DropZone id="pozo" htmlId="pozo-cursos" className="tier-dropzone">
         {!hayMalla && (
           <div className="pozo-empty" id="pozo-empty">
             <i className="fas fa-file-upload" />
