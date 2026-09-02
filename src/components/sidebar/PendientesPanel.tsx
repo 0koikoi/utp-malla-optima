@@ -1,10 +1,9 @@
-// Panel lateral de cursos pendientes (pozo)
-// Agrupados por ciclo de origen, con toggle de drawer para pantallas móviles (<= 640px)
-
+// Panel lateral de cursos pendientes (pozo) con DropZone integrado
 import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import { useContadorPozo } from '@/store/selectors';
 import { CursoCard } from '@/components/planner/CursoCard';
+import { DropZone } from '@/components/planner/DropZone';
 import type { Curso } from '@/types/malla';
 
 export function PendientesPanel() {
@@ -45,10 +44,15 @@ export function PendientesPanel() {
       </div>
       <p className="aside-hint">Arrastra cursos a los ciclos del planificador</p>
 
-      <div
+      <DropZone
+        id="pozo"
         className="tier-dropzone"
-        id="pozo-cursos"
-        style={{ flexDirection: 'column', flexWrap: 'nowrap', gap: '3px', padding: '4px 8px 16px' }}
+        style={{
+          flexDirection: 'column',
+          flexWrap: 'nowrap',
+          gap: '3px',
+          padding: '4px 8px 16px',
+        }}
       >
         {!hayMalla && (
           <div className="pozo-empty" id="pozo-empty">
@@ -78,7 +82,7 @@ export function PendientesPanel() {
               ))}
             </div>
           ))}
-      </div>
+      </DropZone>
     </aside>
   );
 }

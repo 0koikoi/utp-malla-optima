@@ -1,9 +1,8 @@
-// CicloRow — fila de un ciclo en el planificador
-// Muestra: label con stats + zona de drop con tarjetas
-
+// CicloRow — fila de un ciclo en el planificador con DropZone integrado
 import { useMallaStore } from '@/store/mallaStore';
 import { useFinanzasCiclos } from '@/store/selectors';
 import { CursoCard } from './CursoCard';
+import { DropZone } from './DropZone';
 import { formatSoles } from '@/utils/finance';
 
 interface CicloRowProps {
@@ -38,9 +37,10 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
     .filter(Boolean)
     .join(' ');
 
-  const nombreCiclo = tipo === 'regular'
-    ? `Ciclo ${cicloNum}${cicloNum > 10 ? ' ⚠' : ''}`
-    : `Verano ${cicloNum}`;
+  const nombreCiclo =
+    tipo === 'regular'
+      ? `Ciclo ${cicloNum}${cicloNum > 10 ? ' ⚠' : ''}`
+      : `Verano ${cicloNum}`;
 
   const horas = finanzas?.horas ?? 0;
   const creditos = finanzas?.creditos ?? 0;
@@ -55,7 +55,10 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
       data-tipo={tipo}
     >
       {/* Label lateral */}
-      <div className={labelClass} id={`label-${tipo === 'regular' ? 'ciclo' : 'verano'}-${cicloNum}`}>
+      <div
+        className={labelClass}
+        id={`label-${tipo === 'regular' ? 'ciclo' : 'verano'}-${cicloNum}`}
+      >
         <span className="tier-num">{cicloNum}</span>
         <span className="tier-name">{nombreCiclo}</span>
         <div className="tier-stats">
@@ -74,15 +77,12 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
         </div>
       </div>
 
-      {/* Zona de drop — placeholder hasta Fase 3 */}
-      <div
-        className="tier-dropzone zona-ciclo"
-        id={cicloId}
-      >
+      {/* Zona de drop receptora */}
+      <DropZone id={cicloId} className="tier-dropzone zona-ciclo">
         {[...cursosAprobados, ...cursosPendientes].map((curso) => (
           <CursoCard key={curso.codigo} curso={curso} />
         ))}
-      </div>
+      </DropZone>
     </div>
   );
 }

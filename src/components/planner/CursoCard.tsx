@@ -1,22 +1,30 @@
-// CursoCard — tarjeta de curso con tooltip en portal
-// En Fase 0: muestra la información y tooltips limpios sin colisiones de coordenadas CSS
-
+// CursoCard — tarjeta de curso con arrastre (@dnd-kit) y tooltip en portal
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useDraggable } from '@dnd-kit/core';
 import type { Curso } from '@/types/malla';
 import { useMallaStore } from '@/store/mallaStore';
 
 interface CursoCardProps {
   curso: Curso;
   compacto?: boolean;
+  isOverlay?: boolean;
 }
 
-export function CursoCard({ curso }: CursoCardProps) {
+export function CursoCard({ curso, isOverlay = false }: CursoCardProps) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const diccionario = useMallaStore((s) => s.cursos);
 
   const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
+  const esArrastrable = !esAprobado && !isOverlay;
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: curso.codigo,
+    data: { curso },
+    disabled: !esArrastrable,
+  });
+
   const claseEst = esAprobado ? curso.estado.toLowerCase() : '';
   const claseT = curso.tipo === 'O' ? 'obligatorio' : 'electivo';
   const textoT = curso.tipo === 'O' ? 'Obligatorio' : 'Electivo';
@@ -24,6 +32,7 @@ export function CursoCard({ curso }: CursoCardProps) {
   const sinSucesores = !esAprobado && curso.habilitaA.length === 0;
 
   function handleInfoEnter(e: React.MouseEvent) {
+    if (isDragging) return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     setTooltipPos({
       top: rect.bottom + 5,
@@ -32,22 +41,34 @@ export function CursoCard({ curso }: CursoCardProps) {
     setTooltipVisible(true);
   }
 
+  const cardClasses = [
+    'curso-card',
+    claseEst,
+    claseT,
+    sinSucesores ? 'no-habilita' : '',
+    isDragging ? 'sortable-ghost' : '',
+    isOverlay ? 'sortable-chosen' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <>
       <div
-        className={[
-          'curso-card',
-          claseEst,
-          claseT,
-          sinSucesores ? 'no-habilita' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        ref={esArrastrable ? setNodeRef : undefined}
+        className={cardClasses}
         data-horas={curso.horas}
         data-creditos={curso.creditos}
         data-estado={curso.estado}
         data-ciclo-origen={curso.cicloOrigen}
         data-codigo={curso.codigo}
+        style={{
+          opacity: isDragging ? 0.35 : 1,
+          touchAction: esArrastrable ? 'none' : undefined,
+          cursor: isOverlay ? 'grabbing' : esArrastrable ? 'grab' : 'default',
+        }}
+        {...(esArrastrable ? listeners : {})}
+        {...(esArrastrable ? attributes : {})}
       >
         {sinSucesores && (
           <span className="no-hab-mark" title="Este curso no abre ningún otro">×</span>
@@ -61,15 +82,19 @@ export function CursoCard({ curso }: CursoCardProps) {
           <span className="ctag">{curso.creditos} crd</span>
           <span className={`ctag ${claseTag}`}>{textoT}</span>
         </div>
-        <i
-          className="fas fa-info-circle btn-info-flotante"
-          onMouseEnter={handleInfoEnter}
-          onMouseLeave={() => setTooltipVisible(false)}
-        />
+        {!isOverlay && (
+          <i
+            className="fas fa-info-circle btn-info-flotante"
+            onMouseEnter={handleInfoEnter}
+            onMouseLeave={() => setTooltipVisible(false)}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        )}
       </div>
 
-      {/* Tooltip renderizado en document.body via Portal para evitar problemas de transform */}
+      {/* Tooltip renderizado en portal */}
       {tooltipVisible &&
+        !isDragging &&
         createPortal(
           <div
             id="tooltip-global"
