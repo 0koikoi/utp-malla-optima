@@ -1,127 +1,111 @@
-import React from 'react';
+import { AlertTriangle, BookOpen, Calculator, X } from 'lucide-react';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { DisciplineSelector } from './DisciplineSelector';
 import { calcularPresupuesto } from '../utils/budgetEngine';
-import { X, BookOpen, Calculator } from 'lucide-react';
 
-export const PlanificadorPanel: React.FC = () => {
-  const { 
-    cursos, 
-    cursosSeleccionadosParaMatricula, 
-    toggleSeleccionMatricula, 
-    tarifario, 
+const formatoMoneda = (moneda: string, monto: number) => {
+  if (moneda === 'PEN') return `S/ ${monto.toFixed(2)}`;
+  return `${moneda} ${monto.toFixed(2)}`;
+};
+
+export const PlanificadorPanel = () => {
+  const {
+    cursos,
+    cursosSeleccionadosParaMatricula,
+    toggleSeleccionMatricula,
+    tarifario,
     disciplinaActiva,
     panelPlanificadorAbierto,
-    setPanelPlanificadorAbierto
+    setPanelPlanificadorAbierto,
   } = useAcademicStore();
 
-  const cursosEnPlanificador = cursos.filter((c) =>
-    cursosSeleccionadosParaMatricula.includes(c.codigo)
+  const cursosEnPlanificador = cursos.filter((curso) =>
+    cursosSeleccionadosParaMatricula.includes(curso.codigo)
   );
 
   const resumen = tarifario
     ? calcularPresupuesto(cursosEnPlanificador, tarifario, disciplinaActiva)
     : null;
 
+  const limiteMaximo = tarifario?.limitesAcademicos?.creditosMaximos;
+  const excedeCreditos = Boolean(
+    resumen && limiteMaximo && resumen.totalCreditos > limiteMaximo
+  );
+
   return (
     <>
-      {/* Fondo oscuro al abrir en móviles o pantallas medianas */}
       {panelPlanificadorAbierto && (
-        <div 
+        <button
+          type="button"
+          className="drawer-backdrop"
           onClick={() => setPanelPlanificadorAbierto(false)}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 transition-opacity"
+          aria-label="Cerrar planificador"
         />
       )}
 
-      {/* Menú Plegable Deslizante */}
-      <aside
-        className={`fixed top-0 right-0 h-full w-88 max-w-[90vw] bg-slate-900 border-l border-slate-800 p-5 flex flex-col z-50 shadow-2xl transition-transform duration-300 ease-in-out
-          ${panelPlanificadorAbierto ? 'translate-x-0' : 'translate-x-full'}
-        `}
-      >
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2 text-slate-100 font-bold text-sm">
-            <Calculator className="w-5 h-5 text-indigo-400" />
-            <span>Planificador de Matrícula</span>
+      <aside className={`budget-drawer ${panelPlanificadorAbierto ? 'open' : ''}`}>
+        <div className="budget-drawer-head">
+          <div>
+            <span className="budget-kicker">Simulación referencial</span>
+            <h2><Calculator size={18} /> Planificador de matrícula</h2>
           </div>
           <button
+            type="button"
+            className="drawer-close"
             onClick={() => setPanelPlanificadorAbierto(false)}
-            className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
+            aria-label="Cerrar"
           >
-            <X className="w-5 h-5" />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Selector de Especialidad */}
-        <div className="py-4 border-b border-slate-800">
+        <div className="budget-control-block">
+          <label htmlFor="disciplina-select">Tarifario por disciplina</label>
           <DisciplineSelector />
         </div>
 
-        {/* Lista de Cursos Seleccionados */}
-        <div className="flex items-center justify-between py-3">
-          <h4 className="font-semibold text-xs text-slate-300 flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-indigo-400" />
-            Materias Seleccionadas ({cursosEnPlanificador.length})
-          </h4>
+        <div className="budget-section-title">
+          <BookOpen size={15} /> Materias seleccionadas
+          <span>{cursosEnPlanificador.length}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        <div className="budget-course-list">
           {cursosEnPlanificador.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center mt-8">
-              Haz clic en los cursos disponibles para simular tu presupuesto.
-            </p>
+            <div className="budget-empty">
+              Usa el icono de calculadora de una tarjeta para añadir cursos a esta simulación.
+            </div>
           ) : (
             cursosEnPlanificador.map((curso) => (
-              <div
-                key={curso.codigo}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs"
-              >
+              <div className="budget-course" key={curso.codigo}>
                 <div>
-                  <p className="font-semibold text-slate-200 line-clamp-1">{curso.nombre}</p>
-                  <p className="text-slate-400 font-mono text-[11px]">
-                    {curso.codigo} • {curso.creditos} cr • {curso.horasSemanales} hrs
-                  </p>
+                  <strong>{curso.nombre}</strong>
+                  <small>{curso.codigo} · {curso.creditos} cr · {curso.horasSemanales} h</small>
                 </div>
                 <button
+                  type="button"
                   onClick={() => toggleSeleccionMatricula(curso.codigo)}
-                  className="p-1 hover:bg-slate-700 text-slate-400 hover:text-red-400 rounded transition-colors"
-                  title="Quitar materia"
+                  aria-label={`Quitar ${curso.nombre}`}
                 >
-                  <X className="w-4 h-4" />
+                  <X size={14} />
                 </button>
               </div>
             ))
           )}
         </div>
 
-        {/* Resumen Financiero */}
+        {excedeCreditos && (
+          <div className="budget-warning">
+            <AlertTriangle size={15} />
+            La selección supera el máximo configurado de {limiteMaximo} créditos.
+          </div>
+        )}
+
         {resumen && tarifario && (
-          <div className="pt-4 border-t border-slate-800 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-400">
-              <span>Total Carga:</span>
-              <span className="text-slate-200 font-mono font-semibold">
-                {resumen.totalCreditos} cr / {resumen.totalHorasSemanales} hrs
-              </span>
-            </div>
-            
-            <div className="flex justify-between text-slate-400">
-              <span>Matrícula regular:</span>
-              <span className="text-slate-200 font-mono">{tarifario.moneda} {resumen.costoMatricula.toFixed(2)}</span>
-            </div>
-
-            <div className="flex justify-between text-slate-400">
-              <span>Cuota mensual ({tarifario.cuotasPorCiclo} cuotas):</span>
-              <span className="text-indigo-400 font-bold font-mono text-sm">
-                {tarifario.moneda} {resumen.montoPorCuota.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="flex justify-between pt-2 border-t border-slate-800 font-bold text-slate-200">
-              <span>Total Ciclo:</span>
-              <span className="text-emerald-400 font-mono text-sm">
-                {tarifario.moneda} {resumen.costoTotalCiclo.toFixed(2)}
-              </span>
-            </div>
+          <div className="budget-summary">
+            <div><span>Carga</span><b>{resumen.totalCreditos} cr · {resumen.totalHorasSemanales} h</b></div>
+            <div><span>Matrícula</span><b>{formatoMoneda(tarifario.moneda, resumen.costoMatricula)}</b></div>
+            <div><span>Cuota estimada</span><b className="accent-value">{formatoMoneda(tarifario.moneda, resumen.montoPorCuota)}</b></div>
+            <div className="budget-total"><span>Total ciclo</span><b>{formatoMoneda(tarifario.moneda, resumen.costoTotalCiclo)}</b></div>
           </div>
         )}
       </aside>

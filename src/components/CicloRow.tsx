@@ -1,72 +1,85 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { DragEvent } from 'react';
 import type { Curso } from '../types/academic';
 import { CourseCard } from './CourseCard';
 import { useAcademicStore } from '../store/useAcademicStore';
+import { LockKeyhole, MoveDown } from 'lucide-react';
 
 interface Props {
   numCiclo: number;
   cursos: Curso[];
 }
 
-export const CicloRow: React.FC<Props> = ({ numCiclo, cursos }) => {
-  const [isOver, setIsOver] = useState<boolean>(false);
-  const moverCursoACiclo = useAcademicStore((state) => state.moverCursoACiclo);
+export const CicloRow = ({ numCiclo, cursos }: Props) => {
+  const [isOver, setIsOver] = useState(false);
+  const { moverCursoACiclo, cursoAMover } = useAcademicStore();
 
-  const totalCreditos = cursos.reduce((acc, c) => acc + c.creditos, 0);
-  const totalHoras = cursos.reduce((acc, c) => acc + c.horasSemanales, 0);
+  const cursosOrdenados = [...cursos].sort((a, b) => {
+    const aLlevado = a.estado === 'APROBADO' || a.estado === 'CONVALIDADO' ? 0 : 1;
+    const bLlevado = b.estado === 'APROBADO' || b.estado === 'CONVALIDADO' ? 0 : 1;
+    if (aLlevado !== bLlevado) return aLlevado - bLlevado;
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(true);
-  };
+  const cursosParaCarga = cursos.filter(
+    (curso) => curso.estado === 'PENDIENTE' || curso.estado === 'EN_CURSO'
+  );
+  const totalCreditos = cursosParaCarga.reduce((acc, curso) => acc + curso.creditos, 0);
+  const totalHoras = cursosParaCarga.reduce((acc, curso) => acc + curso.horasSemanales, 0);
+  const cursosLlevados = cursos.filter(
+    (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
+  ).length;
+  const cicloCompletado = cursos.length > 0 && cursosLlevados === cursos.length;
+  const cicloAdelantado = cursosLlevados > 0 && !cicloCompletado;
 
-  const handleDragLeave = () => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsOver(false);
-    const codigoCurso = e.dataTransfer.getData('text/plain');
-    if (codigoCurso) {
-      moverCursoACiclo(codigoCurso, numCiclo);
-    }
+    const codigo = event.dataTransfer.getData('text/plain');
+    if (codigo) void moverCursoACiclo(codigo, numCiclo);
   };
 
   return (
-    <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`flex flex-col lg:flex-row gap-4 p-4 rounded-2xl border transition-all duration-200
-        ${isOver 
-          ? 'border-indigo-400 bg-indigo-950/20 ring-2 ring-indigo-500/20' 
-          : 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-900/60'
-        }
-      `}
-    >
-      {/* Etiqueta vertical izquierda del Ciclo */}
-      <div className="lg:w-44 flex-shrink-0 flex lg:flex-col justify-between lg:justify-center border-b lg:border-b-0 lg:border-r border-slate-800 pb-2 lg:pb-0 lg:pr-4">
-        <div>
-          <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">
-            Ciclo {numCiclo}
-          </h3>
-          <p className="text-xs text-slate-400 mt-0.5">{cursos.length} asignaturas</p>
+    <div className={`tier-row ${isOver ? 'is-over' : ''}`} data-ciclo={numCiclo}>
+      <div
+        className={`tier-label ${cicloCompletado ? 'ciclo-aprobado' : ''} ${cicloAdelantado ? 'ciclo-adelantado' : ''}`}
+      >
+        <span className="tier-num">{numCiclo}</span>
+        <span className="tier-name">Ciclo {numCiclo}</span>
+        <div className="tier-stats">
+          <span className="stat-chip stat-horas">{totalHoras}h sem.</span>
+          <span className="stat-chip">{totalCreditos} cr</span>
         </div>
-        <div className="text-right lg:text-left lg:mt-3 text-[11px] font-mono text-slate-500">
-          <div>{totalCreditos} créditos</div>
-          <div>{totalHoras} hrs/sem</div>
-        </div>
+        {cursosLlevados > 0 && (
+          <span className="tier-lock-note">
+            <LockKeyhole size={10} /> {cursosLlevados} fijo{cursosLlevados === 1 ? '' : 's'}
+          </span>
+        )}
       </div>
 
-      {/* Contenedor horizontal con scroll de cursos */}
-      <div className="flex-1 overflow-x-auto flex items-center gap-3 pb-2 lg:pb-0 min-h-[110px]">
-        {cursos.length === 0 ? (
-          <div className="flex items-center justify-center w-full h-24 border-2 border-dashed border-slate-800/80 rounded-xl text-xs text-slate-600">
-            Arrastra un curso aquí para asignarlo a este ciclo
-          </div>
+      <div
+        className="tier-dropzone"
+        onDragOver={(event) => {
+          event.preventDefault();
+          setIsOver(true);
+        }}
+        onDragLeave={() => setIsOver(false)}
+        onDrop={handleDrop}
+      >
+        {cursoAMover && (
+          <button
+            type="button"
+            className="tap-move-target"
+            onClick={() => void moverCursoACiclo(cursoAMover, numCiclo)}
+          >
+            <MoveDown size={14} /> Mover aquí
+          </button>
+        )}
+
+        {cursosOrdenados.length === 0 ? (
+          <div className="tier-empty">Arrastra aquí un curso pendiente</div>
         ) : (
-          cursos.map((curso) => <CourseCard key={curso.codigo} curso={curso} />)
+          cursosOrdenados.map((curso) => <CourseCard key={curso.codigo} curso={curso} />)
         )}
       </div>
     </div>

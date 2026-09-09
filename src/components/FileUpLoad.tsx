@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, UploadCloud } from 'lucide-react';
 import { parseUTPExcel } from '../adapters/utpExcelAdapter';
 import { useAcademicStore } from '../store/useAcademicStore';
 
@@ -7,18 +7,17 @@ interface FileUploadProps {
   onSuccess?: () => void;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onSuccess }) => {
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+export const FileUpload = ({ onSuccess }: FileUploadProps) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setCursos = useAcademicStore((state) => state.setCursos);
 
   const processFile = async (file: File) => {
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      setErrorMessage('Por favor, sube un archivo Excel válido (.xlsx o .xls)');
+    if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+      setErrorMessage('Sube un archivo Excel válido (.xlsx o .xls).');
       return;
     }
 
@@ -27,106 +26,80 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onSuccess }) => {
 
     try {
       const cursosParsed = await parseUTPExcel(file);
-      
-      if (cursosParsed.length === 0) {
-        throw new Error('No se encontraron cursos válidos en el archivo.');
-      }
+      if (cursosParsed.length === 0) throw new Error('No se encontraron cursos válidos.');
 
-      await setCursos(cursosParsed);
+      await setCursos(cursosParsed, file.name);
       setFileName(file.name);
-      if (onSuccess) onSuccess();
+      onSuccess?.();
     } catch (error) {
       console.error('Error al procesar el Excel:', error);
-      setErrorMessage('Ocurrió un error al procesar la malla curricular. Revisa el formato del archivo.');
+      setErrorMessage('No se pudo interpretar la malla. Revisa que sea el Excel de avance de plan de estudios.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
-    }
-  };
-
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="file-upload-wrap">
       <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        className={`file-upload-zone ${isDragging ? 'dragging' : ''}`}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          setIsDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setIsDragging(false);
+          const file = event.dataTransfer.files?.[0];
+          if (file) void processFile(file);
+        }}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200
-          ${isDragging 
-            ? 'border-indigo-400 bg-indigo-950/30 scale-[1.01]' 
-            : 'border-slate-700 bg-slate-900/60 hover:bg-slate-900 hover:border-slate-600'
-          }
-        `}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
+        }}
       >
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xlsx, .xls"
-          onChange={handleFileChange}
-          className="hidden"
+          accept=".xlsx,.xls"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void processFile(file);
+          }}
+          hidden
         />
 
         {isLoading ? (
-          <div className="flex flex-col items-center py-4 space-y-2">
-            <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-            <p className="text-sm font-medium text-slate-300">Procesando plan de estudios...</p>
-          </div>
+          <>
+            <Loader2 className="upload-spin" size={31} />
+            <strong>Procesando plan de estudios…</strong>
+            <span>Normalizando cursos, estados y prerrequisitos.</span>
+          </>
         ) : fileName ? (
-          <div className="flex flex-col items-center py-2 space-y-2 text-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-            <div className="text-sm font-medium text-slate-200">{fileName}</div>
-            <p className="text-xs text-slate-400">
-              Malla cargada correctamente. Haz clic o arrastra otro archivo para reemplazarla.
-            </p>
-          </div>
+          <>
+            <CheckCircle2 className="upload-success" size={31} />
+            <strong>{fileName}</strong>
+            <span>Malla cargada correctamente.</span>
+          </>
         ) : (
-          <div className="flex flex-col items-center py-4 space-y-3 text-center">
-            <div className="p-3 bg-slate-800 rounded-full text-indigo-400">
-              <UploadCloud className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-200">
-                Haz clic para subir o arrastra tu archivo Excel
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Formatos soportados: .xlsx o .xls del portal universitario
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Detección automática de códigos, créditos y prerrequisitos</span>
-            </div>
-          </div>
+          <>
+            <span className="upload-icon"><UploadCloud size={24} /></span>
+            <strong>Arrastra tu Excel o haz clic para seleccionarlo</strong>
+            <span>Plan_de_Estudio.xlsx · formatos .xlsx / .xls</span>
+            <small><FileSpreadsheet size={13} /> Lectura local: el archivo no se envía a un servidor</small>
+          </>
         )}
       </div>
 
       {errorMessage && (
-        <div className="mt-3 flex items-center gap-2 p-3 bg-red-950/50 border border-red-800/80 rounded-lg text-xs text-red-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMessage}</span>
+        <div className="file-upload-error">
+          <AlertCircle size={15} /> {errorMessage}
         </div>
       )}
     </div>

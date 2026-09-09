@@ -1,6 +1,12 @@
 import { create } from 'zustand';
-import type { Curso, Tarifario, EstadoCurso } from '../types/academic';
+import type {
+  Curso,
+  EstadoCurso,
+  NotificacionMovimiento,
+  Tarifario,
+} from '../types/academic';
 import { db } from '../services/db';
+import { validarPrerequisitosParaCiclo } from '../utils/academicGraph';
 
 interface AcademicStore {
   cursos: Curso[];
@@ -8,15 +14,44 @@ interface AcademicStore {
   disciplinaActiva: string;
   cursosSeleccionadosParaMatricula: string[];
   panelPlanificadorAbierto: boolean;
-  setCursos: (cursos: Curso[]) => Promise<void>;
+  cursoAMover: string | null;
+  notificacionMovimiento: NotificacionMovimiento | null;
+  nombreArchivoCargado: string | null;
+  setCursos: (cursos: Curso[], nombreArchivo?: string) => Promise<void>;
   updateEstadoCurso: (codigo: string, estado: EstadoCurso) => Promise<void>;
-  moverCursoACiclo: (codigo: string, nuevoCiclo: number) => Promise<void>;
+  moverCursoACiclo: (codigo: string, nuevoCiclo: number) => Promise<boolean>;
+  moverCursoABanco: (codigo: string) => Promise<boolean>;
+  reiniciarPlanificacion: () => Promise<void>;
   toggleSeleccionMatricula: (codigo: string) => void;
   setTarifario: (tarifario: Tarifario) => Promise<void>;
   setDisciplinaActiva: (disciplina: string) => Promise<void>;
   setPanelPlanificadorAbierto: (abierto: boolean) => void;
+  setCursoAMover: (codigo: string | null) => void;
+  limpiarNotificacionMovimiento: () => void;
   cargarDesdeDB: () => Promise<void>;
 }
+
+const esCursoYaLlevado = (curso: Curso): boolean =>
+  curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+
+const normalizarCurso = (curso: Curso): Curso => {
+  const cicloOrigen = curso.cicloOrigen || curso.ciclo || 1;
+  const ubicacion = curso.ubicacion ?? (esCursoYaLlevado(curso) || curso.estado === 'EN_CURSO' ? 'ciclo' : 'banco');
+
+  return {
+    ...curso,
+    ciclo: curso.ciclo || cicloOrigen,
+    cicloOrigen,
+    ubicacion,
+    prerrequisitos: curso.prerrequisitos ?? [],
+  };
+};
+
+const ordenarCursos = (cursos: Curso[]): Curso[] =>
+  [...cursos].sort((a, b) => {
+    if (a.cicloOrigen !== b.cicloOrigen) return a.cicloOrigen - b.cicloOrigen;
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
 
 export const useAcademicStore = create<AcademicStore>((set, get) => ({
   cursos: [],
@@ -24,27 +59,161 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
   disciplinaActiva: 'Ingeniería y Tecnología',
   cursosSeleccionadosParaMatricula: [],
   panelPlanificadorAbierto: false,
+  cursoAMover: null,
+  notificacionMovimiento: null,
+  nombreArchivoCargado: null,
 
-  setCursos: async (cursos) => {
-    set({ cursos });
-    await db.courses.clear();
-    await db.courses.bulkPut(cursos);
+  setCursos: async (cursos, nombreArchivo) => {
+    const cursosNormalizados = ordenarCursos(
+      cursos.map((curso) => {
+        const normalizado = normalizarCurso(curso);
+        return {
+          ...normalizado,
+          ciclo: normalizado.cicloOrigen,
+          ubicacion: esCursoYaLlevado(normalizado) || normalizado.estado === 'EN_CURSO' ? 'ciclo' : 'banco',
+        };
+      })
+    );
+
+    set({
+      cursos: cursosNormalizados,
+      cursosSeleccionadosParaMatricula: [],
+      cursoAMover: null,
+      notificacionMovimiento: null,
+      nombreArchivoCargado: nombreArchivo ?? null,
+    });
+
+    await db.transaction('rw', db.courses, db.profile, async () => {
+      await db.courses.clear();
+      await db.courses.bulkPut(cursosNormalizados);
+
+      const perfilActual = await db.profile.get('current_profile');
+      if (nombreArchivo) {
+        await db.profile.put({
+          id: 'current_profile',
+          universidadId: perfilActual?.universidadId || get().tarifario?.universidadId || 'pe-utp',
+          carrera: perfilActual?.carrera || 'Ingeniería de Sistemas e Informática',
+          disciplinaActiva: perfilActual?.disciplinaActiva || get().disciplinaActiva,
+          fechaActualizacion: new Date().toISOString(),
+          nombreArchivoCargado: nombreArchivo,
+        });
+      }
+    });
   },
 
   updateEstadoCurso: async (codigo, nuevoEstado) => {
-    const cursosActualizados = get().cursos.map((c) =>
-      c.codigo === codigo ? { ...c, estado: nuevoEstado } : c
+    const cursoActual = get().cursos.find((curso) => curso.codigo === codigo);
+    if (!cursoActual) return;
+
+    const ubicacion =
+      nuevoEstado === 'APROBADO' || nuevoEstado === 'CONVALIDADO' || nuevoEstado === 'EN_CURSO'
+        ? 'ciclo'
+        : cursoActual.ubicacion;
+
+    const cursosActualizados = ordenarCursos(
+      get().cursos.map((curso) =>
+        curso.codigo === codigo ? { ...curso, estado: nuevoEstado, ubicacion } : curso
+      )
     );
+
     set({ cursos: cursosActualizados });
-    await db.courses.update(codigo, { estado: nuevoEstado });
+    await db.courses.update(codigo, { estado: nuevoEstado, ubicacion });
   },
 
   moverCursoACiclo: async (codigo, nuevoCiclo) => {
-    const cursosActualizados = get().cursos.map((c) =>
-      c.codigo === codigo ? { ...c, ciclo: nuevoCiclo } : c
+    const curso = get().cursos.find((item) => item.codigo === codigo);
+    if (!curso) return false;
+
+    if (esCursoYaLlevado(curso)) {
+      set({
+        notificacionMovimiento: {
+          tipo: 'INMOVIBLE',
+          cursoNombre: curso.nombre,
+        },
+      });
+      return false;
+    }
+
+    const { valido, faltantes } = validarPrerequisitosParaCiclo(
+      curso,
+      get().cursos,
+      nuevoCiclo
     );
-    set({ cursos: cursosActualizados });
-    await db.courses.update(codigo, { ciclo: nuevoCiclo });
+
+    if (!valido) {
+      set({
+        notificacionMovimiento: {
+          tipo: 'PRERREQUISITOS',
+          cursoNombre: curso.nombre,
+          faltantes,
+        },
+      });
+      return false;
+    }
+
+    const cursosActualizados = ordenarCursos(
+      get().cursos.map((item) =>
+        item.codigo === codigo
+          ? { ...item, ciclo: nuevoCiclo, ubicacion: 'ciclo' as const }
+          : item
+      )
+    );
+
+    set({
+      cursos: cursosActualizados,
+      cursoAMover: null,
+      notificacionMovimiento: null,
+    });
+    await db.courses.update(codigo, { ciclo: nuevoCiclo, ubicacion: 'ciclo' });
+    return true;
+  },
+
+  moverCursoABanco: async (codigo) => {
+    const curso = get().cursos.find((item) => item.codigo === codigo);
+    if (!curso) return false;
+
+    if (esCursoYaLlevado(curso)) {
+      set({
+        notificacionMovimiento: {
+          tipo: 'INMOVIBLE',
+          cursoNombre: curso.nombre,
+        },
+      });
+      return false;
+    }
+
+    const cursosActualizados = ordenarCursos(
+      get().cursos.map((item) =>
+        item.codigo === codigo
+          ? { ...item, ciclo: item.cicloOrigen, ubicacion: 'banco' as const }
+          : item
+      )
+    );
+
+    set({
+      cursos: cursosActualizados,
+      cursoAMover: null,
+      notificacionMovimiento: null,
+    });
+    await db.courses.update(codigo, { ciclo: curso.cicloOrigen, ubicacion: 'banco' });
+    return true;
+  },
+
+  reiniciarPlanificacion: async () => {
+    const cursosActualizados = ordenarCursos(
+      get().cursos.map((curso) => {
+        if (curso.estado !== 'PENDIENTE') return curso;
+        return { ...curso, ciclo: curso.cicloOrigen, ubicacion: 'banco' as const };
+      })
+    );
+
+    set({
+      cursos: cursosActualizados,
+      cursosSeleccionadosParaMatricula: [],
+      cursoAMover: null,
+      notificacionMovimiento: null,
+    });
+    await db.courses.bulkPut(cursosActualizados);
   },
 
   toggleSeleccionMatricula: (codigo) => {
@@ -52,8 +221,8 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
     const existe = actual.includes(codigo);
     set({
       cursosSeleccionadosParaMatricula: existe
-        ? actual.filter((c) => c !== codigo)
-        : [...actual, codigo]
+        ? actual.filter((item) => item !== codigo)
+        : [...actual, codigo],
     });
   },
 
@@ -64,24 +233,44 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
 
   setDisciplinaActiva: async (disciplinaActiva) => {
     set({ disciplinaActiva });
+    const perfilActual = await db.profile.get('current_profile');
     await db.profile.put({
       id: 'current_profile',
-      universidadId: get().tarifario?.universidadId || 'pe-utp',
-      carrera: 'Ingeniería de Sistemas e Informática',
+      universidadId: get().tarifario?.universidadId || perfilActual?.universidadId || 'pe-utp',
+      carrera: perfilActual?.carrera || 'Ingeniería de Sistemas e Informática',
       disciplinaActiva,
-      fechaActualizacion: new Date().toISOString()
+      fechaActualizacion: new Date().toISOString(),
+      nombreArchivoCargado: get().nombreArchivoCargado || perfilActual?.nombreArchivoCargado,
     });
   },
 
   setPanelPlanificadorAbierto: (panelPlanificadorAbierto) => set({ panelPlanificadorAbierto }),
+
+  setCursoAMover: (cursoAMover) => set({ cursoAMover }),
+
+  limpiarNotificacionMovimiento: () => set({ notificacionMovimiento: null }),
 
   cargarDesdeDB: async () => {
     const cursosDB = await db.courses.toArray();
     const tarifariosDB = await db.customCosts.toArray();
     const profileDB = await db.profile.get('current_profile');
 
-    if (cursosDB.length > 0) set({ cursos: cursosDB });
+    if (cursosDB.length > 0) {
+      const cursosNormalizados = ordenarCursos(cursosDB.map(normalizarCurso));
+      set({ cursos: cursosNormalizados });
+
+      const necesitaMigracion = cursosDB.some(
+        (curso) => !curso.cicloOrigen || !curso.ubicacion
+      );
+      if (necesitaMigracion) await db.courses.bulkPut(cursosNormalizados);
+    }
+
     if (tarifariosDB.length > 0) set({ tarifario: tarifariosDB[0] });
-    if (profileDB) set({ disciplinaActiva: profileDB.disciplinaActiva });
-  }
+    if (profileDB) {
+      set({
+        disciplinaActiva: profileDB.disciplinaActiva,
+        nombreArchivoCargado: profileDB.nombreArchivoCargado ?? null,
+      });
+    }
+  },
 }));

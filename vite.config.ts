@@ -15,8 +15,8 @@ export default defineConfig({
         name: 'Organizador Curricular Universitario',
         short_name: 'AcademicPlanner',
         description: 'Planificador curricular y presupuestario offline-first',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#2b2d42',
+        background_color: '#f8f8fa',
         display: 'standalone',
         icons: [
           {

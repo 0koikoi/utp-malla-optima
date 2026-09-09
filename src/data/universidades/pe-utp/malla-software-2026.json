@@ -15,7 +15,9 @@
       "tipo": "OBLIGATORIO",
       "prerrequisitos": [],
       "esLaboratorio": false,
-      "estado": "APROBADO"
+      "estado": "APROBADO",
+      "cicloOrigen": 1,
+      "ubicacion": "ciclo"
     },
     {
       "codigo": "100000I02N",
@@ -26,7 +28,9 @@
       "tipo": "OBLIGATORIO",
       "prerrequisitos": [],
       "esLaboratorio": false,
-      "estado": "CONVALIDADO"
+      "estado": "CONVALIDADO",
+      "cicloOrigen": 1,
+      "ubicacion": "ciclo"
     },
     {
       "codigo": "SI0601",
@@ -35,9 +39,14 @@
       "creditos": 3,
       "horasSemanales": 4,
       "tipo": "OBLIGATORIO",
-      "prerrequisitos": ["SI0501", "SI0502"],
+      "prerrequisitos": [
+        "SI0501",
+        "SI0502"
+      ],
       "esLaboratorio": true,
-      "estado": "EN_CURSO"
+      "estado": "EN_CURSO",
+      "cicloOrigen": 6,
+      "ubicacion": "ciclo"
     },
     {
       "codigo": "SI0602",
@@ -46,9 +55,13 @@
       "creditos": 4,
       "horasSemanales": 4,
       "tipo": "OBLIGATORIO",
-      "prerrequisitos": ["SI0503"],
+      "prerrequisitos": [
+        "SI0503"
+      ],
       "esLaboratorio": false,
-      "estado": "EN_CURSO"
+      "estado": "EN_CURSO",
+      "cicloOrigen": 6,
+      "ubicacion": "ciclo"
     },
     {
       "codigo": "SI0701",
@@ -57,9 +70,13 @@
       "creditos": 3,
       "horasSemanales": 4,
       "tipo": "OBLIGATORIO",
-      "prerrequisitos": ["SI0602"],
+      "prerrequisitos": [
+        "SI0602"
+      ],
       "esLaboratorio": true,
-      "estado": "EN_CURSO"
+      "estado": "EN_CURSO",
+      "cicloOrigen": 7,
+      "ubicacion": "ciclo"
     },
     {
       "codigo": "SI0702",
@@ -68,9 +85,13 @@
       "creditos": 4,
       "horasSemanales": 4,
       "tipo": "OBLIGATORIO",
-      "prerrequisitos": ["SI0601"],
+      "prerrequisitos": [
+        "SI0601"
+      ],
       "esLaboratorio": false,
-      "estado": "PENDIENTE"
+      "estado": "PENDIENTE",
+      "cicloOrigen": 7,
+      "ubicacion": "banco"
     },
     {
       "codigo": "SI0801",
@@ -79,9 +100,13 @@
       "creditos": 3,
       "horasSemanales": 4,
       "tipo": "OBLIGATORIO",
-      "prerrequisitos": ["SI0702"],
+      "prerrequisitos": [
+        "SI0702"
+      ],
       "esLaboratorio": false,
-      "estado": "PENDIENTE"
+      "estado": "PENDIENTE",
+      "cicloOrigen": 8,
+      "ubicacion": "banco"
     }
   ]
 }

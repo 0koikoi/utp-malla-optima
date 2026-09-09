@@ -1,67 +1,160 @@
-import React from 'react';
+import type { DragEvent } from 'react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado } from '../utils/academicGraph';
-import { GripVertical } from 'lucide-react';
+import { Calculator, CircleCheck, Info, LockKeyhole } from 'lucide-react';
 
 interface Props {
   curso: Curso;
+  compacto?: boolean;
 }
 
-export const CourseCard: React.FC<Props> = ({ curso }) => {
-  const { cursos, cursosSeleccionadosParaMatricula, toggleSeleccionMatricula } = useAcademicStore();
-  
+export const CourseCard = ({ curso, compacto = false }: Props) => {
+  const {
+    cursos,
+    cursosSeleccionadosParaMatricula,
+    toggleSeleccionMatricula,
+    cursoAMover,
+    setCursoAMover,
+  } = useAcademicStore();
+
+  const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
   const estaSeleccionado = cursosSeleccionadosParaMatricula.includes(curso.codigo);
   const desbloqueado = isCursoDesbloqueado(curso, cursos);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+  const esSeleccionMovil = cursoAMover === curso.codigo;
+  const habilitaA = cursos.filter((item) => item.prerrequisitos.includes(curso.codigo));
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData('text/plain', curso.codigo);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleClick = () => {
-    if (!esAprobado) {
-      toggleSeleccionMatricula(curso.codigo);
+  const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
+    if (esAprobado) {
+      event.preventDefault();
+      return;
     }
+    event.dataTransfer.setData('text/plain', curso.codigo);
+    event.dataTransfer.effectAllowed = 'move';
   };
+
+  const handleCardClick = () => {
+    if (esAprobado) return;
+    const esPantallaTactil = window.matchMedia('(pointer: coarse)').matches;
+    if (esPantallaTactil) {
+      setCursoAMover(esSeleccionMovil ? null : curso.codigo);
+      return;
+    }
+    toggleSeleccionMatricula(curso.codigo);
+  };
+
+  const mostrarTooltip = (element: HTMLButtonElement) => {
+    const rect = element.getBoundingClientRect();
+    setTooltip({
+      top: rect.bottom + 7,
+      left: Math.max(8, Math.min(rect.left - 130, window.innerWidth - 292)),
+    });
+  };
+
+  const clases = [
+    'curso-card',
+    curso.tipo === 'OBLIGATORIO' ? 'obligatorio' : 'electivo',
+    esAprobado ? 'curso-bloqueado' : '',
+    curso.estado === 'EN_CURSO' ? 'en-curso' : '',
+    curso.estado === 'PENDIENTE' && !desbloqueado ? 'con-prerrequisitos' : '',
+    estaSeleccionado ? 'seleccionado-presupuesto' : '',
+    esSeleccionMovil ? 'seleccionado-mover' : '',
+    compacto ? 'compacto' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div
-      draggable
-      onDragStart={handleDragStart}
-      onClick={handleClick}
-      className={`course-card flex-shrink-0 w-64 p-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing select-none relative group
-        ${esAprobado ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-100' : ''}
-        ${curso.estado === 'EN_CURSO' ? 'bg-blue-950/40 border-blue-700/80 text-blue-100 ring-1 ring-blue-500/30' : ''}
-        ${curso.estado === 'PENDIENTE' && !desbloqueado ? 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60' : ''}
-        ${curso.estado === 'PENDIENTE' && desbloqueado ? 'bg-slate-900 border-slate-700 text-slate-200 hover:border-indigo-500 shadow-md' : ''}
-        ${estaSeleccionado ? 'ring-2 ring-indigo-400 bg-indigo-950/60 border-indigo-400 shadow-indigo-950/50' : ''}
-      `}
-    >
-      <div className="flex justify-between items-center text-[11px] font-mono text-slate-400 mb-1">
-        <span className="flex items-center gap-1">
-          <GripVertical className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />
-          {curso.codigo}
-        </span>
-        <span className="font-semibold text-slate-300">{curso.creditos} cr</span>
+    <>
+      <div
+        draggable={!esAprobado}
+        onDragStart={handleDragStart}
+        onClick={handleCardClick}
+        className={clases}
+        aria-disabled={esAprobado}
+        title={esAprobado ? 'Curso ya llevado: no se puede mover' : undefined}
+      >
+        <div className="curso-card-head">
+          <span className="curso-codigo">{curso.codigo}</span>
+          <div className="curso-card-actions">
+            {esAprobado && <LockKeyhole size={13} className="curso-lock" />}
+            <button
+              type="button"
+              className={`curso-budget-btn ${estaSeleccionado ? 'active' : ''}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!esAprobado) toggleSeleccionMatricula(curso.codigo);
+              }}
+              disabled={esAprobado}
+              title="Añadir o quitar del presupuesto"
+            >
+              <Calculator size={13} />
+            </button>
+            <button
+              type="button"
+              className="curso-info-btn"
+              onMouseEnter={(event) => mostrarTooltip(event.currentTarget)}
+              onMouseLeave={() => setTooltip(null)}
+              onFocus={(event) => mostrarTooltip(event.currentTarget)}
+              onBlur={() => setTooltip(null)}
+              onClick={(event) => event.stopPropagation()}
+              aria-label={`Ver requisitos de ${curso.nombre}`}
+            >
+              <Info size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className="curso-titulo">{curso.nombre}</div>
+
+        <div className="curso-tags">
+          <span className="ctag">C{curso.cicloOrigen}</span>
+          <span className="ctag ctag-horas">{curso.horasSemanales}h</span>
+          <span className="ctag">{curso.creditos} cr</span>
+          <span className={`ctag ${curso.tipo === 'OBLIGATORIO' ? 'obl' : 'ele'}`}>
+            {curso.tipo === 'OBLIGATORIO' ? 'Obligatorio' : 'Electivo'}
+          </span>
+        </div>
+
+        {esAprobado && (
+          <div className="curso-estado-chip">
+            <CircleCheck size={11} /> {curso.estado === 'APROBADO' ? 'Aprobado' : 'Convalidado'}
+          </div>
+        )}
       </div>
 
-      <h4 className="text-xs font-semibold leading-tight mb-2 line-clamp-2 min-h-[32px]">
-        {curso.nombre}
-      </h4>
-
-      <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-800/60">
-        <span className="text-slate-400">{curso.horasSemanales} hrs/sem</span>
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium
-          ${esAprobado ? 'bg-emerald-900/60 text-emerald-300' : ''}
-          ${curso.estado === 'EN_CURSO' ? 'bg-blue-900/60 text-blue-300' : ''}
-          ${curso.estado === 'PENDIENTE' && desbloqueado ? 'bg-indigo-900/60 text-indigo-300' : ''}
-          ${curso.estado === 'PENDIENTE' && !desbloqueado ? 'bg-slate-800 text-slate-400' : ''}
-        `}>
-          {curso.estado.replace('_', ' ')}
-        </span>
-      </div>
-    </div>
+      {tooltip &&
+        createPortal(
+          <div
+            className="curso-tooltip"
+            style={{ position: 'fixed', top: tooltip.top, left: tooltip.left }}
+          >
+            <section>
+              <b><LockKeyhole size={12} /> Prerrequisitos</b>
+              {curso.prerrequisitos.length > 0 ? (
+                curso.prerrequisitos.map((codigo) => {
+                  const req = cursos.find((item) => item.codigo === codigo);
+                  return <div key={codigo}>{req ? `${codigo} · ${req.nombre}` : codigo}</div>;
+                })
+              ) : (
+                <div>Sin prerrequisitos</div>
+              )}
+            </section>
+            <hr />
+            <section className="tooltip-habilita">
+              <b>Habilita</b>
+              {habilitaA.length > 0 ? (
+                habilitaA.map((item) => <div key={item.codigo}>{item.nombre}</div>)
+              ) : (
+                <div>No habilita otro curso de la malla.</div>
+              )}
+            </section>
+          </div>,
+          document.body
+        )}
+    </>
   );
 };
