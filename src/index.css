@@ -556,3 +556,237 @@ button { color: inherit; }
   .tier-lock-note { display: none; }
   .curso-tooltip { display: none; }
 }
+
+/* Planificación académica automática */
+.budget-title-trigger {
+  margin: 3px 0 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: .86rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.budget-title-trigger > svg:first-child { color: var(--accent); }
+.budget-title-trigger:hover span { text-decoration: underline; text-underline-offset: 3px; }
+.route-chevron { color: rgba(255,255,255,.38); transition: transform .18s ease; }
+.route-chevron.open { transform: rotate(180deg); }
+
+.planning-drawer {
+  width: 410px;
+  max-width: calc(100vw - 380px);
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 380px;
+  z-index: 3998;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  transform: translateX(calc(100% + 380px));
+  background: #202238;
+  color: #fff;
+  border-right: 1px solid rgba(255,255,255,.07);
+  box-shadow: -12px 0 32px rgba(18,20,35,.18);
+  transition: transform .25s ease;
+}
+.planning-drawer.open { transform: translateX(0); }
+.planning-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+.planning-drawer-head h2 {
+  margin: 3px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .86rem;
+}
+.planning-drawer-head h2 svg { color: var(--accent); }
+.planning-action-block {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.planning-action-block p {
+  margin: 0 0 11px;
+  color: rgba(255,255,255,.48);
+  font-size: .64rem;
+  line-height: 1.55;
+}
+.planning-generate-btn {
+  width: 100%;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: .15s ease;
+}
+.planning-generate-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.planning-generate-btn:disabled { opacity: .45; cursor: not-allowed; }
+.planning-inline-error {
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 10px;
+  border-left: 3px solid var(--accent);
+  background: rgba(239,35,60,.1);
+  color: #fca5a5;
+  font-size: .63rem;
+  line-height: 1.45;
+}
+.planning-explanation {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 2px 8px 0;
+}
+.planning-section-heading {
+  margin-bottom: 9px;
+  color: rgba(255,255,255,.72);
+  font-size: .65rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.planning-placeholder,
+.planning-explanation > p {
+  margin: 0 0 9px;
+  color: rgba(255,255,255,.5);
+  font-size: .64rem;
+  line-height: 1.6;
+}
+.planning-result-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.planning-result-meta span {
+  padding: 7px 6px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 3px;
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.46);
+  font-size: .58rem;
+  text-align: center;
+}
+.planning-result-meta b { display: block; margin-bottom: 1px; color: #fff; font-size: .72rem; }
+.planning-cycle-list { display: grid; gap: 5px; margin: 12px 0; }
+.planning-cycle-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 8px;
+  border-left: 2px solid var(--purple);
+  background: rgba(255,255,255,.035);
+  font-size: .61rem;
+}
+.planning-cycle-item strong { color: rgba(255,255,255,.84); }
+.planning-cycle-item span { color: rgba(255,255,255,.4); }
+.planning-errors {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.planning-errors-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  color: #f6d08a;
+  font-size: .65rem;
+  font-weight: 800;
+}
+.planning-error-item {
+  margin-bottom: 7px;
+  padding: 8px 9px;
+  border: 1px solid rgba(245,158,11,.16);
+  border-radius: 3px;
+  background: rgba(245,158,11,.06);
+}
+.planning-error-item strong { display: block; color: rgba(255,255,255,.8); font-size: .64rem; }
+.planning-error-item small { display: block; margin-top: 2px; color: rgba(255,255,255,.35); font-size: .56rem; }
+.planning-error-item ul { margin: 6px 0 0; padding-left: 16px; color: #e7c98c; font-size: .59rem; line-height: 1.45; }
+
+.planning-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(22,24,42,.64);
+  backdrop-filter: blur(3px);
+}
+.planning-confirm-modal {
+  width: min(490px, calc(100vw - 30px));
+  padding: 22px;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-pop);
+}
+.planning-confirm-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #fff3df;
+  color: #d88712;
+}
+.planning-confirm-kicker {
+  color: var(--accent);
+  font-size: .58rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .65px;
+}
+.planning-confirm-modal h2 { margin: 4px 0 10px; font-size: 1.05rem; }
+.planning-confirm-modal p { margin: 0 0 8px; color: var(--text-secondary); font-size: .7rem; line-height: 1.55; }
+.planning-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.planning-confirm-actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 4px;
+  font-size: .68rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.planning-confirm-cancel { border: 1px solid #d9dde4; background: #fff; color: var(--text-secondary); }
+.planning-confirm-accept { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+.planning-confirm-actions button:disabled { opacity: .5; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .planning-drawer {
+    width: min(410px, 94vw);
+    max-width: 94vw;
+    right: 0;
+    z-index: 4010;
+    transform: translateX(101%);
+  }
+  .planning-drawer.open { transform: translateX(0); }
+}

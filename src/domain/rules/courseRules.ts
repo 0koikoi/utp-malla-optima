@@ -1,7 +1,9 @@
 import type { Curso } from '../../types/academic';
 
 export const cursoBloqueado = (curso: Curso) =>
-  curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+  curso.estado === 'APROBADO' ||
+  curso.estado === 'CONVALIDADO' ||
+  curso.estado === 'EN_CURSO';
 
 export const normalizarCurso = (curso: Curso): Curso => {
   const cicloOrigen = curso.cicloOrigen || curso.ciclo || 1;

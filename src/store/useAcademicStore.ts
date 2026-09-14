@@ -7,6 +7,8 @@ import type {
 } from '../types/academic';
 import { db } from '../services/db';
 import { validarPrerequisitosParaCiclo } from '../utils/academicGraph';
+import { generateOptimalPlanUseCase } from '../application/usecases/generateOptimalPlanUseCase';
+import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 
 interface AcademicStore {
   cursos: Curso[];
@@ -22,6 +24,7 @@ interface AcademicStore {
   moverCursoACiclo: (codigo: string, nuevoCiclo: number) => Promise<boolean>;
   moverCursoABanco: (codigo: string) => Promise<boolean>;
   reiniciarPlanificacion: () => Promise<void>;
+  generarPlanificacionOptima: () => Promise<ResultadoPlanificacionAutomatica>;
   toggleSeleccionMatricula: (codigo: string) => void;
   setTarifario: (tarifario: Tarifario) => Promise<void>;
   setDisciplinaActiva: (disciplina: string) => Promise<void>;
@@ -32,12 +35,14 @@ interface AcademicStore {
   importarCursos: (cursos: Curso[]) => Promise<void>;
 }
 
-const esCursoYaLlevado = (curso: Curso): boolean =>
-  curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+const esCursoFijo = (curso: Curso): boolean =>
+  curso.estado === 'APROBADO' ||
+  curso.estado === 'CONVALIDADO' ||
+  curso.estado === 'EN_CURSO';
 
 const normalizarCurso = (curso: Curso): Curso => {
   const cicloOrigen = curso.cicloOrigen || curso.ciclo || 1;
-  const ubicacion = curso.ubicacion ?? (esCursoYaLlevado(curso) || curso.estado === 'EN_CURSO' ? 'ciclo' : 'banco');
+  const ubicacion = curso.ubicacion ?? (esCursoFijo(curso) ? 'ciclo' : 'banco');
 
   return {
     ...curso,
@@ -71,7 +76,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
         return {
           ...normalizado,
           ciclo: normalizado.cicloOrigen,
-          ubicacion: esCursoYaLlevado(normalizado) || normalizado.estado === 'EN_CURSO' ? 'ciclo' : 'banco',
+          ubicacion: esCursoFijo(normalizado) ? 'ciclo' : 'banco',
         };
       })
     );
@@ -125,7 +130,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
     const curso = get().cursos.find((item) => item.codigo === codigo);
     if (!curso) return false;
 
-    if (esCursoYaLlevado(curso)) {
+    if (esCursoFijo(curso)) {
       set({
         notificacionMovimiento: {
           tipo: 'INMOVIBLE',
@@ -173,7 +178,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
     const curso = get().cursos.find((item) => item.codigo === codigo);
     if (!curso) return false;
 
-    if (esCursoYaLlevado(curso)) {
+    if (esCursoFijo(curso)) {
       set({
         notificacionMovimiento: {
           tipo: 'INMOVIBLE',
@@ -215,6 +220,31 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
       notificacionMovimiento: null,
     });
     await db.courses.bulkPut(cursosActualizados);
+  },
+
+  generarPlanificacionOptima: async () => {
+    const { cursos, tarifario } = get();
+    const totalCiclos = cursos.reduce(
+      (mayor, curso) => Math.max(mayor, curso.cicloOrigen || curso.ciclo || 1),
+      1
+    );
+
+    const resultado = generateOptimalPlanUseCase({
+      cursos,
+      limiteCreditos: tarifario?.limitesAcademicos?.creditosMaximos,
+      totalCiclos,
+    });
+
+    const cursosOrdenados = ordenarCursos(resultado.cursos);
+    set({
+      cursos: cursosOrdenados,
+      cursosSeleccionadosParaMatricula: [],
+      cursoAMover: null,
+      notificacionMovimiento: null,
+    });
+
+    await db.courses.bulkPut(cursosOrdenados);
+    return { ...resultado, cursos: cursosOrdenados };
   },
 
   toggleSeleccionMatricula: (codigo) => {

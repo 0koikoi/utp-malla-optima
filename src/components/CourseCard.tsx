@@ -24,11 +24,12 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
   const estaSeleccionado = cursosSeleccionadosParaMatricula.includes(curso.codigo);
   const desbloqueado = isCursoDesbloqueado(curso, cursos);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+  const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO';
   const esSeleccionMovil = cursoAMover === curso.codigo;
   const habilitaA = cursos.filter((item) => item.prerrequisitos.includes(curso.codigo));
 
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
-    if (esAprobado) {
+    if (esFijoMovimiento) {
       event.preventDefault();
       return;
     }
@@ -37,9 +38,9 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
   };
 
   const handleCardClick = () => {
-    if (esAprobado) return;
     const esPantallaTactil = window.matchMedia('(pointer: coarse)').matches;
     if (esPantallaTactil) {
+      if (esFijoMovimiento) return;
       setCursoAMover(esSeleccionMovil ? null : curso.codigo);
       return;
     }
@@ -70,17 +71,17 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
   return (
     <>
       <div
-        draggable={!esAprobado}
+        draggable={!esFijoMovimiento}
         onDragStart={handleDragStart}
         onClick={handleCardClick}
         className={clases}
-        aria-disabled={esAprobado}
-        title={esAprobado ? 'Curso ya llevado: no se puede mover' : undefined}
+        aria-disabled={esFijoMovimiento}
+        title={esFijoMovimiento ? 'Curso fijo: no se puede mover' : undefined}
       >
         <div className="curso-card-head">
           <span className="curso-codigo">{curso.codigo}</span>
           <div className="curso-card-actions">
-            {esAprobado && <LockKeyhole size={13} className="curso-lock" />}
+            {esFijoMovimiento && <LockKeyhole size={13} className="curso-lock" />}
             <button
               type="button"
               className={`curso-budget-btn ${estaSeleccionado ? 'active' : ''}`}
