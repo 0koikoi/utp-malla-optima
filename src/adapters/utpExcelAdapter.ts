@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { Curso, EstadoCurso, TipoCurso } from '../types/academic';
+import type { CurriculumAdapter } from './CurriculumAdapter';
 
 type ExcelCell = string | number | boolean | null | undefined;
 type ExcelRow = ExcelCell[];
@@ -230,7 +231,7 @@ const esFilaNivelacion = (valor: ExcelCell): boolean =>
   normalizarTexto(valor).includes('CURSOS DE NIVELACION');
 
 const contarCeldasConDatos = (fila: ExcelRow): number =>
-  fila.reduce((total, celda) => total + (texto(celda) ? 1 : 0), 0);
+  fila.reduce((total: number, celda) => total + (texto(celda) ? 1 : 0), 0);
 
 export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
   const data = await file.arrayBuffer();
@@ -343,3 +344,12 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
 
   return cursos;
 };
+
+
+export class UTPExcelAdapter implements CurriculumAdapter {
+  readonly universidadId = 'pe-utp';
+
+  async parse(file: File): Promise<Curso[]> {
+    return parseUTPExcel(file);
+  }
+}

@@ -58,15 +58,56 @@ export const validarPrerequisitosParaCiclo = (
 };
 
 /**
- * Calcula cuántas materias dependen directamente de cada curso.
+ * Genera una representación del grafo académico.
+ * Las claves representan cursos y los valores sus dependientes.
  */
-export const calcularRutaCritica = (cursos: Curso[]): Map<string, number> => {
-  const impactoMap = new Map<string, number>();
+export const construirGrafoAcademico = (cursos: Curso[]): Map<string, string[]> => {
+  const grafo = new Map<string, string[]>();
+
+  cursos.forEach((curso) => grafo.set(curso.codigo, []));
 
   cursos.forEach((curso) => {
-    const dependenciasDirectas = cursos.filter((c) => c.prerrequisitos.includes(curso.codigo));
-    impactoMap.set(curso.codigo, dependenciasDirectas.length);
+    curso.prerrequisitos.forEach((requisito) => {
+      grafo.get(requisito)?.push(curso.codigo);
+    });
   });
 
-  return impactoMap;
+  return grafo;
+};
+
+/**
+ * Ordenamiento topológico básico para conocer el orden académico posible.
+ */
+export const obtenerOrdenTopologico = (cursos: Curso[]): string[] => {
+  const grafo = construirGrafoAcademico(cursos);
+  const grados = new Map<string, number>();
+
+  cursos.forEach((curso) => grados.set(curso.codigo, 0));
+
+  grafo.forEach((dependientes) => {
+    dependientes.forEach((dependiente) => {
+      grados.set(dependiente, (grados.get(dependiente) ?? 0) + 1);
+    });
+  });
+
+  const cola = [...grados.entries()]
+    .filter(([, grado]) => grado === 0)
+    .map(([codigo]) => codigo);
+
+  const resultado: string[] = [];
+
+  while (cola.length) {
+    const actual = cola.shift()!;
+    resultado.push(actual);
+
+    (grafo.get(actual) ?? []).forEach((siguiente) => {
+      grados.set(siguiente, grados.get(siguiente)! - 1);
+
+      if (grados.get(siguiente) === 0) {
+        cola.push(siguiente);
+      }
+    });
+  }
+
+  return resultado;
 };

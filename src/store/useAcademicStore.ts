@@ -29,6 +29,7 @@ interface AcademicStore {
   setCursoAMover: (codigo: string | null) => void;
   limpiarNotificacionMovimiento: () => void;
   cargarDesdeDB: () => Promise<void>;
+  importarCursos: (cursos: Curso[]) => Promise<void>;
 }
 
 const esCursoYaLlevado = (curso: Curso): boolean =>
@@ -249,6 +250,13 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
   setCursoAMover: (cursoAMover) => set({ cursoAMover }),
 
   limpiarNotificacionMovimiento: () => set({ notificacionMovimiento: null }),
+
+  importarCursos: async (cursosImportados) => {
+    const cursosNormalizados = ordenarCursos(cursosImportados.map(normalizarCurso));
+    set({ cursos: cursosNormalizados, cursoAMover: null });
+    await db.courses.clear();
+    await db.courses.bulkPut(cursosNormalizados);
+  },
 
   cargarDesdeDB: async () => {
     const cursosDB = await db.courses.toArray();

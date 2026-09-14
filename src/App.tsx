@@ -14,6 +14,8 @@ import { PlanificadorPanel } from './components/PlanificadorPanel';
 import { FileUpload } from './components/FileUpLoad';
 import { DisciplineSelector } from './components/DisciplineSelector';
 import { PrerequisitoToast } from './components/PrerequisitoToast';
+import { BackupControls } from './components/BackupControls';
+import { PDFReport } from './components/PDFReport';
 import defaultCostos from './data/universidades/pe-utp/costos.json';
 import type { Tarifario } from './types/academic';
 
@@ -110,6 +112,9 @@ export const App = () => {
         >
           <RotateCcw size={14} /> Limpiar plan
         </button>
+
+        <BackupControls />
+        <PDFReport cursos={cursos} />
 
         <button
           type="button"
