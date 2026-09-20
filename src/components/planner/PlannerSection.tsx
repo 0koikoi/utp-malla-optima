@@ -1,7 +1,7 @@
 // PlannerSection — sección de ciclos regulares y de verano
-
 import { useMallaStore } from '@/store/mallaStore';
 import { CicloRow } from './CicloRow';
+import { CalendarCheck, Sun } from 'lucide-react';
 
 export function PlannerSection() {
   const { cicloInicio, cicloFin } = useMallaStore();
@@ -14,9 +14,9 @@ export function PlannerSection() {
   return (
     <section id="panel-planificador" aria-label="Planificador de ciclos">
       <p className="planner-section-title">
-        <i className="fas fa-calendar-check" />
+        <CalendarCheck size={14} className="inline-icon" />
         {' '}Planificador — Ciclos Regulares
-        <span className="title-note">1 al 10, extensibles hasta el 12</span>
+        <span className="title-note">Del {cicloInicio} al {cicloFin}</span>
       </p>
       <div id="malla-container">
         {ciclos.map((n) => (
@@ -42,7 +42,7 @@ function VeranoSection() {
   return (
     <div id="contenedor-verano-master" style={{ marginTop: '24px' }}>
       <p className="planner-section-title summer">
-        <i className="fas fa-sun" />
+        <Sun size={14} className="inline-icon" style={{ color: '#F59E0B' }} />
         {' '}Planificador — Ciclos de Verano
         <span className="title-note">Máx. 11 créditos por verano</span>
       </p>

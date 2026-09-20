@@ -10,28 +10,39 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
+import { Homepage } from '@/components/home/Homepage';
 import { BienvenidaModal } from '@/components/modals/BienvenidaModal';
 import { TopBar } from '@/components/layout/TopBar';
 import { NavBar } from '@/components/layout/NavBar';
+import { ConfigSidebar } from '@/components/layout/ConfigSidebar';
+import { MobileMenuModal } from '@/components/layout/MobileMenuModal';
 import { PendientesPanel } from '@/components/sidebar/PendientesPanel';
 import { PlannerSection } from '@/components/planner/PlannerSection';
 import { CursoCard } from '@/components/planner/CursoCard';
 import { PrerequisitoToast } from '@/components/common/PrerequisitoToast';
-import { useMallaRestore } from '@/hooks/useMallaRestore';
 import { useMallaStore } from '@/store/mallaStore';
-import { validarPrerequisitos } from '@/utils/validators';
 import type { Curso, UbicacionCurso } from '@/types/malla';
 
-export default function App() {
-  // Restaurar malla guardada al iniciar
-  useMallaRestore();
+import { Pointer, X } from 'lucide-react';
 
-  const { cursos, asignaciones, moverCurso, setDrawerMobOpen } = useMallaStore();
+export default function App() {
+
+  const {
+    cursos,
+    setDrawerMobOpen,
+    nombreArchivoCargado,
+    blockedInfo,
+    cascadaAlerta,
+    setBlockedInfo,
+    setCascadaAlerta,
+    ejecutarMovimiento,
+    cursoAMover,
+    setCursoAMover,
+  } = useMallaStore();
+
   const [activeCurso, setActiveCurso] = useState<Curso | null>(null);
-  const [blockedInfo, setBlockedInfo] = useState<{
-    cursoNombre: string;
-    faltantes: { codigo: string; nombre: string }[];
-  } | null>(null);
+
+  const hayMallaCargada = !!nombreArchivoCargado && Object.keys(cursos).length > 0;
 
   // Configuración de sensores para mouse y touch (con tolerancia para evitar activar drag en simple click)
   const sensors = useSensors(
@@ -62,35 +73,18 @@ export default function App() {
     if (!over) return;
 
     const codigoCurso = String(active.id);
-    const curso = cursos[codigoCurso];
-    if (!curso) return;
-
     const destino = String(over.id) as UbicacionCurso;
-
-    // Si se devuelve al pozo → siempre permitido
-    if (destino === 'pozo') {
-      moverCurso(codigoCurso, 'pozo');
-      return;
-    }
-
-    // Si se asigna a un ciclo (regular o verano) → validar prerrequisitos
-    // Pasa asignaciones y destinoId para que R1 pueda comparar ciclos
-    const { valido, faltantes } = validarPrerequisitos(curso, cursos, asignaciones, destino);
-    if (!valido) {
-      setBlockedInfo({
-        cursoNombre: curso.nombre,
-        faltantes,
-      });
-      return;
-    }
-
-    // Mover al destino
-    moverCurso(codigoCurso, destino);
+    ejecutarMovimiento(codigoCurso, destino);
 
     // Cerrar el drawer de pendientes en móvil al soltar en un ciclo
     if (window.matchMedia('(max-width: 640px)').matches) {
       setDrawerMobOpen(false);
     }
+  }
+
+  // Si no hay malla cargada, mostrar la Homepage de inicio con subida directa
+  if (!hayMallaCargada) {
+    return <Homepage />;
   }
 
   return (
@@ -102,11 +96,17 @@ export default function App() {
       {/* Modal de bienvenida */}
       <BienvenidaModal />
 
+      {/* Menú responsive lateral para móviles */}
+      <MobileMenuModal />
+
       {/* Top Bar */}
       <TopBar />
 
       {/* Barra de controles */}
       <NavBar />
+
+      {/* Config Sidebar */}
+      <ConfigSidebar />
 
       {/* Layout principal */}
       <main id="app-main">
@@ -119,13 +119,46 @@ export default function App() {
         {activeCurso ? <CursoCard curso={activeCurso} isOverlay /> : null}
       </DragOverlay>
 
-      {/* Toast de alerta cuando un drop es bloqueado por prerrequisitos */}
+      {/* Toast de bloqueo por prerrequisitos */}
       {blockedInfo && (
         <PrerequisitoToast
           cursoNombre={blockedInfo.cursoNombre}
           faltantes={blockedInfo.faltantes}
+          tipo="bloqueo"
           onClose={() => setBlockedInfo(null)}
         />
+      )}
+
+      {/* Toast de advertencia por rupturas en cascada */}
+      {cascadaAlerta && (
+        <PrerequisitoToast
+          cursoNombre={cascadaAlerta.cursoNombre}
+          faltantes={cascadaAlerta.faltantes}
+          tipo="cascada"
+          onClose={() => setCascadaAlerta(null)}
+        />
+      )}
+
+      {/* Barra flotante inferior en modo selección Two-Tap (móvil) */}
+      {cursoAMover && (
+        <div className="tap-move-floating-bar" role="status">
+          <div className="tap-move-floating-info">
+            <span className="tap-move-floating-badge">
+              <Pointer size={12} /> Moviendo
+            </span>
+            <span className="tap-move-floating-name">
+              {cursos[cursoAMover]?.nombre}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="tap-move-cancel-btn"
+            onClick={() => setCursoAMover(null)}
+            aria-label="Cancelar selección"
+          >
+            <X size={13} /> Cancelar
+          </button>
+        </div>
       )}
     </DndContext>
   );

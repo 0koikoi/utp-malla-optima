@@ -2,7 +2,7 @@
   "name": "utp-malla-optima",
   "private": true,
   "version": "0.1.0",
-  "homepage": "https://github.com/...\/utp-malla-optima",
+  "homepage": "https://github.com/.../utp-malla-optima",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "gh-pages": "^6.3.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "lucide-react": "^1.47.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "xlsx": "^0.18.5",

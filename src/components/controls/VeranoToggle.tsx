@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
+import { Sun } from 'lucide-react';
 
 function clamp(val: number, min: number, max: number) {
   return Math.min(max, Math.max(min, val));
@@ -8,10 +9,12 @@ function clamp(val: number, min: number, max: number) {
 export function VeranoToggle() {
   const { veranoActivo, cantVeranos, setVeranoActivo, setCantVeranos } = useMallaStore();
   const [valVeranos, setValVeranos] = useState(String(cantVeranos));
+  const [prevCant, setPrevCant] = useState(cantVeranos);
 
-  useEffect(() => {
+  if (cantVeranos !== prevCant) {
+    setPrevCant(cantVeranos);
     setValVeranos(String(cantVeranos));
-  }, [cantVeranos]);
+  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
@@ -49,7 +52,7 @@ export function VeranoToggle() {
   return (
     <div className="nav-group">
       <span className="nav-group-label">
-        <i className="fas fa-sun" style={{ color: '#F59E0B' }} /> Verano
+        <Sun size={12} className="inline-icon" style={{ color: '#F59E0B' }} /> Verano
       </span>
       <div className="nav-group-body verano-row">
         <label className="switch" title="Activar planificador de verano">

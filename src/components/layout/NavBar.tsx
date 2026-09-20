@@ -1,115 +1,383 @@
-// NavBar — barra de controles del simulador
-// Ensambla: upload, facultad, pago, ciclos, verano, acciones, costo global
+// NavBar.tsx — Barra de controles del simulador
+// Incluye funciones de dev: Auto-Planificador óptimo, Respaldo/Restauración JSON, Exportación PNG/PDF
+// Iconografía moderna con Lucide React
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
-import { useCuotaMaxima } from '@/store/selectors';
-import { useExcelParser } from '@/hooks/useExcelParser';
+import { useCreditosElectivos } from '@/store/selectors';
 import { useExport } from '@/hooks/useExport';
-import { formatSoles } from '@/utils/finance';
-import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
-import { PagoDropdown } from '@/components/controls/PagoDropdown';
-import { RangoCiclos } from '@/components/controls/RangoCiclos';
-import { VeranoToggle } from '@/components/controls/VeranoToggle';
+import { descargarRespaldoJSON, leerRespaldoJSON } from '@/services/backupService';
+import {
+  Sparkles,
+  RotateCcw,
+  Download,
+  UploadCloud,
+  CheckCircle2,
+  Info,
+  Settings2,
+  Camera,
+  FileDown,
+  Database,
+} from 'lucide-react';
 
 export function NavBar() {
-  const { nombreArchivoCargado, resetAsignaciones } = useMallaStore();
-  const cuotaMax = useCuotaMaxima();
-  const { parsearExcel } = useExcelParser();
-  const { exportarPNG } = useExport();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    cursos,
+    asignaciones,
+    facultad,
+    descuento,
+    cicloInicio,
+    cicloFin,
+    veranoActivo,
+    cantVeranos,
+    veranoUbicaciones,
+    nombreArchivoCargado,
+    resetAsignaciones,
+    autoPlanificar,
+    cargarRespaldo,
+    setConfigSidebarOpen,
+  } = useMallaStore();
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) parsearExcel(file);
+  const creditosElectivos = useCreditosElectivos();
+  const { exportarPNG, exportarPDF, exportando } = useExport();
+
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  const [feedbackMsg, setFeedbackMsg] = useState<{ tipo: 'exito' | 'info' | 'error'; texto: string } | null>(null);
+  const [menuAccionesOpen, setMenuAccionesOpen] = useState(false);
+  const [menuExportOpen, setMenuExportOpen] = useState(false);
+
+  const exportWrapRef = useRef<HTMLDivElement>(null);
+  const accionesWrapRef = useRef<HTMLDivElement>(null);
+  const exportTimerRef = useRef<number | null>(null);
+  const accionesTimerRef = useRef<number | null>(null);
+
+  // Cerrar menús desplegables al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        exportWrapRef.current &&
+        !exportWrapRef.current.contains(e.target as Node)
+      ) {
+        setMenuExportOpen(false);
+      }
+      if (
+        accionesWrapRef.current &&
+        !accionesWrapRef.current.contains(e.target as Node)
+      ) {
+        setMenuAccionesOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Manejadores de vistazo (hover preview) con margen de transición
+  function handleExportMouseEnter() {
+    if (exportTimerRef.current) clearTimeout(exportTimerRef.current);
+    setMenuExportOpen(true);
+    setMenuAccionesOpen(false);
   }
 
-  const fileName = nombreArchivoCargado ?? 'Plan_de_Estudio.xlsx';
-  const displayName = fileName.length > 22 ? fileName.slice(0, 20) + '…' : fileName;
-  const isLoaded = !!nombreArchivoCargado;
+  function handleExportMouseLeave() {
+    exportTimerRef.current = window.setTimeout(() => {
+      setMenuExportOpen(false);
+    }, 160);
+  }
+
+  function handleAccionesMouseEnter() {
+    if (accionesTimerRef.current) clearTimeout(accionesTimerRef.current);
+    setMenuAccionesOpen(true);
+    setMenuExportOpen(false);
+  }
+
+  function handleAccionesMouseLeave() {
+    accionesTimerRef.current = window.setTimeout(() => {
+      setMenuAccionesOpen(false);
+    }, 160);
+  }
+
+  function mostrarFeedback(texto: string, tipo: 'exito' | 'info' | 'error' = 'exito') {
+    setFeedbackMsg({ tipo, texto });
+    setTimeout(() => setFeedbackMsg(null), 4500);
+  }
+
+  function handleAutoPlanificar() {
+    if (Object.keys(cursos).length === 0) {
+      mostrarFeedback('Primero debes subir tu Plan de Estudios para planificar.', 'info');
+      return;
+    }
+    const resumen = autoPlanificar();
+    if (resumen) {
+      mostrarFeedback(
+        `¡Planificación generada! Se ubicaron ${resumen.cursosAsignados} cursos en ${resumen.ciclosModificados} ciclos lectivos.`,
+        'exito'
+      );
+    }
+  }
+
+  function handleExportarJSON() {
+    if (Object.keys(cursos).length === 0) {
+      mostrarFeedback('No hay cursos para respaldar.', 'info');
+      return;
+    }
+    descargarRespaldoJSON({
+      nombreArchivoCargado,
+      facultad,
+      descuento,
+      cicloInicio,
+      cicloFin,
+      veranoActivo,
+      cantVeranos,
+      veranoUbicaciones,
+      cursos,
+      asignaciones,
+    });
+    mostrarFeedback('Respaldo de planificación descargado en JSON.', 'exito');
+    setMenuAccionesOpen(false);
+  }
+
+  async function handleImportarJSON(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const respaldo = await leerRespaldoJSON(file);
+      cargarRespaldo(respaldo);
+      mostrarFeedback('¡Planificación restaurada con éxito desde el archivo JSON!', 'exito');
+    } catch (err) {
+      mostrarFeedback(err instanceof Error ? err.message : 'Error al cargar respaldo', 'error');
+    } finally {
+      if (backupInputRef.current) backupInputRef.current.value = '';
+      setMenuAccionesOpen(false);
+    }
+  }
 
   return (
-    <nav id="app-nav" aria-label="Controles del simulador">
-
-      {/* 1. Subir Malla */}
-      <div className="nav-group">
-        <span className="nav-group-label">
-          <i className="fas fa-file-excel" /> Subir Malla
-        </span>
-        <div className="nav-group-body">
-          <div className={`upload-wrap${isLoaded ? ' loaded' : ''}`} id="upload-wrap">
-            <input
-              ref={fileInputRef}
-              type="file"
-              id="excel-upload"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-            />
-            <div className="upload-face">
-              <i className="fas fa-upload" />
-              <span id="upload-text">{displayName}</span>
-            </div>
+    <>
+      <nav id="app-nav" aria-label="Controles del simulador">
+        {/* 1. Créditos Electivos */}
+        <div className="nav-group" title="Créditos electivos mínimos requeridos: 3 crd">
+          <span className="nav-group-label">Electivos</span>
+          <div className="nav-group-body">
+            <span className={`nav-chip-electivos ${creditosElectivos >= 3 ? 'cumplido' : 'pendiente'}`}>
+              {creditosElectivos >= 3 ? (
+                <CheckCircle2 size={12} className="chip-status-icon" />
+              ) : (
+                <Info size={12} className="chip-status-icon" />
+              )}
+              {creditosElectivos} / 3 crd
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="nav-divider" />
+        <div className="nav-divider" />
 
-      {/* 2. Facultad */}
-      <FacultadDropdown />
-
-      <div className="nav-divider" />
-
-      {/* 3. Método de pago */}
-      <PagoDropdown />
-
-      <div className="nav-divider" />
-
-      {/* 4. Rango de ciclos */}
-      <RangoCiclos />
-
-      <div className="nav-divider" />
-
-      {/* 5. Verano */}
-      <VeranoToggle />
-
-      <div className="nav-divider" />
-
-      {/* 6. Acciones */}
-      <div className="nav-group">
-        <span className="nav-group-label">
-          <i className="fas fa-tools" /> Acciones
-        </span>
-        <div className="nav-group-body" style={{ gap: '6px' }}>
+        {/* 2. Clúster de acciones rápidas */}
+        <div className="nav-actions-cluster">
+          {/* Botón Auto-Planificar */}
           <button
-            className="nav-btn nav-btn-reset"
-            id="btn-reset"
-            title="Devolver cursos pendientes al pozo"
-            onClick={resetAsignaciones}
+            type="button"
+            className="nav-btn nav-btn-autoplanner"
+            id="btn-autoplanner"
+            title="Auto-Planificar: Calcular la ruta curricular óptima"
+            onClick={handleAutoPlanificar}
+            aria-label="Auto-Planificar"
           >
-            <i className="fas fa-undo" /> Limpiar
+            <Sparkles size={16} className="btn-icon-sparkle" />
           </button>
-          <button
-            className="nav-btn nav-btn-export"
-            id="btn-export"
-            title="Exportar planificador como imagen PNG"
-            onClick={exportarPNG}
+
+          {/* Botón de Captura (Exportar PNG / PDF) con vistazo */}
+          <div
+            ref={exportWrapRef}
+            className="nav-dropdown-wrap"
+            onMouseEnter={handleExportMouseEnter}
+            onMouseLeave={handleExportMouseLeave}
           >
-            <i className="fas fa-camera" /> Exportar
+            <button
+              type="button"
+              className={`nav-btn nav-btn-export ${menuExportOpen ? 'active' : ''}`}
+              id="btn-export-menu"
+              aria-label="Captura y exportación"
+              title="Captura rápida PNG (clic) / Opciones PDF (hover)"
+              onClick={async () => {
+                if (Object.keys(cursos).length === 0) {
+                  mostrarFeedback('Primero debes cargar tu malla para exportar.', 'info');
+                  return;
+                }
+                setMenuExportOpen(false);
+                mostrarFeedback('Generando captura en alta resolución...', 'info');
+                const ok = await exportarPNG();
+                if (ok) {
+                  mostrarFeedback('¡Captura PNG descargada con éxito!', 'exito');
+                } else {
+                  mostrarFeedback('No se pudo generar la captura. Reintenta.', 'error');
+                }
+              }}
+              disabled={exportando}
+            >
+              <Camera size={16} />
+            </button>
+            {menuExportOpen && (
+              <div className="nav-sub-menu" role="menu">
+                <div className="nav-sub-header">Captura & Exportación</div>
+                <button
+                  type="button"
+                  className="nav-sub-item"
+                  role="menuitem"
+                  onClick={async () => {
+                    setMenuExportOpen(false);
+                    if (Object.keys(cursos).length === 0) {
+                      mostrarFeedback('Primero debes cargar tu malla para exportar.', 'info');
+                      return;
+                    }
+                    mostrarFeedback('Generando imagen PNG...', 'info');
+                    const ok = await exportarPNG();
+                    if (ok) {
+                      mostrarFeedback('¡Imagen PNG descargada con éxito!', 'exito');
+                    } else {
+                      mostrarFeedback('Error al exportar PNG. Reintenta.', 'error');
+                    }
+                  }}
+                >
+                  <Camera size={14} className="sub-item-icon" />
+                  <div className="sub-item-content">
+                    <span className="sub-item-title">Imagen PNG</span>
+                    <span className="sub-item-desc">Malla completa en alta resolución</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="nav-sub-item"
+                  role="menuitem"
+                  onClick={async () => {
+                    setMenuExportOpen(false);
+                    if (Object.keys(cursos).length === 0) {
+                      mostrarFeedback('Primero debes cargar tu malla para exportar.', 'info');
+                      return;
+                    }
+                    mostrarFeedback('Generando documento PDF...', 'info');
+                    const ok = await exportarPDF();
+                    if (ok) {
+                      mostrarFeedback('¡Documento PDF descargado con éxito!', 'exito');
+                    } else {
+                      mostrarFeedback('Error al exportar PDF. Reintenta.', 'error');
+                    }
+                  }}
+                >
+                  <FileDown size={14} className="sub-item-icon" />
+                  <div className="sub-item-content">
+                    <span className="sub-item-title">Documento PDF</span>
+                    <span className="sub-item-desc">Listo para imprimir o archivar</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Botón de Gestión (Respaldos JSON y Limpieza) con vistazo */}
+          <div
+            ref={accionesWrapRef}
+            className="nav-dropdown-wrap"
+            onMouseEnter={handleAccionesMouseEnter}
+            onMouseLeave={handleAccionesMouseLeave}
+          >
+            <button
+              type="button"
+              className={`nav-btn nav-btn-more ${menuAccionesOpen ? 'active' : ''}`}
+              id="btn-mas-acciones"
+              aria-label="Gestión de datos y respaldos"
+              title="Gestión de datos (Respaldos JSON y Limpieza)"
+              onClick={() => {
+                setMenuAccionesOpen((v) => !v);
+                setMenuExportOpen(false);
+              }}
+            >
+              <Database size={16} />
+            </button>
+            {menuAccionesOpen && (
+              <div className="nav-sub-menu" role="menu">
+                <div className="nav-sub-header">Gestión de Planificación</div>
+                <button
+                  type="button"
+                  className="nav-sub-item"
+                  role="menuitem"
+                  onClick={handleExportarJSON}
+                >
+                  <Download size={14} className="sub-item-icon" />
+                  <div className="sub-item-content">
+                    <span className="sub-item-title">Descargar Respaldo JSON</span>
+                    <span className="sub-item-desc">Guarda tu avance actual</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="nav-sub-item"
+                  role="menuitem"
+                  onClick={() => backupInputRef.current?.click()}
+                >
+                  <UploadCloud size={14} className="sub-item-icon" />
+                  <div className="sub-item-content">
+                    <span className="sub-item-title">Restaurar Respaldo JSON</span>
+                    <span className="sub-item-desc">Carga tu avance guardado</span>
+                  </div>
+                </button>
+                <div className="sub-divider" />
+                <button
+                  type="button"
+                  className="nav-sub-item sub-danger"
+                  role="menuitem"
+                  onClick={() => {
+                    resetAsignaciones();
+                    setMenuAccionesOpen(false);
+                    mostrarFeedback('Cursos devueltos a la lista de pendientes.', 'info');
+                  }}
+                >
+                  <RotateCcw size={14} className="sub-item-icon" />
+                  <div className="sub-item-content">
+                    <span className="sub-item-title">Limpiar Planificación</span>
+                    <span className="sub-item-desc">Devuelve cursos al banco</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Input oculto para restaurar respaldo JSON */}
+          <input
+            ref={backupInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleImportarJSON}
+          />
+
+          <div className="nav-divider" style={{ margin: '0 2px' }} />
+
+          {/* Botón de Configuración Sidebar */}
+          <button
+            type="button"
+            className="nav-btn nav-btn-config"
+            onClick={() => setConfigSidebarOpen(true)}
+            title="Configuración General de la Malla (Facultad, Veranos, Pagos)"
+            aria-label="Configuración"
+          >
+            <Settings2 size={16} />
           </button>
         </div>
-      </div>
 
-      {/* Costo global */}
-      <div className="nav-cost">
-        <span className="nav-cost-label">Cuota máxima</span>
-        <span className="nav-cost-amount" id="costo-global">
-          {formatSoles(cuotaMax)}
-        </span>
-        <span className="nav-cost-sub" id="cost-note">
-          {cuotaMax > 0 ? 'Cuota más alta entre ciclos visibles' : 'Sin cursos asignados'}
-        </span>
-      </div>
-    </nav>
+        {/* Sección vacía reservada donde estaba el precio */}
+        <div className="nav-slot-empty" id="nav-slot-custom" aria-hidden="true" />
+      </nav>
+
+      {/* Banner de feedback interactivo flotante */}
+      {feedbackMsg && (
+        <div className={`nav-feedback-toast toast-${feedbackMsg.tipo}`} role="status">
+          {feedbackMsg.tipo === 'exito' && <CheckCircle2 size={15} />}
+          {feedbackMsg.tipo === 'info' && <Info size={15} />}
+          {feedbackMsg.tipo === 'error' && <RotateCcw size={15} />}
+          <span>{feedbackMsg.texto}</span>
+        </div>
+      )}
+    </>
   );
 }

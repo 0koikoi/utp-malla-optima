@@ -1,17 +1,26 @@
-// Dropdowns de Facultad y Pago — controles de configuración del simulador con estado React puro
-// Elimina problemas de listeners de Bootstrap en React SPA y cierra automáticamente al seleccionar/hacer click fuera
-
 import { useState, useEffect, useRef } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
+import {
+  GraduationCap,
+  Briefcase,
+  ChevronDown,
+  CreditCard,
+  Ban,
+  Landmark,
+  Building2,
+  Pill,
+  Check,
+} from 'lucide-react';
 
 // ── Facultad ─────────────────────────────────────────────────────────────────
 
 interface FacultadOption {
   value: FacultadKey;
   label: string;
+  sublabel: string;
   shortLabel: string;
-  icon: string;
+  icon: typeof Building2;
   precio: string;
 }
 
@@ -19,16 +28,26 @@ const FACULTADES: FacultadOption[] = [
   {
     value: 'ingenieria',
     label: 'Ingeniería y Arquitectura',
+    sublabel: 'Todas las carreras (exc. Salud, Gestión y Humanas)',
     shortLabel: 'Ingeniería / Arq.',
-    icon: 'fa-flask',
+    icon: Building2,
     precio: 'S/ 815',
   },
   {
-    value: 'gestion',
-    label: 'Gestión y Humanidades',
-    shortLabel: 'Gestión / Humanas',
-    icon: 'fa-briefcase',
+    value: 'salud_gestion',
+    label: 'Salud, Gestión y Humanidades',
+    sublabel: 'Excepto Farmacia y Bioquímica',
+    shortLabel: 'Salud / Gestión / Hum.',
+    icon: Briefcase,
     precio: 'S/ 770',
+  },
+  {
+    value: 'farmacia',
+    label: 'Farmacia y Bioquímica',
+    sublabel: 'Carrera de Farmacia y Bioquímica',
+    shortLabel: 'Farmacia y Bioq.',
+    icon: Pill,
+    precio: 'S/ 815',
   },
 ];
 
@@ -36,9 +55,12 @@ export function FacultadDropdown() {
   const { facultad, setFacultad } = useMallaStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const current = FACULTADES.find((f) => f.value === facultad) ?? FACULTADES[0];
 
-  // Cerrar al hacer click fuera
+  // Mapear compatibilidad si el valor guardado es 'gestion'
+  const currentKey = facultad === 'gestion' ? 'salud_gestion' : facultad;
+  const current = FACULTADES.find((f) => f.value === currentKey) ?? FACULTADES[0];
+  const CurrentIcon = current.icon;
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -56,7 +78,7 @@ export function FacultadDropdown() {
   return (
     <div className="nav-group">
       <span className="nav-group-label">
-        <i className="fas fa-graduation-cap" /> Facultad
+        <GraduationCap size={12} className="inline-icon" /> Facultad / Carrera
       </span>
       <div className="nav-group-body">
         <div
@@ -70,42 +92,47 @@ export function FacultadDropdown() {
             aria-expanded={isOpen}
             id="btn-facultad"
             onClick={() => setIsOpen((prev) => !prev)}
+            title="Seleccionar facultad o carrera para el tarifario"
           >
             <span className="dd-icon">
-              <i className={`fas ${current.icon}`} />
+              <CurrentIcon size={14} />
             </span>
             <span className="dd-label" id="facultad-label">
               {current.shortLabel}
             </span>
+            <ChevronDown size={13} className="dd-chevron" />
           </button>
           <ul
             className={`dropdown-menu${isOpen ? ' show' : ''}`}
             style={{ display: isOpen ? 'block' : 'none' }}
           >
-            {FACULTADES.map((f) => (
-              <li key={f.value}>
-                <button
-                  type="button"
-                  className={`dropdown-item${facultad === f.value ? ' active' : ''}`}
-                  onClick={() => {
-                    setFacultad(f.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  <i className={`fas ${f.icon}`} /> {f.label}
-                  <span className="dd-badge">{f.precio}</span>
-                </button>
-              </li>
-            ))}
-            <li><hr className="dropdown-divider" /></li>
-            <li>
-              <span
-                className="dropdown-item disabled"
-                style={{ fontSize: '0.65rem', color: '#666', cursor: 'default', pointerEvents: 'none' }}
-              >
-                <i className="fas fa-clock" /> Más facultades — próximamente
-              </span>
-            </li>
+            {FACULTADES.map((f) => {
+              const ItemIcon = f.icon;
+              const isSelected =
+                facultad === f.value || (facultad === 'gestion' && f.value === 'salud_gestion');
+              return (
+                <li key={f.value}>
+                  <button
+                    type="button"
+                    className={`dropdown-item${isSelected ? ' active' : ''}`}
+                    onClick={() => {
+                      setFacultad(f.value);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <ItemIcon size={14} className="item-icon" />
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, textAlign: 'left' }}>
+                      <span className="item-text" style={{ fontWeight: 600 }}>{f.label}</span>
+                      <span style={{ fontSize: '0.62rem', color: isSelected ? 'inherit' : '#71717A', opacity: isSelected ? 0.85 : 1, lineHeight: 1.15 }}>
+                        {f.sublabel}
+                      </span>
+                    </div>
+                    {isSelected && <Check size={13} className="item-check" />}
+                    <span className="dd-badge">{f.precio}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
@@ -119,14 +146,14 @@ interface PagoOption {
   value: DescuentoKey;
   label: string;
   shortLabel: string;
-  icon: string;
+  icon: typeof Ban;
   porcentaje: string;
 }
 
 const PAGOS: PagoOption[] = [
-  { value: 'ninguno', label: 'Sin descuento', shortLabel: 'Sin descuento', icon: 'fa-times-circle', porcentaje: '0%' },
-  { value: 'bcp', label: 'BCP/Interbank', shortLabel: 'BCP (2.5%)', icon: 'fa-landmark', porcentaje: '2.5%' },
-  { value: 'scotiabank', label: 'Scotiabank/BBVA', shortLabel: 'Scotiabank (5%)', icon: 'fa-university', porcentaje: '5%' },
+  { value: 'ninguno', label: 'Sin descuento', shortLabel: 'Sin descuento', icon: Ban, porcentaje: '0%' },
+  { value: 'bcp', label: 'BCP/Interbank', shortLabel: 'BCP (2.5%)', icon: Landmark, porcentaje: '2.5%' },
+  { value: 'scotiabank', label: 'Scotiabank/BBVA', shortLabel: 'Scotiabank (5%)', icon: Building2, porcentaje: '5%' },
 ];
 
 export function PagoDropdown() {
@@ -134,8 +161,8 @@ export function PagoDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[2];
+  const CurrentIcon = current.icon;
 
-  // Cerrar al hacer click fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -153,7 +180,7 @@ export function PagoDropdown() {
   return (
     <div className="nav-group">
       <span className="nav-group-label">
-        <i className="fas fa-credit-card" /> Método de Pago
+        <CreditCard size={12} className="inline-icon" /> Método de Pago
       </span>
       <div className="nav-group-body">
         <div
@@ -169,31 +196,38 @@ export function PagoDropdown() {
             onClick={() => setIsOpen((prev) => !prev)}
           >
             <span className="dd-icon">
-              <i className={`fas ${current.icon}`} />
+              <CurrentIcon size={14} />
             </span>
             <span className="dd-label" id="pago-label">
               {current.shortLabel}
             </span>
+            <ChevronDown size={13} className="dd-chevron" />
           </button>
           <ul
             className={`dropdown-menu${isOpen ? ' show' : ''}`}
             style={{ display: isOpen ? 'block' : 'none' }}
           >
-            {PAGOS.map((p) => (
-              <li key={p.value}>
-                <button
-                  type="button"
-                  className={`dropdown-item${descuento === p.value ? ' active' : ''}`}
-                  onClick={() => {
-                    setDescuento(p.value);
-                    setIsOpen(false);
-                  }}
-                >
-                  <i className={`fas ${p.icon}`} /> {p.label}
-                  <span className="dd-badge">{p.porcentaje}</span>
-                </button>
-              </li>
-            ))}
+            {PAGOS.map((p) => {
+              const ItemIcon = p.icon;
+              const isSelected = descuento === p.value;
+              return (
+                <li key={p.value}>
+                  <button
+                    type="button"
+                    className={`dropdown-item${isSelected ? ' active' : ''}`}
+                    onClick={() => {
+                      setDescuento(p.value);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <ItemIcon size={14} className="item-icon" />
+                    <span className="item-text">{p.label}</span>
+                    {isSelected && <Check size={13} className="item-check" />}
+                    <span className="dd-badge">{p.porcentaje}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
