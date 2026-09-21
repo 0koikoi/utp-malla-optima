@@ -6,8 +6,15 @@ function clamp(val: number, min: number, max: number) {
   return Math.min(max, Math.max(min, val));
 }
 
-export function VeranoToggle() {
+interface VeranoToggleProps {
+  idPrefix?: string;
+}
+
+export function VeranoToggle({ idPrefix = '' }: VeranoToggleProps) {
   const { veranoActivo, cantVeranos, setVeranoActivo, setCantVeranos } = useMallaStore();
+  const toggleId = `${idPrefix}toggle-verano`;
+  const cantId = `${idPrefix}cant-veranos`;
+
   const [valVeranos, setValVeranos] = useState(String(cantVeranos));
   const [prevCant, setPrevCant] = useState(cantVeranos);
 
@@ -55,23 +62,28 @@ export function VeranoToggle() {
         <Sun size={12} className="inline-icon" style={{ color: '#F59E0B' }} /> Verano
       </span>
       <div className="nav-group-body verano-row">
-        <label className="switch" title="Activar planificador de verano">
+        <label className="switch" htmlFor={toggleId} title="Activar planificador de verano">
           <input
             type="checkbox"
-            id="toggle-verano"
+            id={toggleId}
+            aria-label="Activar cursos de verano"
             checked={veranoActivo}
             onChange={(e) => setVeranoActivo(e.target.checked)}
           />
           <span className="sw-track" />
         </label>
-        <span className={`verano-tag${veranoActivo ? ' on' : ''}`} id="verano-tag">
+        <span className={`verano-tag${veranoActivo ? ' on' : ''}`}>
           {veranoActivo ? 'Activado' : 'Desactivado'}
         </span>
-        <div className={`verano-qty-wrap${veranoActivo ? ' show' : ''}`} id="verano-qty-wrap">
+        <div className={`verano-qty-wrap${veranoActivo ? ' show' : ''}`}>
+          <label htmlFor={cantId} className="visually-hidden" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+            Cantidad de veranos
+          </label>
           <input
             type="number"
             className="verano-qty"
-            id="cant-veranos"
+            id={cantId}
+            aria-label="Cantidad de veranos"
             value={valVeranos}
             min={1}
             max={5}
@@ -80,7 +92,7 @@ export function VeranoToggle() {
             onChange={handleChange}
             onBlur={handleBlur}
           />
-          <span className="verano-mat" id="verano-mat-tag">+S/190 matrícula</span>
+          <span className="verano-mat">+S/190 matrícula</span>
         </div>
       </div>
     </div>

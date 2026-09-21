@@ -57,7 +57,12 @@ export function BienvenidaModal() {
             </div>
             <div className="mw-foot">
               <div className="mw-check-wrap">
-                <input ref={checkRef} type="checkbox" id="chk-no-mostrar" />
+                <input
+                  ref={checkRef}
+                  type="checkbox"
+                  id="chk-no-mostrar"
+                  aria-label="No mostrar de nuevo esta ventana"
+                />
                 <label htmlFor="chk-no-mostrar">No mostrar de nuevo</label>
               </div>
               <button

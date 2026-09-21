@@ -89,8 +89,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
         <span className="tier-name">{nombreCiclo}</span>
 
         {tipo === 'verano' && (
-          <div className="verano-tras-wrap">
-            <span className="verano-tras-lbl">Tras:</span>
+          <div className="verano-tras-wrap" title={`Este periodo de verano se cursa tras el Ciclo ${trasCiclo}`}>
             <select
               className="verano-tras-select"
               value={trasCiclo}
@@ -98,8 +97,8 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
               title="A qué ciclo sigue cronológicamente este verano"
               aria-label={`Ciclo previo al Verano ${cicloNum}`}
             >
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((c) => (
-                <option key={c} value={c}>Ciclo {c}</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((c) => (
+                <option key={c} value={c}>Post C{c}</option>
               ))}
             </select>
           </div>

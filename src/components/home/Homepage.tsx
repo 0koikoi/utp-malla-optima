@@ -90,6 +90,8 @@ export function Homepage() {
             <input
               ref={fileInputRef}
               type="file"
+              id="home-excel-upload"
+              aria-label="Subir archivo Excel de plan de estudios"
               accept=".xlsx,.xls"
               className="hidden-file-input"
               onChange={handleInputChange}

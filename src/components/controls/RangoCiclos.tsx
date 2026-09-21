@@ -6,8 +6,15 @@ function clamp(val: number, min: number, max: number) {
   return Math.min(max, Math.max(min, val));
 }
 
-export function RangoCiclos() {
+interface RangoCiclosProps {
+  idPrefix?: string;
+}
+
+export function RangoCiclos({ idPrefix = '' }: RangoCiclosProps) {
   const { cursos, cicloInicio, cicloFin, setCicloInicio, setCicloFin } = useMallaStore();
+
+  const inicioId = `${idPrefix}sim-inicio`;
+  const finId = `${idPrefix}sim-fin`;
 
   const maxCicloMalla = Object.values(cursos).length > 0 
     ? Math.max(...Object.values(cursos).map(c => c.cicloOrigen))
@@ -44,20 +51,24 @@ export function RangoCiclos() {
       return;
     }
     const num = parseInt(raw, 10);
-    if (isNaN(num)) return;
-
-    const clamped = clamp(num, 1, maxAllowable);
-    setValInicio(String(clamped));
-    setCicloInicio(clamped);
-    if (clamped > cicloFin) {
-      setCicloFin(clamped);
-      setValFin(String(clamped));
+    if (!isNaN(num)) {
+      setValInicio(String(num));
     }
   }
 
   function handleInicioBlur() {
-    if (valInicio === '') {
-      setValInicio(String(prevInicio));
+    let num = parseInt(valInicio, 10);
+    if (isNaN(num)) {
+      num = cicloInicio;
+    }
+    const clamped = clamp(num, 1, maxAllowable);
+    setValInicio(String(clamped));
+    setCicloInicio(clamped);
+
+    // Ajuste automático si inicio supera fin
+    if (clamped > cicloFin) {
+      setCicloFin(clamped);
+      setValFin(String(clamped));
     }
   }
 
@@ -68,20 +79,24 @@ export function RangoCiclos() {
       return;
     }
     const num = parseInt(raw, 10);
-    if (isNaN(num)) return;
-
-    const clamped = clamp(num, 1, maxAllowable);
-    setValFin(String(clamped));
-    setCicloFin(clamped);
-    if (clamped < cicloInicio) {
-      setCicloInicio(clamped);
-      setValInicio(String(clamped));
+    if (!isNaN(num)) {
+      setValFin(String(num));
     }
   }
 
   function handleFinBlur() {
-    if (valFin === '') {
-      setValFin(String(prevFin));
+    let num = parseInt(valFin, 10);
+    if (isNaN(num)) {
+      num = cicloFin;
+    }
+    const clamped = clamp(num, 1, maxAllowable);
+    setValFin(String(clamped));
+    setCicloFin(clamped);
+
+    // Ajuste automático si fin es menor que inicio
+    if (clamped < cicloInicio) {
+      setCicloInicio(clamped);
+      setValInicio(String(clamped));
     }
   }
 
@@ -91,11 +106,12 @@ export function RangoCiclos() {
         <CalendarRange size={12} className="inline-icon" /> Ciclos (Regular)
       </span>
       <div className="nav-group-body ciclo-inputs">
-        <span className="lbl">Del</span>
+        <label htmlFor={inicioId} className="lbl">Del</label>
         <input
           type="number"
           className="ciclo-num"
-          id="sim-inicio"
+          id={inicioId}
+          aria-label="Ciclo de inicio"
           value={valInicio}
           min={1}
           max={maxAllowable}
@@ -104,11 +120,15 @@ export function RangoCiclos() {
           onChange={handleInicioChange}
           onBlur={handleInicioBlur}
         />
-        <span className="sep">—</span>
+        <span className="sep" aria-hidden="true">—</span>
+        <label htmlFor={finId} className="visually-hidden" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+          Ciclo de fin
+        </label>
         <input
           type="number"
           className="ciclo-num"
-          id="sim-fin"
+          id={finId}
+          aria-label="Ciclo de fin"
           value={valFin}
           min={1}
           max={maxAllowable}

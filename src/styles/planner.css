@@ -198,36 +198,50 @@
   background: var(--tier-bg-verano);
   border-left: 4px solid var(--tier-accent-verano);
   border-right: 1.5px solid var(--amber-border);
+  padding: 6px 4px;
+  gap: 1px;
 }
-.tier-row[data-tipo="verano"] .tier-num   { color: var(--tier-text-verano); }
-.tier-row[data-tipo="verano"] .tier-name  { color: var(--amber-dark); }
+.tier-row[data-tipo="verano"] .tier-num {
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--tier-text-verano);
+}
+.tier-row[data-tipo="verano"] .tier-name {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--amber-dark);
+  letter-spacing: 0.2px;
+}
 
 .verano-tras-wrap {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 4px;
-  margin-top: 3px;
-  padding: 1px 4px;
-  background: rgba(245, 158, 11, 0.12);
-  border-radius: 3px;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  width: 100%;
+  margin: 1px 0 2px;
 }
-.verano-tras-lbl {
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--amber-dark);
-  text-transform: uppercase;
-}
+
 .verano-tras-select {
-  font-size: 0.68rem;
-  font-weight: 700;
+  width: auto;
+  max-width: 74px;
+  height: 20px;
+  line-height: 18px;
+  font-size: 0.60rem;
+  font-weight: 800;
   background: var(--bg-surface);
-  border: 1px solid rgba(245, 158, 11, 0.4);
+  border: 1px solid var(--amber-border);
   color: var(--amber-darker);
-  border-radius: 3px;
-  padding: 1px 3px;
+  border-radius: 10px;
+  padding: 0 4px;
   cursor: pointer;
   outline: none;
+  text-align: center;
+  transition: all var(--tr);
+}
+.verano-tras-select:hover,
+.verano-tras-select:focus {
+  background: var(--amber-subtle);
+  border-color: var(--amber-dark);
 }
 
 /* Zona drop — en ciclos: horizontal wrap */

@@ -51,7 +51,11 @@ const FACULTADES: FacultadOption[] = [
   },
 ];
 
-export function FacultadDropdown() {
+interface DropdownProps {
+  idPrefix?: string;
+}
+
+export function FacultadDropdown({ idPrefix = '' }: DropdownProps) {
   const { facultad, setFacultad } = useMallaStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -75,6 +79,8 @@ export function FacultadDropdown() {
     };
   }, [isOpen]);
 
+  const btnId = `${idPrefix}btn-facultad`;
+
   return (
     <div className="nav-group">
       <span className="nav-group-label">
@@ -84,20 +90,20 @@ export function FacultadDropdown() {
         <div
           ref={dropdownRef}
           className={`dropdown nav-dropdown${isOpen ? ' show' : ''}`}
-          id="dd-facultad"
         >
           <button
             className="dropdown-toggle"
             type="button"
             aria-expanded={isOpen}
-            id="btn-facultad"
+            id={btnId}
+            aria-label="Seleccionar facultad o carrera"
             onClick={() => setIsOpen((prev) => !prev)}
             title="Seleccionar facultad o carrera para el tarifario"
           >
             <span className="dd-icon">
               <CurrentIcon size={14} />
             </span>
-            <span className="dd-label" id="facultad-label">
+            <span className="dd-label">
               {current.shortLabel}
             </span>
             <ChevronDown size={13} className="dd-chevron" />
@@ -156,11 +162,12 @@ const PAGOS: PagoOption[] = [
   { value: 'scotiabank', label: 'Scotiabank/BBVA', shortLabel: 'Scotiabank (5%)', icon: Building2, porcentaje: '5%' },
 ];
 
-export function PagoDropdown() {
+export function PagoDropdown({ idPrefix = '' }: DropdownProps) {
   const { descuento, setDescuento } = useMallaStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[2];
+
+  const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[0];
   const CurrentIcon = current.icon;
 
   useEffect(() => {
@@ -177,6 +184,8 @@ export function PagoDropdown() {
     };
   }, [isOpen]);
 
+  const btnId = `${idPrefix}btn-pago`;
+
   return (
     <div className="nav-group">
       <span className="nav-group-label">
@@ -186,19 +195,19 @@ export function PagoDropdown() {
         <div
           ref={dropdownRef}
           className={`dropdown nav-dropdown${isOpen ? ' show' : ''}`}
-          id="dd-pago"
         >
           <button
             className="dropdown-toggle"
             type="button"
             aria-expanded={isOpen}
-            id="btn-pago"
+            id={btnId}
+            aria-label="Seleccionar método de pago"
             onClick={() => setIsOpen((prev) => !prev)}
           >
             <span className="dd-icon">
               <CurrentIcon size={14} />
             </span>
-            <span className="dd-label" id="pago-label">
+            <span className="dd-label">
               {current.shortLabel}
             </span>
             <ChevronDown size={13} className="dd-chevron" />

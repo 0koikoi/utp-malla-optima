@@ -127,6 +127,8 @@ export function MobileMenuModal() {
               <input
                 ref={fileInputRef}
                 type="file"
+                id="mob-excel-upload"
+                aria-label="Subir plan de estudios Excel"
                 accept=".xlsx,.xls"
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
@@ -150,22 +152,22 @@ export function MobileMenuModal() {
 
           {/* 3. Facultad */}
           <div className="mob-menu-section">
-            <FacultadDropdown />
+            <FacultadDropdown idPrefix="mob-" />
           </div>
 
           {/* 4. Método de pago */}
           <div className="mob-menu-section">
-            <PagoDropdown />
+            <PagoDropdown idPrefix="mob-" />
           </div>
 
           {/* 5. Rango de Ciclos */}
           <div className="mob-menu-section">
-            <RangoCiclos />
+            <RangoCiclos idPrefix="mob-" />
           </div>
 
           {/* 6. Verano */}
           <div className="mob-menu-section">
-            <VeranoToggle />
+            <VeranoToggle idPrefix="mob-" />
           </div>
 
           {/* 7. Electivos */}
@@ -223,6 +225,8 @@ export function MobileMenuModal() {
             <input
               ref={backupInputRef}
               type="file"
+              id="mob-backup-input"
+              aria-label="Restaurar copia de respaldo JSON"
               accept=".json"
               style={{ display: 'none' }}
               onChange={handleImportarJSON}

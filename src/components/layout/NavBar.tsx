@@ -346,6 +346,8 @@ export function NavBar() {
           <input
             ref={backupInputRef}
             type="file"
+            id="nav-backup-input"
+            aria-label="Restaurar copia de respaldo JSON"
             accept=".json"
             style={{ display: 'none' }}
             onChange={handleImportarJSON}

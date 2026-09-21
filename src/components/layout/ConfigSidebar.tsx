@@ -43,18 +43,21 @@ export function ConfigSidebar() {
 
         <div className="config-sidebar-content">
           <div className="config-section">
-            <label className="config-label"><FileSpreadsheet size={14} className="inline-icon" /> Archivo de Malla</label>
-            <div className={`upload-wrap${isLoaded ? ' loaded' : ''}`} id="upload-wrap" style={{ display: 'block', width: '100%' }}>
+            <label htmlFor="cfg-excel-upload" className="config-label">
+              <FileSpreadsheet size={14} className="inline-icon" /> Archivo de Malla
+            </label>
+            <div className={`upload-wrap${isLoaded ? ' loaded' : ''}`} style={{ display: 'block', width: '100%' }}>
               <input
                 ref={fileInputRef}
                 type="file"
-                id="excel-upload"
+                id="cfg-excel-upload"
+                aria-label="Subir archivo de malla Excel"
                 accept=".xlsx,.xls"
                 onChange={handleFileChange}
               />
               <div className="upload-face" style={{ justifyContent: 'center' }}>
                 <Upload size={14} className="upload-icon" />
-                <span id="upload-text">{displayName}</span>
+                <span>{displayName}</span>
               </div>
             </div>
           </div>
@@ -62,25 +65,25 @@ export function ConfigSidebar() {
           <div className="config-divider" />
           
           <div className="config-section">
-            <FacultadDropdown />
+            <FacultadDropdown idPrefix="cfg-" />
           </div>
 
           <div className="config-divider" />
           
           <div className="config-section">
-            <PagoDropdown />
+            <PagoDropdown idPrefix="cfg-" />
           </div>
 
           <div className="config-divider" />
           
           <div className="config-section">
-            <RangoCiclos />
+            <RangoCiclos idPrefix="cfg-" />
           </div>
 
           <div className="config-divider" />
           
           <div className="config-section">
-            <VeranoToggle />
+            <VeranoToggle idPrefix="cfg-" />
           </div>
         </div>
       </aside>

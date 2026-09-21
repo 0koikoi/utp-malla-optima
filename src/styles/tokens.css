@@ -1,8 +1,4 @@
-/* Estilos Base */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap');
-
-/* Variables (Design System Estandarizado en :root) */
+/* Estilos Base y Variables (Design System Estandarizado en :root) */
 :root {
   /* ── 1. Fondos y Superficies Base ──────────────────────────────── */
   --bg-page:           #F1F5F9;      /* Fondo de página principal */
