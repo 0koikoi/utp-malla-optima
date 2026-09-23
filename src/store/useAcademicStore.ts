@@ -12,6 +12,7 @@ import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 import { cursoBloqueado, normalizarCurso, ordenarCursos } from '../domain/rules/courseRules';
 import { crearPeriodoRegular, crearPeriodoVerano } from '../domain/rules/academicPeriodRules';
+import defaultCostos from '../data/universidades/pe-utp/costos.json';
 
 interface AcademicStore {
   cursos: Curso[];
@@ -22,6 +23,7 @@ interface AcademicStore {
   cursoAMover: string | null;
   notificacionMovimiento: NotificacionMovimiento | null;
   nombreArchivoCargado: string | null;
+  sincronizarConMalla: (cursosMap: Record<string, any>, asignaciones: Record<string, string>) => void;
   setCursos: (cursos: Curso[], nombreArchivo?: string) => Promise<void>;
   updateEstadoCurso: (codigo: string, estado: EstadoCurso) => Promise<void>;
   moverCursoAPeriodo: (codigo: string, periodo: PeriodoAcademico) => Promise<boolean>;
@@ -96,13 +98,58 @@ const notificacionDesdeResultado = (
 
 export const useAcademicStore = create<AcademicStore>((set, get) => ({
   cursos: [],
-  tarifario: null,
+  tarifario: defaultCostos as unknown as Tarifario,
   disciplinaActiva: 'Ingeniería y Arquitectura',
   cursosSeleccionadosParaMatricula: [],
   panelPlanificadorAbierto: false,
   cursoAMover: null,
   notificacionMovimiento: null,
   nombreArchivoCargado: null,
+
+  sincronizarConMalla: (cursosMap, asignaciones) => {
+    const academicCursos: Curso[] = Object.values(cursosMap).map((c: any) => {
+      const ubi = asignaciones[c.codigo] ?? 'pozo';
+      let ciclo = c.cicloOrigen;
+      let tipoPeriodo: 'REGULAR' | 'VERANO' = 'REGULAR';
+      let ubicacion: 'banco' | 'periodo' = 'periodo';
+
+      if (ubi === 'pozo') {
+        ubicacion = 'banco';
+      } else {
+        const matchCiclo = ubi.match(/^ciclo-(\d+)$/);
+        if (matchCiclo) {
+          ciclo = parseInt(matchCiclo[1], 10);
+          tipoPeriodo = 'REGULAR';
+          ubicacion = 'periodo';
+        }
+        const matchVerano = ubi.match(/^verano-(\d+)$/);
+        if (matchVerano) {
+          ciclo = parseInt(matchVerano[1], 10);
+          tipoPeriodo = 'VERANO';
+          ubicacion = 'periodo';
+        }
+      }
+
+      return {
+        codigo: c.codigo,
+        nombre: c.nombre,
+        ciclo,
+        cicloOrigen: c.cicloOrigen,
+        tipoPeriodo,
+        ubicacion,
+        horasSemanales: c.horas ?? 0,
+        creditos: c.creditos ?? 0,
+        tipo: c.tipo === 'E' ? 'ELECTIVO' as const : 'OBLIGATORIO' as const,
+        prerrequisitos: c.prerequisitos ?? [],
+        estado: c.estado,
+      };
+    });
+
+    set({
+      cursos: ordenarCursos(academicCursos),
+      tarifario: get().tarifario ?? (defaultCostos as unknown as Tarifario),
+    });
+  },
 
   setCursos: async (cursos, nombreArchivo) => {
     const cursosNormalizados = ordenarCursos(

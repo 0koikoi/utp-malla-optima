@@ -1,0 +1,407 @@
+/* ==========================================================================
+   PLANIFICADOR FINANCIERO Y PRESUPUESTO — UTP 2026
+   ========================================================================== */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3999;
+  background: rgba(22, 24, 42, 0.55);
+  backdrop-filter: blur(2px);
+  border: 0;
+  cursor: pointer;
+}
+
+.budget-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 540px;
+  max-width: 95vw;
+  height: 100vh;
+  z-index: 4000;
+  display: flex;
+  flex-direction: column;
+  background: #242744;
+  color: #fff;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.35);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.budget-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.budget-kicker {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent, #ef233c);
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.budget-title-trigger {
+  background: none;
+  border: 0;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+}
+
+.budget-title-trigger:hover {
+  color: #effff1;
+}
+
+.drawer-close {
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: 0.15s ease;
+}
+
+.drawer-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.budget-control-block {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.budget-control-block > label {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.budget-config-note {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.budget-select-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  color: #cfd4df;
+}
+
+.budget-select-control select,
+.budget-control-block select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f2f3f8;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.budget-select-control option,
+.budget-control-block option {
+  color: #202238;
+  background: #ffffff;
+}
+
+.financial-scroll-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 2px;
+}
+
+.budget-empty {
+  text-align: center;
+  padding: 30px 10px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+}
+
+.period-financial-card {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.period-financial-card.summer {
+  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.period-financial-card.single-payment-active {
+  border-color: rgba(110, 212, 136, 0.35);
+  background: linear-gradient(180deg, rgba(44, 72, 62, 0.22) 0%, rgba(36, 39, 68, 0.95) 100%);
+}
+
+.period-financial-card h3 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.period-course-names {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.period-course-name {
+  padding-left: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  position: relative;
+}
+
+.period-course-name::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.period-financial-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+}
+
+.period-financial-lines p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.period-financial-lines p span {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.period-discount-line {
+  color: #86efac !important;
+}
+
+.period-total-line {
+  margin-top: 4px !important;
+  font-size: 0.92rem !important;
+  font-weight: 700;
+  color: #ffffff !important;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+}
+
+.single-payment-btn {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.single-payment-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.single-payment-btn.active {
+  background: rgba(88, 180, 112, 0.2);
+  border-color: rgba(110, 212, 136, 0.4);
+  color: #effff1;
+}
+
+.single-payment-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.financial-total-card {
+  position: sticky;
+  bottom: 0;
+  margin-top: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1e2038;
+  border-radius: 8px;
+}
+
+.financial-total-card span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.financial-total-card strong {
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* Modal confirmación planificación automática */
+.planning-drawer {
+  position: fixed !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 420px !important;
+  max-width: 95vw;
+  transform: translateX(-110%);
+  background: #242744;
+  z-index: 4001;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+  box-shadow: 12px 0 35px rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.planning-drawer.open {
+  transform: translateX(0);
+}
+
+.planning-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planning-drawer-head h2 {
+  font-size: 0.95rem;
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.planning-generate-btn {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent, #ef233c);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 14px;
+}
+
+.planning-generate-btn:hover {
+  opacity: 0.9;
+}
+
+.planning-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(22, 24, 42, 0.65);
+  backdrop-filter: blur(3px);
+}
+
+.planning-confirm-modal {
+  width: min(460px, calc(100vw - 32px));
+  padding: 22px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #202238;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.planning-confirm-modal h2 {
+  margin: 8px 0 10px;
+  font-size: 1.1rem;
+}
+
+.planning-confirm-modal p {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.planning-confirm-modal button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.planning-confirm-modal button:first-of-type {
+  background: var(--accent, #ef233c);
+  color: #fff;
+  border: 0;
+}
+
+.planning-confirm-modal button:last-of-type {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}

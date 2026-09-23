@@ -20,6 +20,7 @@ import { PendientesPanel } from '@/components/sidebar/PendientesPanel';
 import { PlannerSection } from '@/components/planner/PlannerSection';
 import { CursoCard } from '@/components/planner/CursoCard';
 import { PrerequisitoToast } from '@/components/common/PrerequisitoToast';
+import { PlanificadorPanel } from '@/components/PlanificadorPanel';
 import { useMallaStore } from '@/store/mallaStore';
 import type { Curso, UbicacionCurso } from '@/types/malla';
 
@@ -159,6 +160,9 @@ export default function App() {
           </button>
         </div>
       )}
+
+      {/* Panel Financiero y Presupuesto de dev */}
+      <PlanificadorPanel />
     </DndContext>
   );
 }

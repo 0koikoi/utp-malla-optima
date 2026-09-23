@@ -18,7 +18,9 @@ import {
   Camera,
   FileDown,
   Database,
+  Calculator,
 } from 'lucide-react';
+import { useAcademicStore } from '@/store/useAcademicStore';
 
 export function NavBar() {
   const {
@@ -184,6 +186,25 @@ export function NavBar() {
             aria-label="Auto-Planificar"
           >
             <Sparkles size={16} className="btn-icon-sparkle" />
+          </button>
+
+          {/* Botón Presupuesto / Planificador Financiero (de dev) */}
+          <button
+            type="button"
+            className="nav-btn nav-btn-financial"
+            id="btn-financial-panel"
+            title="Presupuesto y Planificador: Ver cuotas y costos por periodo"
+            onClick={() => {
+              if (Object.keys(cursos).length === 0) {
+                mostrarFeedback('Primero debes cargar tu malla para ver el presupuesto.', 'info');
+                return;
+              }
+              useAcademicStore.getState().sincronizarConMalla(cursos, asignaciones);
+              useAcademicStore.getState().setPanelPlanificadorAbierto(true);
+            }}
+            aria-label="Presupuesto y Planificador Financiero"
+          >
+            <Calculator size={16} />
           </button>
 
           {/* Botón de Captura (Exportar PNG / PDF) con vistazo */}
