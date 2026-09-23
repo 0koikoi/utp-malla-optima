@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import {
   Calculator,
   FileSpreadsheet,
@@ -33,14 +33,17 @@ export const App = () => {
   } = useAcademicStore();
 
   const [mostrarModalCarga, setMostrarModalCarga] = useState(false);
-  const ciclos = Array.from({ length: 10 }, (_, index) => index + 1);
+  const [totalCiclos, setTotalCiclos] = useState(10);
+  const ciclos = Array.from({ length: totalCiclos }, (_, index) => index + 1);
 
   useEffect(() => {
     const inicializar = async () => {
       await cargarDesdeDB();
-      if (!useAcademicStore.getState().tarifario) {
-        await setTarifario(defaultCostos as unknown as Tarifario);
-      }
+      // costos.json es la configuración base versionada del proyecto. Se vuelve
+      // a sincronizar al iniciar para que una copia antigua persistida en
+      // IndexedDB no conserve límites/tarifas obsoletos después de actualizar
+      // la aplicación.
+      await setTarifario(defaultCostos as unknown as Tarifario);
     };
     void inicializar();
   }, [cargarDesdeDB, setTarifario]);
@@ -52,7 +55,7 @@ export const App = () => {
     (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
   ).length;
   const cursosPlanificados = cursos.filter(
-    (curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'ciclo'
+    (curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo'
   ).length;
 
   return (
@@ -143,9 +146,9 @@ export const App = () => {
             <>
               <div className="planner-heading">
                 <div>
-                  <span className="planner-section-title">Planificación regular</span>
+                  <span className="planner-section-title">Planificación regular + verano</span>
                   <h1>Malla proyectada</h1>
-                  <p>Arrastra solo cursos pendientes. Los cursos ya llevados están bloqueados.</p>
+                  <p>Arrastra solo cursos pendientes. Hay un verano disponible después de cada ciclo y los periodos anteriores quedan bloqueados.</p>
                 </div>
                 <div className="planner-legend" aria-label="Leyenda">
                   <span><i className="legend-dot obligatorio" /> Obligatorio</span>
@@ -156,14 +159,38 @@ export const App = () => {
 
               <div id="malla-container">
                 {ciclos.map((numCiclo) => (
-                  <CicloRow
-                    key={numCiclo}
-                    numCiclo={numCiclo}
-                    cursos={cursos.filter(
-                      (curso) => curso.ubicacion === 'ciclo' && curso.ciclo === numCiclo
-                    )}
-                  />
+                  <Fragment key={numCiclo}>
+                    <CicloRow
+                      numCiclo={numCiclo}
+                      tipoPeriodo="REGULAR"
+                      cursos={cursos.filter(
+                        (curso) =>
+                          curso.ubicacion === 'periodo' &&
+                          curso.tipoPeriodo === 'REGULAR' &&
+                          curso.ciclo === numCiclo
+                      )}
+                    />
+                    <CicloRow
+                      numCiclo={numCiclo}
+                      tipoPeriodo="VERANO"
+                      cursos={cursos.filter(
+                        (curso) =>
+                          curso.ubicacion === 'periodo' &&
+                          curso.tipoPeriodo === 'VERANO' &&
+                          curso.ciclo === numCiclo
+                      )}
+                    />
+                  </Fragment>
                 ))}
+                {totalCiclos < 12 && (
+                  <button
+                    type="button"
+                    className="add-cycle-btn"
+                    onClick={() => setTotalCiclos((actual) => Math.min(12, actual + 1))}
+                  >
+                    + Añadir ciclo {totalCiclos + 1}
+                  </button>
+                )}
               </div>
             </>
           )}

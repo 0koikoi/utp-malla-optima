@@ -1,4 +1,5 @@
 import type { Curso } from '../../types/academic';
+import { normalizarCurso } from '../rules/courseRules';
 
 export function validateCourses(cursos: Curso[]): Curso[] {
   if (!Array.isArray(cursos)) {
@@ -14,10 +15,10 @@ export function validateCourses(cursos: Curso[]): Curso[] {
       throw new Error(`Ciclo inválido en ${curso.codigo}`);
     }
 
-    return {
+    return normalizarCurso({
       ...curso,
       prerrequisitos: curso.prerrequisitos ?? [],
       estado: curso.estado ?? 'PENDIENTE',
-    };
+    });
   });
 }

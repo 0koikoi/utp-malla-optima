@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle, LockKeyhole, X } from 'lucide-react';
+import { AlertTriangle, Clock3, Gauge, LockKeyhole, X } from 'lucide-react';
 import { useAcademicStore } from '../store/useAcademicStore';
 
 export function PrerequisitoToast() {
@@ -13,14 +13,33 @@ export function PrerequisitoToast() {
 
   if (!notificacionMovimiento) return null;
 
-  const esInmovible = notificacionMovimiento.tipo === 'INMOVIBLE';
+  const { tipo } = notificacionMovimiento;
   const faltantes = notificacionMovimiento.faltantes ?? [];
+  const titulo =
+    tipo === 'INMOVIBLE'
+      ? 'Curso bloqueado'
+      : tipo === 'PRERREQUISITOS'
+        ? 'Prerrequisitos pendientes'
+        : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'
+          ? 'Periodo no disponible'
+          : tipo === 'LIMITE_CREDITOS_VERANO'
+            ? 'Límite de verano'
+            : 'Límite de horas';
+
+  const Icono =
+    tipo === 'INMOVIBLE'
+      ? LockKeyhole
+      : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'
+        ? Clock3
+        : tipo === 'LIMITE_CREDITOS_VERANO' || tipo === 'LIMITE_HORAS'
+          ? Gauge
+          : AlertTriangle;
 
   return (
     <div className="planner-toast" role="alert" aria-live="assertive">
       <div className="planner-toast-head">
-        {esInmovible ? <LockKeyhole size={17} /> : <AlertTriangle size={17} />}
-        <strong>{esInmovible ? 'Curso bloqueado' : 'Prerrequisitos pendientes'}</strong>
+        <Icono size={17} />
+        <strong>{titulo}</strong>
         <button
           type="button"
           className="planner-toast-close"
@@ -31,14 +50,14 @@ export function PrerequisitoToast() {
         </button>
       </div>
 
-      {esInmovible ? (
+      {tipo === 'INMOVIBLE' ? (
         <p>
-          <b>{notificacionMovimiento.cursoNombre}</b> ya figura como aprobado o convalidado y no puede cambiarse de ciclo.
+          <b>{notificacionMovimiento.cursoNombre}</b> ya figura como aprobado, convalidado o en curso y no puede cambiarse de periodo.
         </p>
-      ) : (
+      ) : tipo === 'PRERREQUISITOS' ? (
         <>
           <p>
-            Para mover <b>{notificacionMovimiento.cursoNombre}</b> a ese ciclo, primero debes aprobar o planificar antes:
+            Para mover <b>{notificacionMovimiento.cursoNombre}</b> a {notificacionMovimiento.periodoDestino ?? 'ese periodo'}, primero debes aprobar o planificar antes:
           </p>
           <ul>
             {faltantes.map((faltante) => (
@@ -48,8 +67,12 @@ export function PrerequisitoToast() {
               </li>
             ))}
           </ul>
-          <small>Coloca esos cursos en un ciclo anterior y vuelve a intentarlo.</small>
+          <small>Los prerrequisitos deben estar en un periodo cronológicamente anterior.</small>
         </>
+      ) : (
+        <p>
+          <b>{notificacionMovimiento.cursoNombre}</b>: {notificacionMovimiento.mensaje}
+        </p>
       )}
     </div>
   );

@@ -7,14 +7,23 @@ export const cursoBloqueado = (curso: Curso) =>
 
 export const normalizarCurso = (curso: Curso): Curso => {
   const cicloOrigen = curso.cicloOrigen || curso.ciclo || 1;
+  const ubicacionPersistida = curso.ubicacion as string | undefined;
+  const ubicacion =
+    ubicacionPersistida === 'ciclo'
+      ? 'periodo'
+      : ubicacionPersistida ?? (curso.estado === 'PENDIENTE' ? 'banco' : 'periodo');
+
   return {
     ...curso,
     cicloOrigen,
     ciclo: curso.ciclo || cicloOrigen,
-    ubicacion: curso.ubicacion ?? (curso.estado === 'PENDIENTE' ? 'banco' : 'ciclo'),
+    tipoPeriodo: curso.tipoPeriodo ?? 'REGULAR',
+    ubicacion: ubicacion as Curso['ubicacion'],
     prerrequisitos: curso.prerrequisitos ?? [],
   };
 };
 
 export const ordenarCursos = (cursos: Curso[]) =>
-  [...cursos].sort((a, b) => a.cicloOrigen - b.cicloOrigen || a.nombre.localeCompare(b.nombre, 'es'));
+  [...cursos].sort((a, b) =>
+    a.cicloOrigen - b.cicloOrigen || a.nombre.localeCompare(b.nombre, 'es')
+  );

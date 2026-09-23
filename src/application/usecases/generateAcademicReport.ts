@@ -1,15 +1,14 @@
 import type { Curso } from '../../types/academic';
+import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 
-/**
- * Datos preparados para un futuro componente PDFReport.
- * Mantiene la generación separada de la interfaz.
- */
+/** Datos preparados para el componente PDFReport. */
 export const generateAcademicReportData = (cursos: Curso[]) => ({
   totalCursos: cursos.length,
   creditos: cursos.reduce((sum, curso) => sum + curso.creditos, 0),
-  ciclos: cursos.reduce<Record<number, Curso[]>>((acc, curso) => {
-    acc[curso.ciclo] ??= [];
-    acc[curso.ciclo].push(curso);
+  periodos: cursos.reduce<Record<string, Curso[]>>((acc, curso) => {
+    const periodo = obtenerPeriodoCurso(curso);
+    acc[periodo.id] ??= [];
+    acc[periodo.id].push(curso);
     return acc;
   }, {}),
 });

@@ -4,7 +4,13 @@ import { calcularImpactoFuturo } from './recommendationService';
 export interface CursoOptimizado {
   cursos: Curso[];
   creditos: number;
+  horas: number;
   impacto: number;
+}
+
+export interface RestriccionesPeriodo {
+  maxHoras?: number;
+  factorHoras?: number;
 }
 
 interface OpcionDP extends CursoOptimizado {
@@ -22,21 +28,22 @@ const esMejorOpcion = (candidata: OpcionDP, actual?: OpcionDP): boolean => {
 
 /**
  * Selecciona la combinación de cursos con mayor impacto académico posible sin
- * exceder el límite de créditos. El impacto siempre se calcula contra la malla
- * completa para no perder descendientes que todavía no están disponibles.
+ * exceder el límite de créditos y, cuando se especifica, el límite de horas.
  */
 export const optimizarSemestre = (
   cursosDisponibles: Curso[],
   maxCreditos: number,
-  mallaCompleta: Curso[] = cursosDisponibles
+  mallaCompleta: Curso[] = cursosDisponibles,
+  restricciones: RestriccionesPeriodo = {}
 ): CursoOptimizado => {
   if (cursosDisponibles.length === 0 || maxCreditos <= 0) {
-    return { cursos: [], creditos: 0, impacto: 0 };
+    return { cursos: [], creditos: 0, horas: 0, impacto: 0 };
   }
 
   const limite = Math.max(0, Math.round(maxCreditos * ESCALA_CREDITOS));
+  const factorHoras = restricciones.factorHoras ?? 1;
   const dp = new Map<number, OpcionDP>();
-  dp.set(0, { cursos: [], creditos: 0, impacto: 0, cantidad: 0 });
+  dp.set(0, { cursos: [], creditos: 0, horas: 0, impacto: 0, cantidad: 0 });
 
   cursosDisponibles.forEach((curso) => {
     const peso = Math.max(0, Math.round(curso.creditos * ESCALA_CREDITOS));
@@ -47,9 +54,13 @@ export const optimizarSemestre = (
       const nuevoPeso = creditosUsados + peso;
       if (nuevoPeso > limite) return;
 
+      const nuevasHoras = opcion.horas + curso.horasSemanales * factorHoras;
+      if (restricciones.maxHoras !== undefined && nuevasHoras > restricciones.maxHoras) return;
+
       const candidata: OpcionDP = {
         cursos: [...opcion.cursos, curso],
         creditos: opcion.creditos + curso.creditos,
+        horas: nuevasHoras,
         impacto: opcion.impacto + impactoCurso,
         cantidad: opcion.cantidad + 1,
       };
@@ -60,7 +71,7 @@ export const optimizarSemestre = (
     });
   });
 
-  let mejor: OpcionDP = { cursos: [], creditos: 0, impacto: 0, cantidad: 0 };
+  let mejor: OpcionDP = { cursos: [], creditos: 0, horas: 0, impacto: 0, cantidad: 0 };
   dp.forEach((opcion) => {
     if (esMejorOpcion(opcion, mejor)) mejor = opcion;
   });
@@ -68,6 +79,7 @@ export const optimizarSemestre = (
   return {
     cursos: mejor.cursos,
     creditos: mejor.creditos,
+    horas: mejor.horas,
     impacto: mejor.impacto,
   };
 };

@@ -1,4 +1,5 @@
-import type { Curso, CursoReferencia } from '../types/academic';
+import type { Curso, CursoReferencia, PeriodoAcademico } from '../types/academic';
+import { crearPeriodoRegular, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 
 const ESTADOS_CUMPLIDOS = new Set(['APROBADO', 'CONVALIDADO']);
 
@@ -20,14 +21,18 @@ export const isCursoDesbloqueado = (curso: Curso, todosLosCursos: Curso[]): bool
 };
 
 /**
- * Valida un movimiento a un ciclo concreto.
- * Un prerrequisito es válido si ya fue aprobado/convalidado o si el estudiante
- * lo planificó en un ciclo estrictamente anterior al destino.
+ * Valida un movimiento a un periodo concreto.
+ * Un prerrequisito es válido si ya fue aprobado/convalidado o si está
+ * planificado en un periodo cronológicamente anterior al destino.
+ *
+ * Esto permite, por ejemplo:
+ * Ciclo 3 -> Verano 3 -> Ciclo 4
+ * de modo que un curso llevado en Verano 3 habilite uno del Ciclo 4.
  */
-export const validarPrerequisitosParaCiclo = (
+export const validarPrerequisitosParaPeriodo = (
   curso: Curso,
   todosLosCursos: Curso[],
-  cicloDestino: number
+  periodoDestino: PeriodoAcademico
 ): { valido: boolean; faltantes: CursoReferencia[] } => {
   if (curso.prerrequisitos.length === 0) return { valido: true, faltantes: [] };
 
@@ -38,13 +43,14 @@ export const validarPrerequisitosParaCiclo = (
     const prerequisito = porCodigo.get(codigoPrerequisito);
 
     // Algunos planes incluyen requisitos externos/nivelación que no aparecen como curso.
-    // Al igual que el prototipo UTP, no se bloquea por referencias inexistentes.
+    // Se conserva el comportamiento actual: esas referencias no bloquean un movimiento manual.
     if (!prerequisito) continue;
 
     if (ESTADOS_CUMPLIDOS.has(prerequisito.estado)) continue;
 
     const planificadoAntes =
-      prerequisito.ubicacion === 'ciclo' && prerequisito.ciclo < cicloDestino;
+      prerequisito.ubicacion === 'periodo' &&
+      obtenerPeriodoCurso(prerequisito).orden < periodoDestino.orden;
 
     if (planificadoAntes) continue;
 
@@ -56,6 +62,14 @@ export const validarPrerequisitosParaCiclo = (
 
   return { valido: faltantes.length === 0, faltantes };
 };
+
+/** Compatibilidad con llamadas antiguas que solo conocen ciclos regulares. */
+export const validarPrerequisitosParaCiclo = (
+  curso: Curso,
+  todosLosCursos: Curso[],
+  cicloDestino: number
+): { valido: boolean; faltantes: CursoReferencia[] } =>
+  validarPrerequisitosParaPeriodo(curso, todosLosCursos, crearPeriodoRegular(cicloDestino));
 
 /**
  * Genera una representación del grafo académico.
@@ -75,9 +89,7 @@ export const construirGrafoAcademico = (cursos: Curso[]): Map<string, string[]> 
   return grafo;
 };
 
-/**
- * Ordenamiento topológico básico para conocer el orden académico posible.
- */
+/** Ordenamiento topológico básico para conocer el orden académico posible. */
 export const obtenerOrdenTopologico = (cursos: Curso[]): string[] => {
   const grafo = construirGrafoAcademico(cursos);
   const grados = new Map<string, number>();

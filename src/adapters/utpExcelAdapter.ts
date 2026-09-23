@@ -182,7 +182,7 @@ const normalizarEstado = (valor: ExcelCell): EstadoCurso => {
 
   if (estado.includes('CONVALID')) return 'CONVALIDADO';
   if (estado.includes('APROB')) return 'APROBADO';
-  if (estado.includes('EN CURSO') || estado.includes('MATRIC')) return 'EN_CURSO';
+  if (estado.includes('EN CURSO') || estado.includes('EN PROCESO') || estado.includes('MATRIC')) return 'EN_CURSO';
   return 'PENDIENTE';
 };
 
@@ -231,7 +231,7 @@ const esFilaNivelacion = (valor: ExcelCell): boolean =>
   normalizarTexto(valor).includes('CURSOS DE NIVELACION');
 
 const contarCeldasConDatos = (fila: ExcelRow): number =>
-  fila.reduce((total: number, celda) => total + (texto(celda) ? 1 : 0), 0);
+  fila.filter((celda) => Boolean(texto(celda))).length;
 
 export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
   const data = await file.arrayBuffer();
@@ -329,9 +329,10 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       nombre: nombreRaw,
       ciclo: cicloCurso,
       cicloOrigen: cicloCurso,
+      tipoPeriodo: 'REGULAR',
       ubicacion:
         estado === 'APROBADO' || estado === 'CONVALIDADO' || estado === 'EN_CURSO'
-          ? 'ciclo'
+          ? 'periodo'
           : 'banco',
       horasSemanales: normalizarNumero(fila[columnas.horas]),
       creditos: normalizarNumero(fila[columnas.creditos]),

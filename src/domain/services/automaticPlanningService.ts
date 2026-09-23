@@ -1,4 +1,16 @@
-import type { Curso } from '../../types/academic';
+import type { Curso, PeriodoAcademico } from '../../types/academic';
+import {
+  determinarPrimerPeriodoPlanificable,
+  generarSecuenciaPeriodos,
+  obtenerPeriodoCurso,
+  crearPeriodoRegular,
+} from '../rules/academicPeriodRules';
+import {
+  FACTOR_HORAS_VERANO,
+  LIMITE_CREDITOS_VERANO,
+  LIMITE_HORAS_PERIODO,
+  validarMinimoCreditosElectivos,
+} from '../rules/planningRules';
 import { calcularImpactoFuturo } from './recommendationService';
 import { optimizarSemestre } from './semesterOptimizationService';
 
@@ -10,8 +22,11 @@ export interface CursoPlanificadoResumen {
 }
 
 export interface CicloPlanificadoResumen {
+  /** Compatibilidad: ciclo de referencia del periodo. */
   ciclo: number;
+  periodo: PeriodoAcademico;
   creditos: number;
+  horasEfectivas: number;
   impacto: number;
   cursos: CursoPlanificadoResumen[];
 }
@@ -26,7 +41,9 @@ export interface ResultadoPlanificacionAutomatica {
   cursos: Curso[];
   cicloInicio: number;
   cicloFinal: number;
+  periodoInicio: PeriodoAcademico;
   limiteCreditos: number;
+  limiteCreditosVerano: number;
   totalPlanificados: number;
   ciclos: CicloPlanificadoResumen[];
   noPlanificados: CursoNoPlanificado[];
@@ -48,26 +65,6 @@ const determinarTotalCiclos = (cursos: Curso[], configurado?: number): number =>
   return Math.max(configurado ?? 0, mayorCicloMalla);
 };
 
-/**
- * La planificación comienza después del ciclo que el estudiante está cursando.
- * Si no existe EN_CURSO, se toma como referencia el último ciclo que contiene
- * al menos un curso aprobado. Las convalidaciones aisladas no adelantan por sí
- * solas el punto de inicio del estudiante.
- */
-const determinarCicloInicio = (cursos: Curso[]): number => {
-  const enCurso = cursos.filter((curso) => curso.estado === 'EN_CURSO');
-  if (enCurso.length > 0) {
-    return Math.max(...enCurso.map((curso) => curso.ciclo)) + 1;
-  }
-
-  const aprobados = cursos.filter((curso) => curso.estado === 'APROBADO');
-  if (aprobados.length > 0) {
-    return Math.max(...aprobados.map((curso) => curso.ciclo)) + 1;
-  }
-
-  return 1;
-};
-
 const calcularLimiteDerivado = (cursos: Curso[]): number => {
   const creditosPorCiclo = new Map<number, number>();
   cursos.forEach((curso) => {
@@ -76,38 +73,36 @@ const calcularLimiteDerivado = (cursos: Curso[]): number => {
   });
 
   const mayorCarga = Math.max(0, ...creditosPorCiclo.values());
-  return mayorCarga > 0 ? mayorCarga : 22;
+  return mayorCarga;
 };
 
 const requisitoCumplidoAntesDe = (
   requisito: Curso,
-  cicloDestino: number,
-  asignaciones: Map<string, number>
+  periodoDestino: PeriodoAcademico,
+  asignaciones: Map<string, PeriodoAcademico>
 ): boolean => {
   if (ESTADOS_COMPLETADOS.has(requisito.estado)) return true;
-  if (requisito.estado === 'EN_CURSO') return requisito.ciclo < cicloDestino;
 
-  const cicloAsignado = asignaciones.get(requisito.codigo);
-  return cicloAsignado !== undefined && cicloAsignado < cicloDestino;
+  if (requisito.estado === 'EN_CURSO') {
+    return obtenerPeriodoCurso(requisito).orden < periodoDestino.orden;
+  }
+
+  const periodoAsignado = asignaciones.get(requisito.codigo);
+  return periodoAsignado !== undefined && periodoAsignado.orden < periodoDestino.orden;
 };
 
 const motivosNoPlanificado = (
   curso: Curso,
   porCodigo: Map<string, Curso>,
-  asignaciones: Map<string, number>,
+  asignaciones: Map<string, PeriodoAcademico>,
   limiteCreditos: number,
-  cicloInicio: number,
-  cicloFinal: number
+  ultimoPeriodo: PeriodoAcademico
 ): string[] => {
   const motivos: string[] = [];
 
-  if (cicloInicio > cicloFinal) {
-    motivos.push('No quedan ciclos disponibles dentro de la malla para ubicar este curso.');
-  }
-
-  if (curso.creditos > limiteCreditos) {
+  if (curso.creditos > limiteCreditos && curso.creditos > LIMITE_CREDITOS_VERANO) {
     motivos.push(
-      `El curso requiere ${curso.creditos} créditos y supera el límite de ${limiteCreditos} créditos por ciclo.`
+      `El curso requiere ${curso.creditos} créditos y supera los límites disponibles de planificación.`
     );
   }
 
@@ -119,7 +114,12 @@ const motivosNoPlanificado = (
     }
 
     if (ESTADOS_COMPLETADOS.has(requisito.estado)) return;
-    if (requisito.estado === 'EN_CURSO' && requisito.ciclo < cicloFinal + 1) return;
+    if (
+      requisito.estado === 'EN_CURSO' &&
+      obtenerPeriodoCurso(requisito).orden < ultimoPeriodo.orden + 1
+    ) {
+      return;
+    }
     if (asignaciones.has(requisito.codigo)) return;
 
     motivos.push(
@@ -129,7 +129,7 @@ const motivosNoPlanificado = (
 
   if (motivos.length === 0) {
     motivos.push(
-      'No pudo ubicarse dentro de los ciclos disponibles respetando prerrequisitos y límite de créditos.'
+      'No pudo ubicarse dentro de los periodos disponibles respetando prerrequisitos, horas y límites de créditos.'
     );
   }
 
@@ -137,9 +137,13 @@ const motivosNoPlanificado = (
 };
 
 /**
- * Genera una ruta académica determinista para todos los cursos PENDIENTE.
- * Los cursos aprobados, convalidados y en curso se conservan sin cambios.
- * Los pendientes que no puedan ubicarse permanecen en el banco y se reportan.
+ * Genera una ruta determinista únicamente sobre ciclos regulares:
+ * Ciclo 1 -> Ciclo 2 -> ... -> Ciclo 10
+ *
+ * Los periodos de verano no participan en el algoritmo automático.
+ *
+ * Los cursos APROBADO, CONVALIDADO y EN_CURSO se conservan sin cambios.
+ * Los pendientes imposibles permanecen en el banco y se reportan.
  */
 export const generarPlanificacionAutomatica = (
   cursosEntrada: Curso[],
@@ -148,31 +152,58 @@ export const generarPlanificacionAutomatica = (
   const cursosBase = cursosEntrada.map((curso) => ({ ...curso }));
   const porCodigo = new Map(cursosBase.map((curso) => [curso.codigo, curso]));
   const cicloFinal = determinarTotalCiclos(cursosBase, opciones.totalCiclos);
-  const cicloInicio = determinarCicloInicio(cursosBase);
+  const periodoInicio = determinarPrimerPeriodoPlanificable(cursosBase);
   const limiteCreditos =
     opciones.limiteCreditos && opciones.limiteCreditos > 0
       ? opciones.limiteCreditos
       : calcularLimiteDerivado(cursosBase);
 
+  // La planificación automática solo considera ciclos regulares.
+  // Verano queda disponible únicamente para planificación manual del usuario.
+  // El motor automático trabaja únicamente con ciclos regulares.
+  // No se generan periodos de verano ni se usan como pasos intermedios.
+  // La planificación manual continúa permitiendo verano.
+  const periodos = Array.from(
+    { length: Math.min(cicloFinal, 10) },
+    (_, index) => crearPeriodoRegular(index + 1)
+  ).filter((periodo) => periodo.orden >= periodoInicio.orden);
+  const ultimoPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : periodoInicio;
+
   const pendientes = cursosBase.filter((curso) => curso.estado === 'PENDIENTE');
   const pendientesRestantes = new Map(pendientes.map((curso) => [curso.codigo, curso]));
-  const asignaciones = new Map<string, number>();
+  const asignaciones = new Map<string, PeriodoAcademico>();
   const ciclos: CicloPlanificadoResumen[] = [];
 
-  for (let ciclo = cicloInicio; ciclo <= cicloFinal && pendientesRestantes.size > 0; ciclo += 1) {
+  for (const periodo of periodos) {
+    if (pendientesRestantes.size === 0) break;
+
+    const maxCreditosPeriodo =
+      periodo.tipo === 'VERANO'
+        ? Math.min(limiteCreditos, LIMITE_CREDITOS_VERANO)
+        : limiteCreditos;
+
     const disponibles = [...pendientesRestantes.values()].filter((curso) => {
-      if (curso.creditos > limiteCreditos) return false;
+      if (curso.creditos > maxCreditosPeriodo) return false;
 
       return curso.prerrequisitos.every((codigoPrerequisito) => {
         const requisito = porCodigo.get(codigoPrerequisito);
         if (!requisito) return false;
-        return requisitoCumplidoAntesDe(requisito, ciclo, asignaciones);
+        return requisitoCumplidoAntesDe(requisito, periodo, asignaciones);
       });
     });
 
     if (disponibles.length === 0) continue;
 
-    const optimizado = optimizarSemestre(disponibles, limiteCreditos, cursosBase);
+    const optimizado = optimizarSemestre(
+      disponibles,
+      maxCreditosPeriodo,
+      cursosBase,
+      {
+        maxHoras: LIMITE_HORAS_PERIODO,
+        factorHoras: periodo.tipo === 'VERANO' ? FACTOR_HORAS_VERANO : 1,
+      }
+    );
+
     if (optimizado.cursos.length === 0) continue;
 
     const resumenCursos = optimizado.cursos.map((curso) => ({
@@ -183,13 +214,15 @@ export const generarPlanificacionAutomatica = (
     }));
 
     optimizado.cursos.forEach((curso) => {
-      asignaciones.set(curso.codigo, ciclo);
+      asignaciones.set(curso.codigo, periodo);
       pendientesRestantes.delete(curso.codigo);
     });
 
     ciclos.push({
-      ciclo,
+      ciclo: periodo.cicloReferencia,
+      periodo,
       creditos: optimizado.creditos,
+      horasEfectivas: optimizado.horas,
       impacto: resumenCursos.reduce((total, curso) => total + curso.impacto, 0),
       cursos: resumenCursos,
     });
@@ -198,19 +231,21 @@ export const generarPlanificacionAutomatica = (
   const cursosResultado = cursosBase.map((curso) => {
     if (curso.estado !== 'PENDIENTE') return curso;
 
-    const cicloAsignado = asignaciones.get(curso.codigo);
-    if (cicloAsignado === undefined) {
+    const periodoAsignado = asignaciones.get(curso.codigo);
+    if (!periodoAsignado) {
       return {
         ...curso,
         ciclo: curso.cicloOrigen,
+        tipoPeriodo: 'REGULAR' as const,
         ubicacion: 'banco' as const,
       };
     }
 
     return {
       ...curso,
-      ciclo: cicloAsignado,
-      ubicacion: 'ciclo' as const,
+      ciclo: periodoAsignado.cicloReferencia,
+      tipoPeriodo: periodoAsignado.tipo,
+      ubicacion: 'periodo' as const,
     };
   });
 
@@ -222,27 +257,36 @@ export const generarPlanificacionAutomatica = (
       porCodigo,
       asignaciones,
       limiteCreditos,
-      cicloInicio,
-      cicloFinal
+      ultimoPeriodo
     ),
   }));
 
   const prioritarios = ciclos
-    .flatMap((ciclo) => ciclo.cursos.map((curso) => ({ ...curso, ciclo: ciclo.ciclo })))
+    .flatMap((ciclo) =>
+      ciclo.cursos.map((curso) => ({ ...curso, etiquetaPeriodo: ciclo.periodo.etiqueta }))
+    )
     .filter((curso) => curso.impacto > 0)
     .sort((a, b) => b.impacto - a.impacto)
     .slice(0, 3);
 
   const explicacion: string[] = [
-    `Se reorganizaron ${asignaciones.size} cursos pendientes a partir del ciclo ${cicloInicio}, conservando sin cambios los cursos aprobados, convalidados y en curso.`,
-    `La ruta prioriza las materias con mayor cantidad total de descendientes y respeta un máximo de ${limiteCreditos} créditos por ciclo.`,
+    `Se reorganizaron ${asignaciones.size} cursos pendientes usando únicamente ciclos regulares desde ${periodoInicio.etiqueta}, conservando sin cambios los cursos aprobados, convalidados y en curso.`,
+    `La ruta solo utiliza ciclos regulares, prioriza materias con mayor cantidad total de descendientes y respeta hasta ${limiteCreditos} créditos por periodo.`,
+    `Cada ciclo regular respeta un máximo de ${LIMITE_HORAS_PERIODO} horas efectivas.`,
   ];
 
   if (prioritarios.length > 0) {
     explicacion.push(
       `Los cursos más estratégicos de la ruta fueron ${prioritarios
-        .map((curso) => `${curso.nombre} (${curso.impacto} cursos futuros)`)
+        .map((curso) => `${curso.nombre} (${curso.impacto} cursos futuros)`) 
         .join(', ')}.`
+    );
+  }
+
+  const electivos = validarMinimoCreditosElectivos(cursosBase);
+  if (!electivos.valido) {
+    explicacion.push(
+      `La malla cargada contiene ${electivos.total} créditos electivos; la regla configurada exige al menos ${electivos.limite}.`
     );
   }
 
@@ -258,9 +302,11 @@ export const generarPlanificacionAutomatica = (
 
   return {
     cursos: cursosResultado,
-    cicloInicio,
+    cicloInicio: periodoInicio.cicloReferencia,
     cicloFinal,
+    periodoInicio,
     limiteCreditos,
+    limiteCreditosVerano: LIMITE_CREDITOS_VERANO,
     totalPlanificados: asignaciones.size,
     ciclos,
     noPlanificados,

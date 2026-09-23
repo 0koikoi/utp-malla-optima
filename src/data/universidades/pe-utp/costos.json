@@ -1,29 +1,100 @@
 {
-  "universidadId": "pe-utp-sistemas-2024",
+  "universidadId": "pe-utp-ate-pregrado-2026",
   "moneda": "PEN",
-  "modalidadPrincipal": "POR_CREDITO",
+  "modalidadPrincipal": "ESCALA_FIJA",
   "cuotasPorCiclo": 5,
+  "cuotasPorVerano": 2,
   "semanasPorCiclo": 16,
-  "disciplinas": {
-    "Ingeniería y Tecnología": {
-      "costoMatriculaRegular": 350.00,
-      "costoPorCredito": 135.00,
-      "costoPorHora": 28.00,
-      "costoPorCurso": 0.00,
-      "costoFijoLaboratorio": 80.00,
-      "recargoRepitenciaPorcentaje": 15.0
+  "sede": "Ate",
+  "modalidadEstudio": "Pregrado regular",
+  "vigencia": "Marzo 2026",
+  "multiplicadorCostoVerano": 3,
+  "costoMatriculaVerano": 198,
+  "costoProgramaSaludEstudiantil": 45,
+  "metodosPago": {
+    "sin_descuento": {
+      "nombre": "Sin descuento",
+      "descuentoPorcentaje": 0,
+      "requiereProntoPago": false
     },
-    "Gestión y Humanidades": {
-      "costoMatriculaRegular": 320.00,
-      "costoPorCredito": 115.00,
-      "costoPorHora": 24.00,
-      "costoPorCurso": 0.00,
-      "costoFijoLaboratorio": 40.00,
-      "recargoRepitenciaPorcentaje": 10.0
+    "interbank_scotiabank": {
+      "nombre": "Interbank / Scotiabank — pronto pago",
+      "descuentoPorcentaje": 5,
+      "requiereProntoPago": true
+    },
+    "bcp_bbva": {
+      "nombre": "BCP / BBVA — pronto pago",
+      "descuentoPorcentaje": 2.5,
+      "requiereProntoPago": true
+    }
+  },
+  "disciplinas": {
+    "Ingeniería y Arquitectura": {
+      "costoMatriculaRegular": 398,
+      "costoPorCredito": 0,
+      "costoPorHora": 0,
+      "costoPorCurso": 0,
+      "costoFijoLaboratorio": 0,
+      "recargoRepitenciaPorcentaje": 0,
+      "costoHoraAdicional": 38.81,
+      "rangosPension": [
+        {
+          "minHoras": 1,
+          "maxHoras": 6,
+          "montoCuota": 407.5
+        },
+        {
+          "minHoras": 7,
+          "maxHoras": 11,
+          "montoCuota": 570.5
+        },
+        {
+          "minHoras": 12,
+          "maxHoras": 15,
+          "montoCuota": 725.35
+        },
+        {
+          "minHoras": 16,
+          "maxHoras": 22,
+          "montoCuota": 815
+        }
+      ]
+    },
+    "Gestión, Humanidades y Ciencias de la Salud": {
+      "costoMatriculaRegular": 398,
+      "costoPorCredito": 0,
+      "costoPorHora": 0,
+      "costoPorCurso": 0,
+      "costoFijoLaboratorio": 0,
+      "recargoRepitenciaPorcentaje": 0,
+      "costoHoraAdicional": 36.67,
+      "rangosPension": [
+        {
+          "minHoras": 1,
+          "maxHoras": 6,
+          "montoCuota": 385
+        },
+        {
+          "minHoras": 7,
+          "maxHoras": 11,
+          "montoCuota": 539
+        },
+        {
+          "minHoras": 12,
+          "maxHoras": 15,
+          "montoCuota": 685.3
+        },
+        {
+          "minHoras": 16,
+          "maxHoras": 22,
+          "montoCuota": 770
+        }
+      ]
     }
   },
   "limitesAcademicos": {
     "creditosMinimos": 12,
     "creditosMaximos": 40
-  }
+  },
+  "descuentoPagoUnicoRegular": 7.5
 }
