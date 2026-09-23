@@ -1,0 +1,428 @@
+/* Tarjetas de curso con colores vívidos y alto contraste */
+.curso-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 4.5px solid var(--border-strong);
+  border-radius: var(--r-card);
+  padding: 7px 9px;
+  cursor: grab;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: var(--card-width);
+  min-height: var(--card-min-h);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--tr), box-shadow var(--tr), border-color var(--tr);
+  user-select: none;
+}
+/* Cards en el pozo: full-width, compactas */
+#pozo-cursos .curso-card {
+  width: 100%;
+  min-height: unset;
+  padding: 6px 10px 6px 11px;
+}
+.curso-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.12);
+  border-color: var(--card-border-hov);
+  z-index: 2;
+}
+.curso-card:active { cursor: grabbing; transform: scale(0.98); }
+
+/* Color de acento por tipo vívido */
+.curso-card.obligatorio { border-left-color: var(--card-obl-accent); }
+.curso-card.electivo    { border-left-color: var(--card-ele-accent); }
+
+/* Aprobados / Convalidados: Vívidos y legibles (NO opacos ni en escala de grises) */
+.curso-card.aprobado,
+.curso-card.convalidado {
+  background: var(--card-apr-bg);
+  border: 1px solid var(--card-apr-border);
+  border-left: 4.5px solid var(--card-apr-accent);
+  opacity: 0.95;
+  filter: none;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+  pointer-events: none;
+}
+.curso-card.aprobado .curso-titulo,
+.curso-card.convalidado .curso-titulo {
+  color: var(--card-apr-text);
+  font-weight: 700;
+}
+
+/* Título */
+.curso-titulo {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--t-primary);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Espacio para el info-btn (derecha) */
+  padding-right: 20px;
+  margin-bottom: auto;
+}
+
+/* Marcador de curso sin sucesores (no abre ningún otro curso / no es prerrequisito) */
+.no-hab-mark {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--amber-dark);
+  cursor: help;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  user-select: none;
+  transition: color var(--tr);
+}
+.no-hab-mark:hover {
+  color: var(--amber-primary);
+}
+.curso-card.no-habilita { border-left-color: var(--teal-primary); }
+.curso-card.obligatorio.no-habilita { border-left-color: var(--rose-primary); }
+.curso-card.electivo.no-habilita    { border-left-color: var(--blue-primary); }
+
+/* Tags de subinfo con colores vívidos */
+.curso-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding-top: 5px;
+  margin-top: 5px;
+  padding-right: 32px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ctag {
+  font-size: 0.60rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--chip-bg-default);
+  color: var(--chip-t-default);
+  border: 1px solid var(--border-subtle);
+}
+.ctag.ctag-horas {
+  background: var(--chip-hrs-bg);
+  color: var(--chip-hrs-t);
+  border-color: var(--chip-hrs-border);
+  font-weight: 800;
+}
+.ctag.ctag-creditos {
+  background: var(--chip-crd-bg);
+  color: var(--chip-crd-t);
+  border-color: var(--chip-crd-border);
+  font-weight: 800;
+}
+.ctag.obl { 
+  background: var(--chip-obl-bg); 
+  color: var(--chip-obl-t); 
+  border-color: var(--chip-obl-border); 
+}
+.ctag.ele { 
+  background: var(--chip-ele-bg); 
+  color: var(--chip-ele-t); 
+  border-color: var(--chip-ele-border); 
+}
+.ctag.ctag-aprobado { 
+  background: var(--chip-apr-bg); 
+  color: var(--chip-apr-t); 
+  border-color: var(--chip-apr-border); 
+  font-weight: 800; 
+}
+
+/* ── Placeholders de Casillas Vacías (Ciclos 1 al 12) ────────── */
+.ciclo-placeholders-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding: 3px 0;
+  align-items: center;
+}
+
+.curso-card-placeholder {
+  width: var(--card-width);
+  min-height: var(--card-min-h);
+  border: 1.5px dashed var(--placeholder-border);
+  background: var(--placeholder-bg);
+  border-radius: var(--r-card);
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+  transition: all var(--tr);
+}
+
+.tier-dropzone:hover .curso-card-placeholder,
+.tier-dropzone.dropzone-over .curso-card-placeholder {
+  border-color: var(--placeholder-hover-border);
+  background: var(--placeholder-hover-bg);
+}
+
+.placeholder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.placeholder-pill {
+  font-size: 0.60rem;
+  font-weight: 800;
+  color: var(--t-secondary);
+  background: var(--border-subtle);
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.placeholder-add-icon {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--border-strong);
+  line-height: 1;
+}
+
+.placeholder-title {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--t-dim);
+  margin-top: 3px;
+}
+
+.placeholder-hint {
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: var(--t-muted);
+}
+
+/* Icono info y acciones de card */
+.curso-card-actions {
+  position: absolute;
+  bottom: 4px;
+  right: 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 6;
+}
+.curso-card-actions .btn-info-flotante {
+  position: static;
+  top: auto;
+  right: auto;
+  font-size: 0.72rem;
+  padding: 1px;
+}
+.btn-info-flotante {
+  color: var(--t-dim);
+  cursor: help;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: color var(--tr);
+}
+.btn-info-flotante:hover { color: var(--accent); }
+
+/* Botón rápido para desasignar card */
+.curso-card-quitar-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--t-secondary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 6;
+  opacity: 0.55;
+  transition: all var(--tr);
+  padding: 0;
+  line-height: 1;
+}
+.curso-card-quitar-btn:hover {
+  opacity: 1;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--t-white);
+}
+
+/* ── Modo Selección Táctil Two-Tap (de dev) ─────────────────────── */
+.curso-card.seleccionado-mover {
+  outline: 2.5px solid var(--amber-primary) !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.22), var(--shadow-card) !important;
+  z-index: 20;
+  animation: pulseMover 1.5s ease-in-out infinite alternate;
+}
+@keyframes pulseMover {
+  from { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18); }
+  to { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.36); }
+}
+
+.badge-moviendo {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: var(--amber-primary);
+  color: var(--t-white);
+  font-size: 0.62rem;
+  font-weight: 800;
+  border-radius: 3px;
+  padding: 1px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+/* Botón destino en ciclos: Mover aquí */
+.tap-move-target {
+  min-height: 38px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1.5px dashed var(--amber-hover);
+  border-radius: 6px;
+  background: var(--amber-subtle);
+  color: var(--amber-dark);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--tr);
+  animation: fadeIn 0.15s ease-out;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.tap-move-target:hover,
+.tap-move-target:active {
+  background: var(--amber-border);
+  border-color: var(--amber-dark);
+  color: var(--amber-darker);
+  transform: scale(0.98);
+}
+.tap-move-target.aside-tap-target {
+  width: 100%;
+  margin: 6px 0;
+  background: var(--rose-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Barra flotante inferior cuando un curso está activo para mover */
+.tap-move-floating-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: var(--bg-dark-1);
+  color: var(--t-white);
+  padding: 8px 16px;
+  border-radius: 30px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  animation: slideUpFloat 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+@keyframes slideUpFloat {
+  from { transform: translate(-50%, 20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.tap-move-floating-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.tap-move-floating-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  background: var(--amber-primary);
+  color: var(--t-white);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.tap-move-floating-name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--t-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+.tap-move-cancel-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--tr);
+}
+.tap-move-cancel-btn:hover {
+  background: rgba(239, 35, 60, 0.8);
+  color: var(--t-white);
+}
+
+/* Badge y estado de prerrequisito roto */
+.badge-prereq-roto {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  background: var(--amber-primary);
+  color: var(--t-white);
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 7;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.curso-card.prereq-warning-card {
+  border-left-color: var(--amber-primary) !important;
+  box-shadow: 0 0 0 1.5px rgba(245, 158, 11, 0.45), var(--shadow-card) !important;
+  background: var(--amber-tint) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   DRAG & DROP FEEDBACK
+   ═══════════════════════════════════════════════════════════════════ */
+.sortable-ghost {
+  opacity: 0.4;
+  background: var(--bg-aside) !important;
+  border: 1px dashed var(--c-details) !important;
+}
+.sortable-chosen {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15) !important;
+  transform: scale(1.02);
+}

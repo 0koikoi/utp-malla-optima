@@ -1,0 +1,263 @@
+/* ── Panel Planificador ─────────────────────────────────────────── */
+#panel-planificador {
+  flex: 1;
+  padding: 18px 18px 48px;
+  overflow-y: auto;
+  min-width: 0;
+}
+#panel-planificador::-webkit-scrollbar { width: 4px; }
+#panel-planificador::-webkit-scrollbar-track { background: transparent; }
+#panel-planificador::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+}
+
+.planner-section-title {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.planner-section-title i { color: var(--accent); }
+.planner-section-title.summer i { color: var(--amber); }
+.title-note {
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: var(--t-light);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#contenedor-verano-master { margin-top: 24px; }
+
+/* Filas de ciclos (Regulares y Verano) con alto contraste */
+.tier-row {
+  display: flex;
+  min-height: 110px;
+  margin-bottom: 9px;
+  background: var(--bg-surface);
+  border-radius: var(--r-card);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--tr), border-color var(--tr);
+}
+.tier-row:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+/* Etiqueta lateral del ciclo con acento visual vívido */
+.tier-label {
+  width: 88px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  background: var(--tier-bg-regular);
+  text-align: center;
+  gap: 2px;
+  border-right: 1.5px solid var(--border-subtle);
+  border-left: 4px solid var(--tier-accent-regular);
+  transition: background var(--tr), color var(--tr), border-color var(--tr);
+}
+.tier-num {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  line-height: 1;
+}
+.tier-name {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.tier-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  margin-top: 2px;
+}
+.stat-chip {
+  font-size: 0.60rem;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: var(--chip-bg-default);
+  color: var(--chip-t-default);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.stat-chip.stat-horas {
+  background: var(--chip-hrs-bg);
+  color: var(--chip-hrs-t);
+  border-color: var(--chip-hrs-border);
+  font-weight: 800;
+}
+.ciclo-costo-val {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  margin-top: 1px;
+}
+.ciclo-mat {
+  font-size: 0.56rem;
+  font-weight: 600;
+  color: var(--t-muted);
+  display: block;
+}
+
+/* Peligro — exceso de horas */
+.tier-label.peligro {
+  background: var(--tier-bg-peligro);
+  border-left: 4px solid var(--tier-accent-peligro);
+  border-right: 1.5px solid var(--accent-border);
+}
+.tier-label.peligro .tier-num { color: var(--accent); }
+.tier-label.peligro .tier-name { color: var(--accent-hov); }
+.tier-label.peligro::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  animation: blink-bar 1.4s ease-in-out infinite;
+}
+@keyframes blink-bar { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+/* Estados de ciclo por avance */
+.tier-label.ciclo-aprobado {
+  background: var(--tier-bg-locked);
+  border-left: 4px solid var(--tier-accent-locked);
+  border-right: 1.5px solid var(--emerald-border);
+}
+.tier-label.ciclo-aprobado .tier-num { color: var(--tier-text-locked); opacity: 1; }
+.tier-label.ciclo-aprobado .tier-name { color: var(--card-apr-text); }
+
+.tier-label.ciclo-adelantado {
+  background: var(--tier-bg-advanced);
+  border-left: 4px solid var(--tier-accent-advanced);
+  border-right: 1.5px solid var(--purple-border);
+}
+.tier-label.ciclo-adelantado .tier-num { color: var(--purple-hover); opacity: 1; }
+.tier-label.ciclo-adelantado .tier-name { color: var(--purple-primary); }
+.tier-label.ciclo-adelantado .stat-chip { background: var(--purple-subtle); color: var(--purple-primary); border-color: var(--purple-border); }
+.tier-label.ciclo-adelantado .stat-chip.stat-horas { color: var(--purple-primary); }
+
+/* Ciclo concluido / Histórico */
+.tier-label.locked {
+  background: var(--tier-bg-locked);
+  border-left: 4px solid var(--tier-accent-locked);
+  border-right: 1.5px solid var(--emerald-border);
+}
+.tier-label.locked .tier-num {
+  color: var(--tier-text-locked);
+  opacity: 1;
+}
+.tier-label.locked .tier-name {
+  color: var(--card-apr-text);
+}
+.tier-dropzone.locked {
+  background: rgba(240, 253, 244, 0.4);
+}
+.stat-chip.stat-concluido {
+  background: var(--chip-apr-bg);
+  color: var(--chip-apr-t);
+  border: 1px solid var(--chip-apr-border);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ciclo-costo-val.historico .hist-lbl {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--tier-text-locked);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ciclo-mat.sin-cursos {
+  color: var(--t-muted);
+  font-style: italic;
+}
+
+/* Verano */
+.tier-row[data-tipo="verano"] .tier-label {
+  background: var(--tier-bg-verano);
+  border-left: 4px solid var(--tier-accent-verano);
+  border-right: 1.5px solid var(--amber-border);
+  padding: 6px 4px;
+  gap: 1px;
+}
+.tier-row[data-tipo="verano"] .tier-num {
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--tier-text-verano);
+}
+.tier-row[data-tipo="verano"] .tier-name {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--amber-dark);
+  letter-spacing: 0.2px;
+}
+
+.verano-tras-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 1px 0 2px;
+}
+
+.verano-tras-select {
+  width: auto;
+  max-width: 74px;
+  height: 20px;
+  line-height: 18px;
+  font-size: 0.60rem;
+  font-weight: 800;
+  background: var(--bg-surface);
+  border: 1px solid var(--amber-border);
+  color: var(--amber-darker);
+  border-radius: 10px;
+  padding: 0 4px;
+  cursor: pointer;
+  outline: none;
+  text-align: center;
+  transition: all var(--tr);
+}
+.verano-tras-select:hover,
+.verano-tras-select:focus {
+  background: var(--amber-subtle);
+  border-color: var(--amber-dark);
+}
+
+/* Zona drop — en ciclos: horizontal wrap */
+.tier-dropzone {
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-content: flex-start;
+  min-height: 108px;
+}
+/* El pozo es la excepción: vertical */
+#pozo-cursos.tier-dropzone {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 3px;
+  padding: 4px 8px 16px;
+}

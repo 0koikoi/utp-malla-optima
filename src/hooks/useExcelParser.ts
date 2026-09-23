@@ -5,7 +5,6 @@
 import { useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { useMallaStore } from '@/store/mallaStore';
-import { saveMalla } from '@/utils/mallaStorage';
 import type { Curso, EstadoCurso, TipoCurso } from '@/types/malla';
 
 export function useExcelParser() {
@@ -22,10 +21,7 @@ export function useExcelParser() {
       );
       const cursos = procesarJson(json);
 
-      // 1. Persistir en localStorage (slot único)
-      saveMalla(cursos, file.name);
-
-      // 2. Actualizar el store (actualiza asignaciones iniciales)
+      // 1. Actualizar el store (actualiza asignaciones iniciales)
       setCursos(cursos, file.name);
     };
     reader.readAsArrayBuffer(file);
@@ -44,14 +40,16 @@ function procesarJson(datos: Record<string, unknown>[]): Record<string, Curso> {
     const codigoRaw = String(fila['Código Curso'] ?? '').trim();
     if (!codigoRaw) continue;
 
-    // Detectar cabecera de ciclo (ej: "CICLO 1")
-    if (codigoRaw.toLowerCase().includes('ciclo')) {
-      const num = codigoRaw.match(/\d+/);
-      if (num) cicloActual = parseInt(num[0]);
+    // Detectar cabecera de ciclo o nivelación (ej: "CICLO 1" o "NIVELACIÓN")
+    if (!fila['Nombre Curso']) {
+      if (codigoRaw.toLowerCase().includes('ciclo') || codigoRaw.toLowerCase().includes('nivelaci')) {
+        const num = codigoRaw.match(/\d+/);
+        if (num) {
+          cicloActual = parseInt(num[0], 10);
+        }
+      }
       continue;
     }
-
-    if (!fila['Nombre Curso'] || codigoRaw.toLowerCase().includes('nivelación')) continue;
 
     const estado = String(fila['Estado(***)'] ?? 'PENDIENTE').trim().toUpperCase() as EstadoCurso;
     const tipoBruto = String(fila['Tipo'] ?? 'O').trim().toUpperCase() as TipoCurso;

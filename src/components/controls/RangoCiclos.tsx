@@ -1,23 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
+import { CalendarRange } from 'lucide-react';
 
 function clamp(val: number, min: number, max: number) {
   return Math.min(max, Math.max(min, val));
 }
 
-export function RangoCiclos() {
-  const { cicloInicio, cicloFin, setCicloInicio, setCicloFin } = useMallaStore();
+interface RangoCiclosProps {
+  idPrefix?: string;
+}
+
+export function RangoCiclos({ idPrefix = '' }: RangoCiclosProps) {
+  const { cursos, cicloInicio, cicloFin, setCicloInicio, setCicloFin } = useMallaStore();
+
+  const inicioId = `${idPrefix}sim-inicio`;
+  const finId = `${idPrefix}sim-fin`;
+
+  const maxCicloMalla = Object.values(cursos).length > 0 
+    ? Math.max(...Object.values(cursos).map(c => c.cicloOrigen))
+    : 12;
+  
+  // Mantenemos un mínimo absoluto de 12 para planes regulares y largos
+  const maxAllowable = Math.max(12, maxCicloMalla);
 
   const [valInicio, setValInicio] = useState(String(cicloInicio));
   const [valFin, setValFin] = useState(String(cicloFin));
+  const [prevInicio, setPrevInicio] = useState(cicloInicio);
+  const [prevFin, setPrevFin] = useState(cicloFin);
 
-  useEffect(() => {
+  if (cicloInicio !== prevInicio) {
+    setPrevInicio(cicloInicio);
     setValInicio(String(cicloInicio));
-  }, [cicloInicio]);
-
-  useEffect(() => {
+  }
+  if (cicloFin !== prevFin) {
+    setPrevFin(cicloFin);
     setValFin(String(cicloFin));
-  }, [cicloFin]);
+  }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     // Bloquear signos negativos, positivos, decimales y notación exponencial
@@ -33,31 +51,24 @@ export function RangoCiclos() {
       return;
     }
     const num = parseInt(raw, 10);
-    if (isNaN(num)) return;
-
-    const clamped = clamp(num, 1, 12);
-    setValInicio(String(clamped));
-    setCicloInicio(clamped);
-    if (clamped > cicloFin) {
-      setCicloFin(clamped);
-      setValFin(String(clamped));
+    if (!isNaN(num)) {
+      setValInicio(String(num));
     }
   }
 
   function handleInicioBlur() {
-    if (valInicio === '' || isNaN(parseInt(valInicio, 10))) {
-      const fallback = clamp(cicloInicio || 1, 1, 12);
-      setValInicio(String(fallback));
-      setCicloInicio(fallback);
-    } else {
-      const num = parseInt(valInicio, 10);
-      const clamped = clamp(num, 1, 12);
-      setValInicio(String(clamped));
-      setCicloInicio(clamped);
-      if (clamped > cicloFin) {
-        setCicloFin(clamped);
-        setValFin(String(clamped));
-      }
+    let num = parseInt(valInicio, 10);
+    if (isNaN(num)) {
+      num = cicloInicio;
+    }
+    const clamped = clamp(num, 1, maxAllowable);
+    setValInicio(String(clamped));
+    setCicloInicio(clamped);
+
+    // Ajuste automático si inicio supera fin
+    if (clamped > cicloFin) {
+      setCicloFin(clamped);
+      setValFin(String(clamped));
     }
   }
 
@@ -68,64 +79,65 @@ export function RangoCiclos() {
       return;
     }
     const num = parseInt(raw, 10);
-    if (isNaN(num)) return;
+    if (!isNaN(num)) {
+      setValFin(String(num));
+    }
+  }
 
-    const clamped = clamp(num, 1, 12);
+  function handleFinBlur() {
+    let num = parseInt(valFin, 10);
+    if (isNaN(num)) {
+      num = cicloFin;
+    }
+    const clamped = clamp(num, 1, maxAllowable);
     setValFin(String(clamped));
     setCicloFin(clamped);
+
+    // Ajuste automático si fin es menor que inicio
     if (clamped < cicloInicio) {
       setCicloInicio(clamped);
       setValInicio(String(clamped));
     }
   }
 
-  function handleFinBlur() {
-    if (valFin === '' || isNaN(parseInt(valFin, 10))) {
-      const fallback = clamp(cicloFin || 12, cicloInicio, 12);
-      setValFin(String(fallback));
-      setCicloFin(fallback);
-    } else {
-      const num = parseInt(valFin, 10);
-      const clamped = clamp(num, 1, 12);
-      const finalFin = clamped < cicloInicio ? cicloInicio : clamped;
-      setValFin(String(finalFin));
-      setCicloFin(finalFin);
-    }
-  }
-
   return (
     <div className="nav-group">
       <span className="nav-group-label">
-        <i className="fas fa-calendar-alt" /> Ciclos (Regular)
+        <CalendarRange size={12} className="inline-icon" /> Ciclos (Regular)
       </span>
       <div className="nav-group-body ciclo-inputs">
-        <span className="lbl">Del</span>
+        <label htmlFor={inicioId} className="lbl">Del</label>
         <input
           type="number"
           className="ciclo-num"
-          id="sim-inicio"
+          id={inicioId}
+          aria-label="Ciclo de inicio"
           value={valInicio}
           min={1}
-          max={12}
-          title="Ciclo de inicio (1 a 12)"
+          max={maxAllowable}
+          title={`Ciclo de inicio (1 a ${maxAllowable})`}
           onKeyDown={handleKeyDown}
           onChange={handleInicioChange}
           onBlur={handleInicioBlur}
         />
-        <span className="sep">—</span>
+        <span className="sep" aria-hidden="true">—</span>
+        <label htmlFor={finId} className="visually-hidden" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+          Ciclo de fin
+        </label>
         <input
           type="number"
           className="ciclo-num"
-          id="sim-fin"
+          id={finId}
+          aria-label="Ciclo de fin"
           value={valFin}
           min={1}
-          max={12}
-          title="Ciclo de fin (1 a 12)"
+          max={maxAllowable}
+          title={`Ciclo de fin (1 a ${maxAllowable})`}
           onKeyDown={handleKeyDown}
           onChange={handleFinChange}
           onBlur={handleFinBlur}
         />
-        <span className="lbl">de 12</span>
+        <span className="lbl">de {maxAllowable}</span>
       </div>
     </div>
   );

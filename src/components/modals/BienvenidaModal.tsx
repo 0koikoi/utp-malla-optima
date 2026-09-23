@@ -1,18 +1,9 @@
-// Modal de bienvenida — controlado con estado de React puro
-// Se muestra al primer uso a menos que se haya marcado "No mostrar de nuevo"
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
+import { Layers } from 'lucide-react';
 
 export function BienvenidaModal() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => !localStorage.getItem('malla_modal_visto'));
   const checkRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const visto = localStorage.getItem('malla_modal_visto');
-    if (!visto) {
-      setIsOpen(true);
-    }
-  }, []);
 
   function handleEntendido() {
     if (checkRef.current?.checked) {
@@ -45,7 +36,7 @@ export function BienvenidaModal() {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="mw-head">
-              <i className="fas fa-layer-group" style={{ color: '#E8002D' }} />
+              <Layers size={18} style={{ color: '#E8002D', marginRight: '6px' }} />
               <span className="mw-head-title" id="modal-title">Malla Óptima</span>
               <span className="mw-badge">UTP</span>
             </div>
@@ -66,7 +57,12 @@ export function BienvenidaModal() {
             </div>
             <div className="mw-foot">
               <div className="mw-check-wrap">
-                <input ref={checkRef} type="checkbox" id="chk-no-mostrar" />
+                <input
+                  ref={checkRef}
+                  type="checkbox"
+                  id="chk-no-mostrar"
+                  aria-label="No mostrar de nuevo esta ventana"
+                />
                 <label htmlFor="chk-no-mostrar">No mostrar de nuevo</label>
               </div>
               <button
