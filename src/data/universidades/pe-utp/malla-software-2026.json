@@ -17,7 +17,8 @@
       "esLaboratorio": false,
       "estado": "APROBADO",
       "cicloOrigen": 1,
-      "ubicacion": "ciclo"
+      "ubicacion": "periodo",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "100000I02N",
@@ -30,7 +31,8 @@
       "esLaboratorio": false,
       "estado": "CONVALIDADO",
       "cicloOrigen": 1,
-      "ubicacion": "ciclo"
+      "ubicacion": "periodo",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "SI0601",
@@ -46,7 +48,8 @@
       "esLaboratorio": true,
       "estado": "EN_CURSO",
       "cicloOrigen": 6,
-      "ubicacion": "ciclo"
+      "ubicacion": "periodo",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "SI0602",
@@ -61,7 +64,8 @@
       "esLaboratorio": false,
       "estado": "EN_CURSO",
       "cicloOrigen": 6,
-      "ubicacion": "ciclo"
+      "ubicacion": "periodo",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "SI0701",
@@ -76,7 +80,8 @@
       "esLaboratorio": true,
       "estado": "EN_CURSO",
       "cicloOrigen": 7,
-      "ubicacion": "ciclo"
+      "ubicacion": "periodo",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "SI0702",
@@ -91,7 +96,8 @@
       "esLaboratorio": false,
       "estado": "PENDIENTE",
       "cicloOrigen": 7,
-      "ubicacion": "banco"
+      "ubicacion": "banco",
+      "tipoPeriodo": "REGULAR"
     },
     {
       "codigo": "SI0801",
@@ -106,7 +112,8 @@
       "esLaboratorio": false,
       "estado": "PENDIENTE",
       "cicloOrigen": 8,
-      "ubicacion": "banco"
+      "ubicacion": "banco",
+      "tipoPeriodo": "REGULAR"
     }
   ]
 }

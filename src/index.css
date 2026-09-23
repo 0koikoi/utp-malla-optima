@@ -263,6 +263,9 @@ button { color: inherit; }
 .tier-label.ciclo-adelantado { background: var(--advanced); }
 .tier-label.ciclo-adelantado * { color: #fff; }
 .tier-label.ciclo-adelantado .stat-chip { background: rgba(255,255,255,.14); }
+.tier-label.ciclo-actual { background: var(--advanced); box-shadow: inset 4px 0 0 #f59e0b; }
+.tier-label.ciclo-actual * { color: #fff; }
+.tier-label.ciclo-actual .stat-chip { background: rgba(255,255,255,.14); }
 .tier-dropzone {
   min-width: 0;
   flex: 1;
@@ -410,7 +413,7 @@ button { color: inherit; }
 .file-upload-error { margin-top: 8px; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-left: 3px solid var(--accent); background: #fff0f2; color: #b51f35; font-size: .66rem; text-align: left; }
 
 /* Modal upload */
-.upload-modal-backdrop, .drawer-backdrop { position: fixed; inset: 0; z-index: 3000; background: rgba(22,24,42,.52); backdrop-filter: blur(2px); }
+.upload-modal-backdrop, .drawer-backdrop { position: fixed; inset: 0; z-index: 3000; background: rgba(22,24,42,.52); backdrop-filter: none; }
 .upload-modal { width: min(600px, calc(100vw - 30px)); position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 3010; padding: 20px; border-radius: 7px; background: #fff; box-shadow: var(--shadow-pop); }
 .upload-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 5px; }
 .upload-modal-head span { color: var(--accent); font-size: .58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; }
@@ -421,8 +424,8 @@ button { color: inherit; }
 /* Drawer financiero */
 .drawer-backdrop { z-index: 3990; border: 0; }
 .budget-drawer {
-  width: 380px;
-  max-width: 92vw;
+  width: 520px;
+  max-width: 95vw;
   height: 100vh;
   position: fixed;
   top: 0;
@@ -790,4 +793,327 @@ button { color: inherit; }
     transform: translateX(101%);
   }
   .planning-drawer.open { transform: translateX(0); }
+}
+
+/* Periodos académicos y verano */
+.tier-row.summer-row {
+  min-height: 92px;
+  margin-top: -3px;
+  margin-bottom: 11px;
+  border-color: rgba(245, 158, 11, .16);
+  background: linear-gradient(90deg, rgba(255, 247, 237, .8), #fff 18%);
+}
+.tier-row.summer-row .tier-dropzone { min-height: 92px; }
+.tier-row.summer-row .tier-empty { min-height: 74px; border-color: rgba(245, 158, 11, .22); color: #b78332; }
+.tier-label.summer-label { background: #fff0d4; }
+.tier-label.summer-label .tier-name { color: #9a6700; }
+.tier-label.summer-label .stat-chip { background: rgba(180, 112, 0, .08); }
+.summer-icon { color: #d88700; margin-bottom: 2px; }
+.summer-limit { color: #9a6700; }
+.tier-row.period-past { opacity: .68; }
+.tier-row.period-past .tier-dropzone { background: repeating-linear-gradient(135deg, rgba(148,163,184,.035), rgba(148,163,184,.035) 8px, transparent 8px, transparent 16px); }
+.tier-row.period-past .tier-empty { color: #9aa3b0; border-color: #e4e7eb; }
+.tier-row.period-past.is-over { border-color: transparent; box-shadow: var(--shadow-card); }
+.tier-row.period-current { border-color: rgba(245,158,11,.26); }
+.tier-row.period-current .tier-dropzone { background: rgba(245,158,11,.025); }
+.tier-row.period-current.is-over { border-color: rgba(245,158,11,.26); box-shadow: var(--shadow-card); }
+.curso-card.curso-verano { box-shadow: 0 0 0 1px rgba(245,158,11,.12), var(--shadow-card); }
+.ctag.ctag-verano { color: #9a6700; background: #fff2d8; }
+
+@media (max-width: 768px) {
+  .tier-row.summer-row { min-height: 96px; }
+  .tier-row.summer-row .tier-dropzone { min-height: 96px; }
+}
+
+/* Controles financieros UTP 2026 */
+.budget-select-control { display: flex; align-items: center; gap: 6px; width: 100%; color: #cfd4df; }
+.budget-select-control select {
+  width: 100%; min-width: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 7px;
+  background: rgba(255,255,255,.06); color: #f2f3f8; padding: 7px 9px; font-size: .66rem;
+}
+.budget-select-control option { color: #202238; background: #fff; }
+.budget-config-note { display: block; margin-top: 6px; color: rgba(255,255,255,.43); font-size: .56rem; line-height: 1.45; }
+.budget-summary > small.budget-config-note { margin-top: 2px; }
+
+/* Financial planner */
+.financial-scroll-panel {
+  overflow-y: auto;
+  flex: 1;
+  max-height: 65vh;
+  padding: 8px 2px;
+}
+.period-financial-card {
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.period-financial-card h3 { margin-top:0; }
+.period-financial-card ul { padding-left:18px; }
+.financial-total-card {
+  position: sticky;
+  bottom: 0;
+  padding: 16px;
+  font-weight: 800;
+  border-radius: 12px;
+}
+
+
+/* Refinamiento visual del planificador financiero */
+.budget-drawer {
+  width: 560px;
+  max-width: 95vw;
+  background: #242744;
+}
+
+.budget-drawer-head {
+  padding-bottom: 16px;
+}
+
+.budget-drawer-head h2 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.budget-control-block {
+  padding: 14px 0;
+}
+
+.budget-control-block > label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,.42);
+  font-size: .74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.budget-config-note {
+  margin-top: 8px;
+  color: rgba(255,255,255,.42);
+  font-size: .72rem;
+  line-height: 1.5;
+}
+
+.budget-select-control select,
+.budget-control-block .discipline-control select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  color: #f2f3f8;
+  padding: 8px 10px;
+  font-size: .9rem;
+}
+
+.financial-scroll-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 2px 12px;
+}
+
+.period-financial-card {
+  padding: 18px 16px;
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 14px;
+  background: rgba(36, 39, 68, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.period-financial-card.summer {
+  border-color: rgba(255,255,255,.06);
+}
+
+.period-financial-card.single-payment-active {
+  border-color: rgba(110, 212, 136, .32);
+  background: linear-gradient(180deg, rgba(44, 72, 62, .18) 0%, rgba(36,39,68,.95) 100%);
+}
+
+.period-financial-card h3 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.period-course-names {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.period-course-name {
+  padding-left: 18px;
+  color: #ffffff;
+  font-size: .98rem;
+  line-height: 1.35;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.period-course-name::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: .62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.5);
+}
+
+.period-financial-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.period-financial-lines p {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.period-financial-lines p span {
+  font-weight: 400;
+}
+
+.period-discount-line {
+  color: #b9f1c0 !important;
+}
+
+.period-total-line {
+  margin-top: 2px !important;
+  font-size: 1.08rem !important;
+  font-weight: 700;
+}
+
+.period-total-line span {
+  font-weight: 700 !important;
+}
+
+.period-card-actions.simple {
+  margin-top: 14px;
+}
+
+.single-payment-btn {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  color: #ffffff;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.single-payment-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,.1);
+}
+
+.single-payment-btn.active {
+  background: rgba(88, 180, 112, .18);
+  border-color: rgba(110, 212, 136, .38);
+  color: #effff1;
+}
+
+.single-payment-btn:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.financial-total-card {
+  position: sticky;
+  bottom: 0;
+  margin-top: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: #242744;
+}
+
+.financial-total-card span {
+  color: #ffffff;
+  font-size: .95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.financial-total-card strong {
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .budget-drawer {
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .financial-total-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
+.stat-chip.stat-price { color: #16a34a; font-weight: 850; background: rgba(34,197,94,.12); }
+.tier-label.ciclo-aprobado .stat-chip.stat-price, .tier-label.ciclo-adelantado .stat-chip.stat-price, .tier-label.ciclo-actual .stat-chip.stat-price, .tier-label.summer-label .stat-chip.stat-price { background: rgba(255,255,255,.16); color: inherit; }
+
+.budget-title-trigger { background:none; border:0; color:inherit; font-size:inherit; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; padding:0; }
+.planning-drawer { position:fixed; left:0; top:0; height:100vh; width:420px; transform:translateX(-105%); transition:.25s; background:#242744; z-index:1001; padding:20px; overflow:auto; }
+.planning-drawer.open { transform:translateX(0); box-shadow:10px 0 30px #0004; }
+.planning-generate-btn { width:100%; padding:12px; margin-top:15px; cursor:pointer; }
+
+/* Panel automatico: fijo a la izquierda sin afectar el contenido principal */
+.planning-drawer {
+  position: fixed !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 0 !important;
+  height: 100vh !important;
+  width: 420px !important;
+  transform: translateX(-110%);
+  background: #242744;
+  z-index: 4001;
+  overflow-y: auto;
+  transition: transform .25s ease;
+  box-shadow: 12px 0 35px rgba(0,0,0,.25);
+}
+.planning-drawer.open {
+  transform: translateX(0);
+}
+.drawer-backdrop {
+  backdrop-filter: none !important;
+  background: rgba(22,24,42,.35) !important;
+}
+
+.add-cycle-btn {
+  margin: 18px auto;
+  display: block;
+  color: #000;
+  background: transparent;
+  border: 1px dashed #666;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.add-cycle-btn:hover {
+  color: #000;
 }

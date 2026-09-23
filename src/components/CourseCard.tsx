@@ -63,6 +63,7 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
     curso.estado === 'PENDIENTE' && !desbloqueado ? 'con-prerrequisitos' : '',
     estaSeleccionado ? 'seleccionado-presupuesto' : '',
     esSeleccionMovil ? 'seleccionado-mover' : '',
+    curso.tipoPeriodo === 'VERANO' && curso.ubicacion === 'periodo' ? 'curso-verano' : '',
     compacto ? 'compacto' : '',
   ]
     .filter(Boolean)
@@ -112,7 +113,10 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
         <div className="curso-titulo">{curso.nombre}</div>
 
         <div className="curso-tags">
-          <span className="ctag">C{curso.cicloOrigen}</span>
+          <span className="ctag">Origen C{curso.cicloOrigen}</span>
+          {curso.tipoPeriodo === 'VERANO' && curso.ubicacion === 'periodo' && (
+            <span className="ctag ctag-verano">Verano {curso.ciclo}</span>
+          )}
           <span className="ctag ctag-horas">{curso.horasSemanales}h</span>
           <span className="ctag">{curso.creditos} cr</span>
           <span className={`ctag ${curso.tipo === 'OBLIGATORIO' ? 'obl' : 'ele'}`}>

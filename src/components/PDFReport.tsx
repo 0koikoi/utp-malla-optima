@@ -1,5 +1,6 @@
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { Curso } from '../types/academic';
+import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 10 },
@@ -18,7 +19,7 @@ const ReportDocument = ({ cursos }: { cursos: Curso[] }) => (
       <View>
         {cursos.map((curso) => (
           <Text key={curso.codigo} style={styles.row}>
-            {curso.ciclo}° ciclo - {curso.nombre} ({curso.creditos} créditos)
+            {obtenerPeriodoCurso(curso).etiqueta} - {curso.nombre} ({curso.creditos} créditos)
           </Text>
         ))}
       </View>
