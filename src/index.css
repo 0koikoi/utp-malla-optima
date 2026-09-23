@@ -330,6 +330,7 @@ button { color: inherit; }
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   color: var(--text-primary);
   font-size: .73rem;
