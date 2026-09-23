@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+// App.tsx — raíz del árbol de componentes con DndContext de @dnd-kit
+import { useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -25,7 +26,6 @@ import type { Curso, UbicacionCurso } from '@/types/malla';
 import { Pointer, X } from 'lucide-react';
 
 export default function App() {
-
   const {
     cursos,
     setDrawerMobOpen,
@@ -109,48 +109,8 @@ export default function App() {
 
       {/* Layout principal */}
       <main id="app-main">
-        <BancoPendientes cursosPendientes={cursosPendientesBanco} />
-
-        <section id="panel-planificador" aria-label="Planificador por ciclos">
-          {cursos.length === 0 ? (
-            <div className="empty-planner">
-              <div className="empty-planner-icon"><GraduationCap size={28} /></div>
-              <span className="planner-section-title">Organizador Curricular Universitario</span>
-              <h1>Proyecta tu malla antes de matricularte</h1>
-              <p>
-                Sube el Excel de avance de plan de estudios. Los cursos aprobados quedarán fijos en su ciclo y los pendientes aparecerán en el banco lateral.
-              </p>
-              <FileUpload onSuccess={() => setMostrarModalCarga(false)} />
-            </div>
-          ) : (
-            <>
-              <div className="planner-heading">
-                <div>
-                  <span className="planner-section-title">Planificación regular</span>
-                  <h1>Malla proyectada</h1>
-                  <p>Arrastra solo cursos pendientes. Los cursos ya llevados están bloqueados.</p>
-                </div>
-                <div className="planner-legend" aria-label="Leyenda">
-                  <span><i className="legend-dot obligatorio" /> Obligatorio</span>
-                  <span><i className="legend-dot electivo" /> Electivo</span>
-                  <span><i className="legend-dot aprobado" /> Aprobado / convalidado</span>
-                </div>
-              </div>
-
-              <div id="malla-container">
-                {ciclos.map((numCiclo) => (
-                  <CicloRow
-                    key={numCiclo}
-                    numCiclo={numCiclo}
-                    cursos={cursos.filter(
-                      (curso) => curso.ubicacion === 'ciclo' && curso.ciclo === numCiclo
-                    )}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </section>
+        <PendientesPanel />
+        <PlannerSection />
       </main>
 
       {/* Drag overlay flotante mientras se arrastra */}
@@ -201,6 +161,4 @@ export default function App() {
       )}
     </DndContext>
   );
-};
-
-export default App;
+}
