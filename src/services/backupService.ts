@@ -63,11 +63,53 @@ export function leerRespaldoJSON(file: File): Promise<RespaldoMalla> {
     reader.onload = (e) => {
       try {
         const contenido = e.target?.result as string;
-        const parsed = JSON.parse(contenido) as RespaldoMalla;
+        const parsed = JSON.parse(contenido);
+
+        // Compatibilidad con formato de respaldo de dev: { cursos: Curso[] }
+        if (Array.isArray(parsed?.cursos)) {
+          const cursosMap: Record<string, Curso> = {};
+          const asignaciones: Record<string, UbicacionCurso> = {};
+          parsed.cursos.forEach((c: any) => {
+            cursosMap[c.codigo] = {
+              codigo: c.codigo,
+              nombre: c.nombre,
+              horas: c.horasSemanales ?? c.horas ?? 0,
+              creditos: c.creditos ?? 0,
+              tipo: c.tipo === 'ELECTIVO' ? 'E' : (c.tipo === 'OBLIGATORIO' ? 'O' : (c.tipo ?? 'O')),
+              estado: c.estado ?? 'PENDIENTE',
+              prerequisitos: c.prerrequisitos ?? c.prerequisitos ?? [],
+              habilitaA: [],
+              cicloOrigen: c.cicloOrigen ?? c.ciclo ?? 1,
+            };
+            if (c.ubicacion === 'banco' || c.ubicacion === 'pozo') {
+              asignaciones[c.codigo] = 'pozo';
+            } else if (c.tipoPeriodo === 'VERANO' || String(c.ubicacion).startsWith('verano-')) {
+              asignaciones[c.codigo] = String(c.ubicacion).startsWith('verano-') ? c.ubicacion : `verano-${c.ciclo}`;
+            } else {
+              asignaciones[c.codigo] = String(c.ubicacion).startsWith('ciclo-') ? c.ubicacion : `ciclo-${c.ciclo}`;
+            }
+          });
+          resolve({
+            version: '1.0',
+            fecha: new Date().toISOString(),
+            nombreArchivoCargado: 'respaldo_academico.json',
+            cursos: cursosMap,
+            asignaciones,
+            facultad: 'ingenieria',
+            descuento: 'ninguno',
+            cicloInicio: 1,
+            cicloFin: 10,
+            veranoActivo: Object.values(asignaciones).some((u) => u.startsWith('verano-')),
+            cantVeranos: 4,
+            veranoUbicaciones: { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 },
+          });
+          return;
+        }
+
         if (!parsed.cursos || !parsed.asignaciones) {
           throw new Error('El archivo no contiene una estructura válida de respaldo de malla.');
         }
-        resolve(parsed);
+        resolve(parsed as RespaldoMalla);
       } catch (err) {
         reject(err instanceof Error ? err : new Error('Error al procesar el archivo JSON'));
       }

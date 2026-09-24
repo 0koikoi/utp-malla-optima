@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Info,
 } from 'lucide-react';
+import { useMallaStore } from '@/store/mallaStore';
+import mallaSoftwareDemo from '@/data/universidades/pe-utp/malla-software-2026.json';
 
 export function Homepage() {
   const { parsearExcel } = useExcelParser();
@@ -40,6 +42,24 @@ export function Homepage() {
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
+  }
+
+  function handleCargarDemo() {
+    const cursosMap: Record<string, any> = {};
+    mallaSoftwareDemo.cursos.forEach((c) => {
+      cursosMap[c.codigo] = {
+        codigo: c.codigo,
+        nombre: c.nombre,
+        horas: c.horasSemanales,
+        creditos: c.creditos,
+        tipo: c.tipo === 'ELECTIVO' ? 'E' : 'O',
+        estado: c.estado,
+        prerequisitos: c.prerrequisitos,
+        habilitaA: [],
+        cicloOrigen: c.cicloOrigen,
+      };
+    });
+    useMallaStore.getState().setCursos(cursosMap, 'Malla_Software_2026_Demo.xlsx');
   }
 
   return (
@@ -107,6 +127,31 @@ export function Homepage() {
               <FileSpreadsheet size={15} className="inline-icon" /> Seleccionar archivo Excel
             </span>
             <span className="upload-note">Soporta formatos oficiales .xlsx y .xls exportados de UTP+</span>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <button
+              type="button"
+              className="demo-load-btn"
+              onClick={handleCargarDemo}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                color: '#e2e8f0',
+                padding: '9px 18px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                transition: '0.15s ease',
+              }}
+            >
+              <Sparkles size={14} style={{ color: '#ef233c' }} />
+              ¿No tienes tu Excel a mano? Probar con Malla Demo (Ing. de Software 2026)
+            </button>
           </div>
 
           {errorMessage && (

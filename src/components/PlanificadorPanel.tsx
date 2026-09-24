@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Calculator, CreditCard, Sparkles, X } from "lucide-react";
 import type { ResultadoPlanificacionAutomatica } from "../domain/services/automaticPlanningService";
 import { useAcademicStore } from "../store/useAcademicStore";
+import { useMallaStore } from "@/store/mallaStore";
 import { DisciplineSelector } from "./DisciplineSelector";
 import { FinancialEngine } from "../financial/engine/FinancialEngine";
 import { Utp2026Rules } from "../financial/rules/utp/Utp2026Rules";
@@ -165,7 +166,19 @@ export const PlanificadorPanel = () => {
           <AlertTriangle size={24}/>
           <h2>Se reemplazará tu planificación</h2>
           <p>Al usar esta herramienta perderás la distribución manual de cursos pendientes. Puedes hacer un respaldo antes de continuar.</p>
-          <button onClick={async () => { setGenerandoAutomatico(true); const r = await generarPlanificacionOptima(); setResultadoAutomatico(r); setConfirmarAutomatico(false); setGenerandoAutomatico(false); }}>{generandoAutomatico ? 'Generando...' : 'Continuar'}</button>
+          <button
+            onClick={async () => {
+              setGenerandoAutomatico(true);
+              const r = await generarPlanificacionOptima();
+              setResultadoAutomatico(r);
+              const cursosActualizados = useAcademicStore.getState().cursos;
+              useMallaStore.getState().aplicarPlanAcademico(cursosActualizados);
+              setConfirmarAutomatico(false);
+              setGenerandoAutomatico(false);
+            }}
+          >
+            {generandoAutomatico ? 'Generando...' : 'Continuar'}
+          </button>
           <button onClick={() => setConfirmarAutomatico(false)}>Cancelar</button>
         </div>
       </div>}

@@ -59,6 +59,7 @@ interface MallaState {
   ejecutarMovimiento: (codigoCurso: string, destino: UbicacionCurso) => boolean;
   resetAsignaciones: () => void;
   autoPlanificar: () => PlanificacionResumen | null;
+  aplicarPlanAcademico: (academicCursos: any[]) => void;
   cargarRespaldo: (respaldo: RespaldoMalla) => void;
 
   setBlockedInfo: (info: { cursoNombre: string; faltantes: { codigo: string; nombre: string }[] } | null) => void;
@@ -276,6 +277,23 @@ export const useMallaStore = create<MallaState>()(
         );
         set({ asignaciones: nuevasAsignaciones, cursosConPrereqRoto: [] });
         return resumen;
+      },
+
+      /** Aplica el plan curricular generado por el motor algorítmico de dev a las asignaciones visuales */
+      aplicarPlanAcademico: (academicCursos) => {
+        const state = get();
+        const nuevasAsignaciones = { ...state.asignaciones };
+        academicCursos.forEach((c) => {
+          if (!state.cursos[c.codigo]) return;
+          if (c.ubicacion === 'banco') {
+            nuevasAsignaciones[c.codigo] = 'pozo';
+          } else if (c.tipoPeriodo === 'VERANO') {
+            nuevasAsignaciones[c.codigo] = `verano-${c.ciclo}`;
+          } else {
+            nuevasAsignaciones[c.codigo] = `ciclo-${c.ciclo}`;
+          }
+        });
+        set({ asignaciones: nuevasAsignaciones, cursosConPrereqRoto: [] });
       },
 
       /** Restaura una copia de seguridad JSON completa */
