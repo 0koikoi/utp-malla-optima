@@ -25,23 +25,42 @@ export const crearPeriodoVerano = (ciclo: number): PeriodoAcademico =>
 export const obtenerPeriodoCurso = (curso: Pick<Curso, 'ciclo' | 'tipoPeriodo'>): PeriodoAcademico =>
   crearPeriodoAcademico(curso.tipoPeriodo ?? 'REGULAR', curso.ciclo || 1);
 
-export const generarSecuenciaPeriodos = (totalCiclos: number): PeriodoAcademico[] => {
+export const generarSecuenciaPeriodos = (
+  totalCiclos: number,
+  periodoIngreso: 'marzo' | 'agosto' = 'marzo'
+): PeriodoAcademico[] => {
   const periodos: PeriodoAcademico[] = [];
   const total = Math.max(1, Math.trunc(totalCiclos));
 
   for (let ciclo = 1; ciclo <= total; ciclo += 1) {
     periodos.push(crearPeriodoRegular(ciclo));
-    // El verano está disponible después de cada ciclo, incluido el último.
-    periodos.push(crearPeriodoVerano(ciclo));
+    // En UTP el ciclo de Verano se cursa en Enero (tras el ciclo de Agosto-Diciembre).
+    // Si el estudiante inicia en marzo: los veranos van tras ciclos pares (2, 4, 6...).
+    // Si el estudiante inicia en agosto: los veranos van tras ciclos impares (1, 3, 5...).
+    const tieneVerano = periodoIngreso === 'marzo' ? ciclo % 2 === 0 : ciclo % 2 !== 0;
+    if (tieneVerano) {
+      periodos.push(crearPeriodoVerano(ciclo));
+    }
   }
 
   return periodos;
 };
 
-export const siguientePeriodo = (periodo: PeriodoAcademico): PeriodoAcademico =>
-  periodo.tipo === 'REGULAR'
+export const siguientePeriodo = (
+  periodo: PeriodoAcademico,
+  periodoIngreso: 'marzo' | 'agosto' = 'marzo'
+): PeriodoAcademico => {
+  if (periodo.tipo === 'VERANO') {
+    return crearPeriodoRegular(periodo.cicloReferencia + 1);
+  }
+  const tieneVerano = periodoIngreso === 'marzo'
+    ? periodo.cicloReferencia % 2 === 0
+    : periodo.cicloReferencia % 2 !== 0;
+
+  return tieneVerano
     ? crearPeriodoVerano(periodo.cicloReferencia)
     : crearPeriodoRegular(periodo.cicloReferencia + 1);
+};
 
 /**
  * Determina el periodo que el estudiante está cursando actualmente.

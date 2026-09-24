@@ -10,6 +10,8 @@ import { calcularCicloActual } from '@/utils/cicloHelper';
 import { generarPlanificacionOptima, type PlanificacionResumen } from '@/services/autoPlannerService';
 import type { RespaldoMalla } from '@/services/backupService';
 
+export type PeriodoIngreso = 'marzo' | 'agosto';
+
 interface MallaState {
   // ── Datos de la malla (del xlsx) ─────────────────────────────────
   cursos: Record<string, Curso>;
@@ -24,10 +26,14 @@ interface MallaState {
   cicloFin: number;
   veranoActivo: boolean;
   cantVeranos: number;
+  periodoIngreso: PeriodoIngreso;
 
   // ── Metadata UI ──────────────────────────────────────────────────
   /** Nombre del archivo xlsx cargado (para mostrarlo en el botón upload) */
   nombreArchivoCargado: string | null;
+
+  /** Controla el modal instructivo y de bienvenida */
+  bienvenidaModalOpen: boolean;
 
   /** Controla el drawer de pendientes en móvil (≤ 640px) */
   drawerMobOpen: boolean;
@@ -71,6 +77,8 @@ interface MallaState {
   setCicloFin: (ciclo: number) => void;
   setVeranoActivo: (activo: boolean) => void;
   setCantVeranos: (cant: number) => void;
+  setPeriodoIngreso: (periodo: PeriodoIngreso) => void;
+  setBienvenidaModalOpen: (open: boolean) => void;
   setDrawerMobOpen: (open: boolean) => void;
   setMenuMobOpen: (open: boolean) => void;
   setConfigSidebarOpen: (open: boolean) => void;
@@ -90,7 +98,9 @@ export const useMallaStore = create<MallaState>()(
       cicloFin: 12,
       veranoActivo: false,
       cantVeranos: 3,
+      periodoIngreso: 'marzo',
       nombreArchivoCargado: null,
+      bienvenidaModalOpen: typeof window !== 'undefined' ? !localStorage.getItem('malla_modal_visto') : true,
       drawerMobOpen: false,
       menuMobOpen: false,
       configSidebarOpen: false,
@@ -307,7 +317,10 @@ export const useMallaStore = create<MallaState>()(
           cicloFin: respaldo.cicloFin,
           veranoActivo: respaldo.veranoActivo,
           cantVeranos: respaldo.cantVeranos,
-          veranoUbicaciones: respaldo.veranoUbicaciones || { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 },
+          periodoIngreso: respaldo.periodoIngreso || 'marzo',
+          veranoUbicaciones: respaldo.veranoUbicaciones || (respaldo.periodoIngreso === 'agosto'
+            ? { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 }
+            : { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 }),
           nombreArchivoCargado: respaldo.nombreArchivoCargado,
           cursosConPrereqRoto: [],
         });
@@ -319,6 +332,22 @@ export const useMallaStore = create<MallaState>()(
       setCicloFin: (ciclo) => set({ cicloFin: Math.min(14, Math.max(1, ciclo)) }),
       setVeranoActivo: (activo) => set({ veranoActivo: activo }),
       setCantVeranos: (cant) => set({ cantVeranos: Math.min(5, Math.max(1, cant)) }),
+      setPeriodoIngreso: (periodo) => {
+        // En UTP: regular 1 = Marzo-Julio, regular 2 = Agosto-Diciembre, verano = Enero-Febrero.
+        // Si inicia en marzo: Verano 1 tras Ciclo 2 (Enero), luego tras 4, 6, 8, 10.
+        // Si inicia en agosto: Verano 1 tras Ciclo 1 (Enero), luego tras 3, 5, 7, 9.
+        const veranoUbicaciones = periodo === 'agosto'
+          ? { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 }
+          : { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 };
+
+        set({ periodoIngreso: periodo, veranoUbicaciones });
+
+        // Recalcular posibles rupturas de prerrequisito con la nueva cronología
+        const state = get();
+        const nuevosRotos = obtenerTodosCursosRotos(state.cursos, state.asignaciones, veranoUbicaciones);
+        set({ cursosConPrereqRoto: nuevosRotos });
+      },
+      setBienvenidaModalOpen: (open) => set({ bienvenidaModalOpen: open }),
       setDrawerMobOpen: (open) => set({ drawerMobOpen: open }),
       setMenuMobOpen: (open) => set({ menuMobOpen: open }),
       setConfigSidebarOpen: (open) => set({ configSidebarOpen: open }),
@@ -342,6 +371,7 @@ export const useMallaStore = create<MallaState>()(
         cicloFin: state.cicloFin,
         veranoActivo: state.veranoActivo,
         cantVeranos: state.cantVeranos,
+        periodoIngreso: state.periodoIngreso,
         veranoUbicaciones: state.veranoUbicaciones,
         nombreArchivoCargado: state.nombreArchivoCargado,
       }),

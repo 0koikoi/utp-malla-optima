@@ -1,56 +1,73 @@
-// PlannerSection — sección de ciclos regulares y de verano
+// PlannerSection — sección de ciclos regulares con ciclos de verano intercalados cronológicamente
 import { useMallaStore } from '@/store/mallaStore';
 import { CicloRow } from './CicloRow';
-import { CalendarCheck, Sun } from 'lucide-react';
+import { CalendarCheck } from 'lucide-react';
 
 export function PlannerSection() {
-  const { cicloInicio, cicloFin } = useMallaStore();
+  const {
+    cicloInicio,
+    cicloFin,
+    veranoActivo,
+    cantVeranos,
+    veranoUbicaciones,
+    periodoIngreso,
+  } = useMallaStore();
 
   const ciclos = [];
   for (let i = cicloInicio; i <= cicloFin; i++) {
     ciclos.push(i);
   }
 
+  // Lista de números de verano activos (1..cantVeranos)
+  const veranosActivos = veranoActivo
+    ? Array.from({ length: cantVeranos }, (_, idx) => idx + 1)
+    : [];
+
+  // Función para determinar tras qué ciclo va cada verano
+  const getTrasCiclo = (v: number) => {
+    if (veranoUbicaciones[v] !== undefined) return veranoUbicaciones[v];
+    return periodoIngreso === 'agosto' ? (v * 2 - 1) : (v * 2);
+  };
+
+  // Rastrear qué veranos ya fueron renderizados intercalados
+  const veranosRenderizados = new Set<number>();
+
   return (
     <section id="panel-planificador" aria-label="Planificador de ciclos">
       <p className="planner-section-title">
         <CalendarCheck size={14} className="inline-icon" />
-        {' '}Planificador — Ciclos Regulares
-        <span className="title-note">Del {cicloInicio} al {cicloFin}</span>
+        {' '}Planificador de Avance Curricular
+        <span className="title-note">
+          Ciclos {cicloInicio} al {cicloFin}
+          {veranoActivo ? ` · Veranos en Enero (${periodoIngreso === 'marzo' ? 'post ciclo par' : 'post ciclo impar'})` : ''}
+        </span>
       </p>
-      <div id="malla-container">
-        {ciclos.map((n) => (
-          <CicloRow key={`ciclo-${n}`} cicloNum={n} tipo="regular" />
-        ))}
-      </div>
 
-      <VeranoSection />
+      <div id="malla-container">
+        {ciclos.map((n) => {
+          // Buscar si algún verano activo se cursa inmediatamente tras este ciclo n
+          const veranosTrasEsteCiclo = veranosActivos.filter((v) => getTrasCiclo(v) === n);
+          veranosTrasEsteCiclo.forEach((v) => veranosRenderizados.add(v));
+
+          return (
+            <div key={`seccion-ciclo-${n}`} className="ciclo-bloque-grupo">
+              <CicloRow cicloNum={n} tipo="regular" />
+
+              {veranosTrasEsteCiclo.map((v) => (
+                <CicloRow key={`verano-${v}`} cicloNum={v} tipo="verano" />
+              ))}
+            </div>
+          );
+        })}
+
+        {/* Si algún verano quedó configurado fuera del rango cicloInicio..cicloFin, mostrarlo al final */}
+        {veranosActivos
+          .filter((v) => !veranosRenderizados.has(v))
+          .map((v) => (
+            <CicloRow key={`verano-extra-${v}`} cicloNum={v} tipo="verano" />
+          ))}
+      </div>
     </section>
   );
 }
 
-function VeranoSection() {
-  const { veranoActivo, cantVeranos } = useMallaStore();
-
-  if (!veranoActivo) return null;
-
-  const veranos = [];
-  for (let v = 1; v <= cantVeranos; v++) {
-    veranos.push(v);
-  }
-
-  return (
-    <div id="contenedor-verano-master" style={{ marginTop: '24px' }}>
-      <p className="planner-section-title summer">
-        <Sun size={14} className="inline-icon" style={{ color: '#F59E0B' }} />
-        {' '}Planificador — Ciclos de Verano
-        <span className="title-note">Máx. 11 créditos por verano</span>
-      </p>
-      <div id="malla-verano-container">
-        {veranos.map((v) => (
-          <CicloRow key={`verano-${v}`} cicloNum={v} tipo="verano" />
-        ))}
-      </div>
-    </div>
-  );
-}

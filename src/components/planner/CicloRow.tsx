@@ -17,6 +17,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
     cursos,
     asignaciones,
     veranoUbicaciones,
+    periodoIngreso,
     setVeranoUbicacion,
     cursoAMover,
     setCursoAMover,
@@ -27,7 +28,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
 
   const cicloId: UbicacionCurso = tipo === 'regular' ? `ciclo-${cicloNum}` : `verano-${cicloNum}`;
   const finanzas = finanzasList.find((f) => f.cicloId === cicloId);
-  const trasCiclo = veranoUbicaciones[cicloNum] ?? (cicloNum * 2);
+  const trasCiclo = veranoUbicaciones[cicloNum] ?? (periodoIngreso === 'agosto' ? (cicloNum * 2 - 1) : (cicloNum * 2));
 
   // Cursos en este ciclo
   const cursosEnCiclo = Object.values(cursos).filter(

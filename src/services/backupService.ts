@@ -23,6 +23,7 @@ export interface RespaldoMalla {
   cicloFin: number;
   veranoActivo: boolean;
   cantVeranos: number;
+  periodoIngreso?: 'marzo' | 'agosto';
   veranoUbicaciones: Record<number, number>;
   cursos: Record<string, Curso>;
   asignaciones: Record<string, UbicacionCurso>;

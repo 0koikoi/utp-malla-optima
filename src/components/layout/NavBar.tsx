@@ -19,6 +19,7 @@ import {
   FileDown,
   Database,
   Calculator,
+  HelpCircle,
 } from 'lucide-react';
 import { useAcademicStore } from '@/store/useAcademicStore';
 
@@ -38,6 +39,7 @@ export function NavBar() {
     autoPlanificar,
     cargarRespaldo,
     setConfigSidebarOpen,
+    setBienvenidaModalOpen,
   } = useMallaStore();
 
   const creditosElectivos = useCreditosElectivos();
@@ -385,6 +387,17 @@ export function NavBar() {
             aria-label="Configuración"
           >
             <Settings2 size={16} />
+          </button>
+
+          {/* Botón de Instructivo y Periodo de Inicio */}
+          <button
+            type="button"
+            className="nav-btn nav-btn-help"
+            onClick={() => setBienvenidaModalOpen(true)}
+            title="Instructivo y Periodo de Inicio (Marzo / Agosto)"
+            aria-label="Instructivo y Periodo de Inicio"
+          >
+            <HelpCircle size={16} />
           </button>
         </div>
 

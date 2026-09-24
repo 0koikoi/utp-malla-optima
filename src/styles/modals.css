@@ -19,6 +19,10 @@
 .tt-hab { color: var(--blue-border); }
 
 /* Modal de bienvenida */
+#modalBienvenida .modal-dialog {
+  max-width: 560px;
+  margin: 1.5rem auto;
+}
 .modal-content {
   border: none !important;
   border-radius: var(--r-modal) !important;
@@ -31,7 +35,28 @@
   border-bottom: none;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+.mw-head-left {
+  display: flex;
+  align-items: center;
   gap: 10px;
+}
+.mw-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--tr), background var(--tr);
+}
+.mw-close-btn:hover {
+  color: var(--t-white);
+  background: rgba(255, 255, 255, 0.1);
 }
 .mw-head-title {
   font-size: var(--fs-md);
@@ -45,6 +70,104 @@
   background: var(--accent);
   color: var(--t-white);
   border-radius: var(--r);
+}
+
+/* Periodo de Inicio (Marzo / Agosto) en Modal Bienvenida */
+.mw-periodo-section {
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-card);
+  padding: 12px 14px;
+}
+.mw-periodo-title {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--t-white);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.mw-periodo-sub {
+  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+.mw-periodo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 520px) {
+  .mw-periodo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.mw-period-card {
+  position: relative;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-card);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all var(--tr);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+.mw-period-card:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+}
+.mw-period-card.active {
+  border-color: #E8002D;
+  background: rgba(232, 0, 45, 0.12);
+  box-shadow: 0 0 12px rgba(232, 0, 45, 0.25);
+}
+.mw-period-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mw-period-name {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--t-white);
+}
+.mw-period-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+.mw-period-card.active .mw-period-tag {
+  background: #E8002D;
+  color: #fff;
+}
+.mw-period-desc {
+  font-size: 0.63rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.35;
+}
+.mw-period-timeline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #FCD34D;
+  margin-top: 3px;
+}
+.mw-period-timeline span {
+  opacity: 0.9;
 }
 .mw-body {
   background: var(--bg-dark-4);
@@ -213,6 +336,61 @@
   height: 1.5px;
   background: var(--border-subtle);
   margin: 4px 0;
+}
+
+/* Periodo selector y hint en ConfigSidebar */
+.periodo-toggle-group {
+  display: flex;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-btn);
+  padding: 3px;
+  gap: 3px;
+}
+.periodo-toggle-btn {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--t-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.periodo-toggle-btn:hover {
+  color: var(--t-primary);
+}
+.periodo-toggle-btn.active {
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.config-hint {
+  font-size: 0.65rem;
+  color: var(--t-muted);
+  line-height: 1.35;
+  font-style: italic;
+}
+.cfg-btn-instructivo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--r-btn);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.cfg-btn-instructivo:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
 }
 
 @keyframes fadeIn {

@@ -193,7 +193,16 @@
   font-style: italic;
 }
 
-/* Verano */
+/* Verano intercalado */
+.tier-row[data-tipo="verano"] {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: var(--amber-tint);
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.08);
+}
+.tier-row[data-tipo="verano"]:hover {
+  border-color: var(--amber-primary);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
 .tier-row[data-tipo="verano"] .tier-label {
   background: var(--tier-bg-verano);
   border-left: 4px solid var(--tier-accent-verano);

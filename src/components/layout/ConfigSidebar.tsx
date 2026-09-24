@@ -5,10 +5,17 @@ import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
 import { PagoDropdown } from '@/components/controls/PagoDropdown';
 import { RangoCiclos } from '@/components/controls/RangoCiclos';
 import { VeranoToggle } from '@/components/controls/VeranoToggle';
-import { FileSpreadsheet, Upload, X } from 'lucide-react';
+import { FileSpreadsheet, Upload, X, Calendar, HelpCircle } from 'lucide-react';
 
 export function ConfigSidebar() {
-  const { configSidebarOpen, setConfigSidebarOpen, nombreArchivoCargado } = useMallaStore();
+  const {
+    configSidebarOpen,
+    setConfigSidebarOpen,
+    nombreArchivoCargado,
+    periodoIngreso,
+    setPeriodoIngreso,
+    setBienvenidaModalOpen,
+  } = useMallaStore();
   const { parsearExcel } = useExcelParser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,6 +71,36 @@ export function ConfigSidebar() {
 
           <div className="config-divider" />
           
+          {/* Selector de Periodo de Inicio (Marzo / Agosto) */}
+          <div className="config-section">
+            <label className="config-label">
+              <Calendar size={14} className="inline-icon" /> Inicio de Carrera
+            </label>
+            <div className="periodo-toggle-group">
+              <button
+                type="button"
+                className={`periodo-toggle-btn ${periodoIngreso === 'marzo' ? 'active' : ''}`}
+                onClick={() => setPeriodoIngreso('marzo')}
+              >
+                Inicio en Marzo
+              </button>
+              <button
+                type="button"
+                className={`periodo-toggle-btn ${periodoIngreso === 'agosto' ? 'active' : ''}`}
+                onClick={() => setPeriodoIngreso('agosto')}
+              >
+                Inicio en Agosto
+              </button>
+            </div>
+            <span className="config-hint">
+              {periodoIngreso === 'marzo'
+                ? 'Veranos en Enero tras ciclos regulares pares (Ciclo 2, 4, 6...)'
+                : 'Veranos en Enero tras ciclos regulares impares (Ciclo 1, 3, 5...)'}
+            </span>
+          </div>
+
+          <div className="config-divider" />
+          
           <div className="config-section">
             <FacultadDropdown idPrefix="cfg-" />
           </div>
@@ -85,8 +122,24 @@ export function ConfigSidebar() {
           <div className="config-section">
             <VeranoToggle idPrefix="cfg-" />
           </div>
+
+          <div className="config-divider" />
+
+          <div className="config-section" style={{ marginTop: 'auto', paddingTop: '8px' }}>
+            <button
+              type="button"
+              className="cfg-btn-instructivo"
+              onClick={() => {
+                setConfigSidebarOpen(false);
+                setBienvenidaModalOpen(true);
+              }}
+            >
+              <HelpCircle size={15} /> Ver Instructivo y Guía
+            </button>
+          </div>
         </div>
       </aside>
     </>
   );
 }
+
