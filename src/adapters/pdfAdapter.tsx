@@ -1,14 +1,14 @@
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import type { Curso } from '../types/academic';
-import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
+import type { Curso } from '@/core/types';
+import { obtenerPeriodoCurso } from '@/domain/rules/academicPeriodRules';
 
 const styles = StyleSheet.create({
   page: { padding: 32, fontSize: 10 },
   title: { fontSize: 16, marginBottom: 12 },
-  row: { marginBottom: 4 }
+  row: { marginBottom: 4 },
 });
 
-const ReportDocument = ({ cursos }: { cursos: Curso[] }) => (
+export const ReportDocument = ({ cursos }: { cursos: Curso[] }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <Text style={styles.title}>Academic Planner - Proyección académica</Text>
@@ -19,7 +19,7 @@ const ReportDocument = ({ cursos }: { cursos: Curso[] }) => (
       <View>
         {cursos.map((curso) => (
           <Text key={curso.codigo} style={styles.row}>
-            {obtenerPeriodoCurso(curso).etiqueta} - {curso.nombre} ({curso.creditos} créditos)
+            {obtenerPeriodoCurso(curso as any).etiqueta} - {curso.nombre} ({curso.creditos} créditos)
           </Text>
         ))}
       </View>

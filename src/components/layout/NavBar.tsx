@@ -18,10 +18,10 @@ import {
   Camera,
   FileDown,
   Database,
-  Calculator,
   HelpCircle,
 } from 'lucide-react';
 import { useAcademicStore } from '@/store/useAcademicStore';
+import { usePlannerStore } from '@/store/plannerStore';
 
 export function NavBar() {
   const {
@@ -36,7 +36,6 @@ export function NavBar() {
     veranoUbicaciones,
     nombreArchivoCargado,
     resetAsignaciones,
-    autoPlanificar,
     cargarRespaldo,
     setConfigSidebarOpen,
     setBienvenidaModalOpen,
@@ -106,20 +105,6 @@ export function NavBar() {
     setTimeout(() => setFeedbackMsg(null), 4500);
   }
 
-  function handleAutoPlanificar() {
-    if (Object.keys(cursos).length === 0) {
-      mostrarFeedback('Primero debes subir tu Plan de Estudios para planificar.', 'info');
-      return;
-    }
-    const resumen = autoPlanificar();
-    if (resumen) {
-      mostrarFeedback(
-        `¡Planificación generada! Se ubicaron ${resumen.cursosAsignados} cursos en ${resumen.ciclosModificados} ciclos lectivos.`,
-        'exito'
-      );
-    }
-  }
-
   function handleExportarJSON() {
     if (Object.keys(cursos).length === 0) {
       mostrarFeedback('No hay cursos para respaldar.', 'info');
@@ -178,35 +163,23 @@ export function NavBar() {
 
         {/* 2. Clúster de acciones rápidas */}
         <div className="nav-actions-cluster">
-          {/* Botón Auto-Planificar */}
+          {/* Botón Estrategia de Matrícula (Asesor Curricular IA & Presupuesto) */}
           <button
             type="button"
-            className="nav-btn nav-btn-autoplanner"
-            id="btn-autoplanner"
-            title="Auto-Planificar: Calcular la ruta curricular óptima"
-            onClick={handleAutoPlanificar}
-            aria-label="Auto-Planificar"
-          >
-            <Sparkles size={16} className="btn-icon-sparkle" />
-          </button>
-
-          {/* Botón Presupuesto / Planificador Financiero (de dev) */}
-          <button
-            type="button"
-            className="nav-btn nav-btn-financial"
-            id="btn-financial-panel"
-            title="Presupuesto y Planificador: Ver cuotas y costos por periodo"
+            className="nav-btn nav-btn-strategy"
+            id="btn-strategy-panel"
+            title="Estrategia de Matrícula: Asesor Curricular (IA) y Simulación Financiera"
             onClick={() => {
               if (Object.keys(cursos).length === 0) {
-                mostrarFeedback('Primero debes cargar tu malla para ver el presupuesto.', 'info');
+                mostrarFeedback('Primero debes cargar tu malla para acceder a la estrategia y finanzas.', 'info');
                 return;
               }
               useAcademicStore.getState().sincronizarConMalla(cursos, asignaciones);
-              useAcademicStore.getState().setPanelPlanificadorAbierto(true);
+              usePlannerStore.getState().abrirEstrategia('academico');
             }}
-            aria-label="Presupuesto y Planificador Financiero"
+            aria-label="Estrategia de Matrícula: Asesor Curricular y Finanzas"
           >
-            <Calculator size={16} />
+            <Sparkles size={16} className="btn-icon-sparkle" />
           </button>
 
           {/* Botón de Captura (Exportar PNG / PDF) con vistazo */}

@@ -222,35 +222,99 @@
   letter-spacing: 0.2px;
 }
 
-.verano-tras-wrap {
-  display: flex;
-  justify-content: center;
+/* Botón para omitir el periodo de verano en la tarjeta lateral */
+.btn-verano-omitir {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  margin: 1px 0 2px;
-}
-
-.verano-tras-select {
-  width: auto;
-  max-width: 74px;
-  height: 20px;
-  line-height: 18px;
-  font-size: 0.60rem;
-  font-weight: 800;
+  gap: 4px;
   background: var(--bg-surface);
   border: 1px solid var(--amber-border);
   color: var(--amber-darker);
-  border-radius: 10px;
-  padding: 0 4px;
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 0.60rem;
+  font-weight: 750;
   cursor: pointer;
-  outline: none;
-  text-align: center;
+  margin-top: 2px;
   transition: all var(--tr);
 }
-.verano-tras-select:hover,
-.verano-tras-select:focus {
-  background: var(--amber-subtle);
-  border-color: var(--amber-dark);
+
+.btn-verano-omitir:hover {
+  background: rgba(239, 35, 60, 0.1);
+  border-color: rgba(239, 35, 60, 0.4);
+  color: #ef233c;
+}
+
+/* Franja compacta cuando el periodo de verano está deshabilitado / omitido */
+.verano-disabled-strip {
+  min-height: 44px;
+  background: rgba(245, 158, 11, 0.03);
+  border: 1.5px dashed rgba(245, 158, 11, 0.28);
+  border-radius: var(--r-card);
+  padding: 8px 14px;
+  margin: 3px 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all var(--tr);
+}
+
+.verano-disabled-strip:hover {
+  border-color: var(--amber-primary);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.verano-disabled-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verano-disabled-icon {
+  color: var(--amber-primary);
+  flex-shrink: 0;
+}
+
+.verano-disabled-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.verano-disabled-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--amber-darker);
+}
+
+.verano-disabled-sub {
+  font-size: 0.64rem;
+  color: var(--t-muted);
+}
+
+.btn-verano-toggle-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--amber-border);
+  color: var(--amber-darker);
+  font-size: 0.70rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  transition: all var(--tr);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.btn-verano-toggle-strip:hover {
+  background: #F59E0B;
+  border-color: #D97706;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
 }
 
 /* Zona drop — en ciclos: horizontal wrap */
@@ -270,3 +334,130 @@
   gap: 3px;
   padding: 4px 8px 16px;
 }
+
+/* ── Encabezado y Leyenda del Planificador ───────────────────────── */
+.planner-heading {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.planner-heading h1 {
+  margin: 2px 0 2px;
+  color: var(--t-primary);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.planner-heading p {
+  margin: 0;
+  color: var(--t-muted);
+  font-size: 0.72rem;
+}
+.planner-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--t-secondary);
+  font-size: 0.65rem;
+}
+.planner-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-default);
+}
+.legend-dot.obligatorio { background: var(--blue-primary); }
+.legend-dot.electivo { background: var(--purple-primary); }
+.legend-dot.aprobado { background: var(--emerald-primary); }
+
+/* ── Filas de ciclo: Casillas vacías y estados extendidos ────────── */
+.tier-empty {
+  min-height: 90px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--border-default);
+  border-radius: var(--r-card);
+  color: var(--t-muted);
+  font-size: 0.72rem;
+  background: var(--placeholder-bg);
+}
+
+.tier-lock-note {
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--t-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.tier-label.ciclo-actual {
+  background: var(--tier-bg-advanced);
+  border-left: 4px solid var(--amber-primary);
+  box-shadow: inset 4px 0 0 var(--amber-primary);
+}
+.tier-label.ciclo-actual .tier-num { color: var(--purple-hover); opacity: 1; }
+.tier-label.ciclo-actual .tier-name { color: var(--purple-primary); }
+.tier-label.ciclo-actual .stat-chip { background: var(--purple-subtle); color: var(--purple-primary); border-color: var(--purple-border); }
+
+.stat-chip.stat-price {
+  color: var(--emerald-dark);
+  font-weight: 850;
+  background: var(--emerald-subtle);
+  border-color: var(--emerald-border);
+}
+.tier-label.ciclo-aprobado .stat-chip.stat-price,
+.tier-label.ciclo-adelantado .stat-chip.stat-price,
+.tier-label.ciclo-actual .stat-chip.stat-price,
+.tier-label[data-tipo="verano"] .stat-chip.stat-price {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  border-color: transparent;
+}
+
+/* ── Compatibilidad con CicloRow (verano y periodos) ─────────────── */
+.tier-row.summer-row {
+  min-height: 92px;
+  margin-top: -3px;
+  margin-bottom: 11px;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.8), var(--bg-surface) 18%);
+}
+.tier-row.summer-row .tier-dropzone { min-height: 92px; }
+.tier-row.summer-row .tier-empty { min-height: 74px; border-color: rgba(245, 158, 11, 0.3); color: var(--amber-dark); }
+.tier-label.summer-label { background: var(--tier-bg-verano); border-left: 4px solid var(--amber-primary); }
+.tier-label.summer-label .tier-name { color: var(--amber-dark); }
+.tier-label.summer-label .stat-chip { background: rgba(180, 112, 0, 0.08); }
+.summer-icon { color: var(--amber-primary); margin-bottom: 2px; }
+.summer-limit { color: var(--amber-dark); font-size: 0.58rem; }
+.verano-mes-chip {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--amber-darker);
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid var(--amber-border);
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+
+
+.tier-row.period-past { opacity: 0.72; }
+.tier-row.period-past .tier-dropzone { background: repeating-linear-gradient(135deg, rgba(148,163,184,0.04), rgba(148,163,184,0.04) 8px, transparent 8px, transparent 16px); }
+.tier-row.period-past .tier-empty { color: var(--t-muted); border-color: var(--border-subtle); }
+.tier-row.period-past.is-over { border-color: transparent; box-shadow: var(--shadow-card); }
+.tier-row.period-current { border-color: rgba(245, 158, 11, 0.4); }
+.tier-row.period-current .tier-dropzone { background: rgba(245, 158, 11, 0.03); }
+.tier-row.period-current.is-over { border-color: var(--amber-primary); box-shadow: var(--shadow-card); }
+

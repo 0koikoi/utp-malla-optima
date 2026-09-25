@@ -7,8 +7,9 @@ export const generateAcademicReportData = (cursos: Curso[]) => ({
   creditos: cursos.reduce((sum, curso) => sum + curso.creditos, 0),
   periodos: cursos.reduce<Record<string, Curso[]>>((acc, curso) => {
     const periodo = obtenerPeriodoCurso(curso);
-    acc[periodo.id] ??= [];
-    acc[periodo.id].push(curso);
+    const lista = acc[periodo.id] ?? [];
+    lista.push(curso);
+    acc[periodo.id] = lista;
     return acc;
   }, {}),
 });

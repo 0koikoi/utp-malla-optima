@@ -1,4 +1,4 @@
-import type { Curso } from '../types/academic';
+import type { Curso } from '@/core/types';
 
 export interface CurriculumAdapter {
   readonly universidadId: string;

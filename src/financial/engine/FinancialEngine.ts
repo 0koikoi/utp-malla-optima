@@ -1,4 +1,4 @@
-import type { Curso, Tarifario } from '../../types/academic';
+import type { CursoEnPlanificador, Tarifario } from '@/core/types';
 import type { FinancialPeriod, FinancialSummary } from '../models/FinancialPeriod';
 import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules';
 
@@ -15,12 +15,12 @@ export class FinancialEngine {
   }
 
   calcular(
-    cursos: Curso[],
+    cursos: CursoEnPlanificador[],
     tarifario: Tarifario,
     disciplina: string,
     opciones: FinancialEngineOptions = {}
   ): FinancialSummary {
-    const agrupados = new Map<string, Curso[]>();
+    const agrupados = new Map<string, CursoEnPlanificador[]>();
 
     cursos
       .filter((curso) => curso.ubicacion === 'periodo' && curso.estado === 'PENDIENTE')
@@ -35,25 +35,27 @@ export class FinancialEngine {
 
     const periodos: FinancialPeriod[] = [...agrupados.entries()]
       .sort((a, b) => {
-        const ao = a[1][0].ciclo * 2 + (a[1][0].tipoPeriodo === 'VERANO' ? 1 : 0);
-        const bo = b[1][0].ciclo * 2 + (b[1][0].tipoPeriodo === 'VERANO' ? 1 : 0);
+        const primerA = a[1][0];
+        const primerB = b[1][0];
+        const ao = primerA ? primerA.ciclo * 2 + (primerA.tipoPeriodo === 'VERANO' ? 1 : 0) : 0;
+        const bo = primerB ? primerB.ciclo * 2 + (primerB.tipoPeriodo === 'VERANO' ? 1 : 0) : 0;
         return ao - bo;
       })
-      .map(([id, cursosPeriodo]) => ({
-        id,
-        etiqueta:
-          cursosPeriodo[0].tipoPeriodo === 'VERANO'
-            ? `VERANO ${cursosPeriodo[0].ciclo}`
-            : `CICLO ${cursosPeriodo[0].ciclo}`,
-        cursos: cursosPeriodo,
-        resumen: this.rules.calcular(cursosPeriodo, tarifario, disciplina, {
-          metodoPago: opciones.metodoPago,
-          pagoUnico:
-            cursosPeriodo[0].tipoPeriodo === 'REGULAR'
-              ? Boolean(opciones.pagoUnicoPorPeriodo?.[id])
-              : false,
-        }),
-      }));
+      .map(([id, cursosPeriodo]) => {
+        const primero = cursosPeriodo[0];
+        const esVerano = primero?.tipoPeriodo === 'VERANO';
+        const cicloNum = primero?.ciclo ?? 1;
+
+        return {
+          id,
+          etiqueta: esVerano ? `VERANO ${cicloNum}` : `CICLO ${cicloNum}`,
+          cursos: cursosPeriodo,
+          resumen: this.rules.calcular(cursosPeriodo, tarifario, disciplina, {
+            metodoPago: opciones.metodoPago,
+            pagoUnico: !esVerano ? Boolean(opciones.pagoUnicoPorPeriodo?.[id]) : false,
+          }),
+        };
+      });
 
     return {
       periodos,

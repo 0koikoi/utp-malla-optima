@@ -1,6 +1,8 @@
 // MobileMenuModal.tsx — Menú modal de controles y opciones para móvil (≤ 768px)
 import { useRef } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
+import { useAcademicStore } from '@/store/useAcademicStore';
 import { useCreditosElectivos } from '@/store/selectors';
 import { useExcelParser } from '@/hooks/useExcelParser';
 import { useExport } from '@/hooks/useExport';
@@ -40,7 +42,6 @@ export function MobileMenuModal() {
     veranoUbicaciones,
     nombreArchivoCargado,
     resetAsignaciones,
-    autoPlanificar,
     cargarRespaldo,
   } = useMallaStore();
 
@@ -59,11 +60,6 @@ export function MobileMenuModal() {
       parsearExcel(file);
       setMenuMobOpen(false);
     }
-  }
-
-  function handleAutoPlanificar() {
-    autoPlanificar();
-    setMenuMobOpen(false);
   }
 
   function handleExportarJSON() {
@@ -138,15 +134,20 @@ export function MobileMenuModal() {
             </div>
           </div>
 
-          {/* 2. Optimización Automática (dev) */}
+          {/* 2. Estrategia & Finanzas (Asistente IA + Presupuesto) */}
           <div className="mob-menu-section">
             <button
               type="button"
-              className="nav-btn nav-btn-autoplanner mob-full-btn"
-              onClick={handleAutoPlanificar}
+              className="nav-btn nav-btn-strategy mob-full-btn"
+              onClick={() => {
+                setMenuMobOpen(false);
+                if (Object.keys(cursos).length === 0) return;
+                useAcademicStore.getState().sincronizarConMalla(cursos, asignaciones);
+                usePlannerStore.getState().abrirEstrategia('academico');
+              }}
             >
-              <Sparkles size={14} />
-              <span>Auto-Planificar Ruta Óptima</span>
+              <Sparkles size={14} className="btn-icon-sparkle" />
+              <span>Estrategia de Matrícula (IA & Cuotas)</span>
             </button>
           </div>
 

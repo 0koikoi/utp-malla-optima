@@ -603,3 +603,32 @@
     font-size: 0.72rem;
   }
 }
+
+/* ── Toast de Prerrequisitos y Reglas Académicas (Fase 5) ────────── */
+.planner-toast {
+  width: min(410px, calc(100vw - 28px));
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 5000;
+  padding: 13px 15px;
+  border-left: 4px solid var(--accent);
+  border-radius: var(--r);
+  background: var(--bg-dark-1);
+  color: var(--t-white);
+  box-shadow: var(--shadow-pop);
+  animation: toast-in 0.2s ease-out;
+}
+@keyframes toast-in { from { transform: translateY(10px); opacity: 0; } }
+.planner-toast-head { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: var(--t-white); font-size: 0.75rem; font-weight: 700; }
+.planner-toast-head > svg { color: var(--accent); }
+.planner-toast-close { margin-left: auto; width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; }
+.planner-toast-close:hover { color: var(--t-white); }
+.planner-toast p { margin: 0 0 8px; color: rgba(255,255,255,0.8); font-size: 0.7rem; line-height: 1.5; }
+.planner-toast p b { color: var(--t-white); }
+.planner-toast ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.planner-toast li { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border-radius: 4px; background: rgba(239,35,60,0.12); font-size: 0.65rem; }
+.planner-toast li span { color: var(--rose-border); font-weight: 850; }
+.planner-toast li strong { color: rgba(255,255,255,0.88); font-weight: 650; }
+.planner-toast small { display: block; margin-top: 8px; color: rgba(255,255,255,0.4); font-size: 0.62rem; }
+

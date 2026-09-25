@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { Curso, EstadoCurso, TipoCurso } from '../types/academic';
+import type { Curso, EstadoCurso, TipoCurso } from '@/core/types';
 import type { CurriculumAdapter } from './CurriculumAdapter';
 
 type ExcelCell = string | number | boolean | null | undefined;
@@ -17,17 +17,15 @@ type ColumnasUTP = {
 };
 
 const CICLO_MINIMO = 1;
-const CICLO_MAXIMO = 10;
+const CICLO_MAXIMO = 14;
 
 /**
- * Este adaptador está pensado para el "Plan de Estudio" exportado por UTP.
+ * Adaptador canónico para el "Plan de Estudio" exportado por UTP.
  *
- * El Excel NO trae una columna de ciclo. El ciclo se obtiene de las filas
- * separadoras: "1er ciclo", "2do ciclo", ..., "10mo ciclo".
- *
- * Importante: no se debe buscar una columna usando `includes('SEM')`, porque
- * "Horas Semanales(*)" contiene "SEM" y eso provoca que las horas (2, 3, 4...)
- * sean interpretadas erróneamente como números de ciclo.
+ * El archivo Excel de UTP normalmente no posee una columna con el número de ciclo,
+ * sino filas separadoras ("1er ciclo", "2do ciclo", ..., "10mo ciclo").
+ * Detecta dinámicamente las columnas por encabezados y alias normalizados (NFD),
+ * preservando la robustez frente a variaciones de formato.
  */
 
 const texto = (valor: ExcelCell): string =>
@@ -54,6 +52,8 @@ const romanToNumber = (roman: string): number | null => {
     VIII: 8,
     IX: 9,
     X: 10,
+    XI: 11,
+    XII: 12,
   };
 
   return mapa[roman.toUpperCase().trim()] ?? null;
@@ -62,7 +62,7 @@ const romanToNumber = (roman: string): number | null => {
 const esCicloValido = (ciclo: number): boolean =>
   Number.isInteger(ciclo) && ciclo >= CICLO_MINIMO && ciclo <= CICLO_MAXIMO;
 
-/** Reconoce los formatos usados por UTP: 1er ciclo, 2do ciclo, 10mo ciclo. */
+/** Reconoce los formatos de separación de ciclos usados por UTP */
 const extraerCicloSeparador = (valor: ExcelCell): number | null => {
   const limpio = normalizarTexto(valor);
   if (!limpio) return null;
@@ -78,19 +78,19 @@ const extraerCicloSeparador = (valor: ExcelCell): number | null => {
   const numeroDespues = limpio.match(
     /^CICLO(?:\s+(?:N|NRO|NUMERO))?\s+(\d{1,2})$/
   );
-  if (numeroDespues) {
+  if (numeroDespues && numeroDespues[1] !== undefined) {
     const ciclo = Number(numeroDespues[1]);
     return esCicloValido(ciclo) ? ciclo : null;
   }
 
   const romanoDespues = limpio.match(/^CICLO\s+([IVX]+)$/);
-  if (romanoDespues) {
+  if (romanoDespues && romanoDespues[1] !== undefined) {
     const ciclo = romanToNumber(romanoDespues[1]);
     return ciclo !== null && esCicloValido(ciclo) ? ciclo : null;
   }
 
   const romanoAntes = limpio.match(/^([IVX]+)\s+CICLO$/);
-  if (romanoAntes) {
+  if (romanoAntes && romanoAntes[1] !== undefined) {
     const ciclo = romanToNumber(romanoAntes[1]);
     return ciclo !== null && esCicloValido(ciclo) ? ciclo : null;
   }
@@ -152,8 +152,6 @@ const detectarColumnas = (fila: ExcelRow): ColumnasUTP | null => {
     'CONDICION ACADEMICA',
   ]);
 
-  // Solo nombres completos. Nunca hacer match con "SEM" porque colisiona con
-  // "HORAS SEMANALES".
   const cicloDetectado = encontrarColumna(encabezados, [
     'CICLO',
     'NUMERO CICLO',
@@ -192,7 +190,8 @@ const normalizarTipo = (valor: ExcelCell): TipoCurso => {
 };
 
 const normalizarNumero = (valor: ExcelCell): number => {
-  const numero = Number.parseFloat(texto(valor).replace(',', '.'));
+  const numStr = texto(valor).replace(',', '.');
+  const numero = Number.parseFloat(numStr);
   return Number.isFinite(numero) ? numero : 0;
 };
 
@@ -233,16 +232,23 @@ const esFilaNivelacion = (valor: ExcelCell): boolean =>
 const contarCeldasConDatos = (fila: ExcelRow): number =>
   fila.filter((celda) => Boolean(texto(celda))).length;
 
+/**
+ * Parsea un archivo Excel de UTP devolviendo una lista de cursos con tipado canónico.
+ */
 export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data, { type: 'array' });
   const nombreHoja = workbook.SheetNames[0];
 
   if (!nombreHoja) {
-    throw new Error('El archivo Excel no contiene hojas.');
+    throw new Error('El archivo Excel no contiene hojas de datos.');
   }
 
   const hoja = workbook.Sheets[nombreHoja];
+  if (!hoja) {
+    throw new Error('No se pudo acceder al contenido de la hoja de cálculo.');
+  }
+
   const filas = XLSX.utils.sheet_to_json<ExcelRow>(hoja, {
     header: 1,
     defval: '',
@@ -254,10 +260,10 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
   let indiceEncabezado = -1;
   let columnas: ColumnasUTP | null = null;
 
-  // El export de UTP normalmente tiene los encabezados al inicio, pero se deja
-  // margen por si en otra versión aparecen algunas filas informativas encima.
-  for (let indice = 0; indice < Math.min(filas.length, 20); indice += 1) {
-    const detectadas = detectarColumnas(filas[indice]);
+  for (let indice = 0; indice < Math.min(filas.length, 25); indice += 1) {
+    const fila = filas[indice];
+    if (!fila) continue;
+    const detectadas = detectarColumnas(fila);
     if (detectadas) {
       indiceEncabezado = indice;
       columnas = detectadas;
@@ -282,15 +288,12 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
     const codigoRaw = texto(fila[columnas.codigo]);
     const nombreRaw = texto(fila[columnas.nombre]);
 
-    // "Cursos de nivelación" es una sección diferente a los ciclos 1-10.
     if (esFilaNivelacion(codigoRaw)) {
       dentroDeNivelacion = true;
       cicloActual = null;
       continue;
     }
 
-    // Los separadores reales del Excel están en la columna "Código Curso":
-    // "1er ciclo", "2do ciclo", ... "10mo ciclo".
     const cicloSeparador = extraerCicloSeparador(codigoRaw);
     if (cicloSeparador !== null && contarCeldasConDatos(fila) <= 2) {
       cicloActual = cicloSeparador;
@@ -298,19 +301,11 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       continue;
     }
 
-    // La UI actual de Academic Planner tiene filas regulares del ciclo 1 al 10,
-    // pero todavía no posee la caja independiente de Nivelación. Para evitar
-    // ubicar esas materias incorrectamente en el ciclo 1, no se mezclan aquí.
     if (dentroDeNivelacion) continue;
-
-    // Una fila de curso real debe tener al menos código y nombre.
     if (!codigoRaw || !nombreRaw) continue;
 
     let cicloCurso = cicloActual;
 
-    // Compatibilidad con eventuales variantes del archivo que sí incluyan una
-    // columna "Ciclo" explícita. Solo se usa si el encabezado fue detectado por
-    // nombre exacto/alias seguro.
     if (columnas.ciclo !== null) {
       const cicloDesdeCelda = extraerCicloCelda(fila[columnas.ciclo]);
       if (cicloDesdeCelda !== null) cicloCurso = cicloDesdeCelda;
@@ -323,31 +318,55 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
     }
 
     const estado = normalizarEstado(fila[columnas.estado]);
+    const prerequisitos = normalizarPrerrequisitos(fila[columnas.prerrequisitos]);
 
-    cursos.push({
+    // Retorna un objeto compatible con Curso canónico y adaptadores de transición
+    const cursoItem: Curso & Record<string, any> = {
       codigo: codigoRaw,
       nombre: nombreRaw,
-      ciclo: cicloCurso,
-      cicloOrigen: cicloCurso,
-      tipoPeriodo: 'REGULAR',
-      ubicacion:
-        estado === 'APROBADO' || estado === 'CONVALIDADO' || estado === 'EN_CURSO'
-          ? 'periodo'
-          : 'banco',
-      horasSemanales: normalizarNumero(fila[columnas.horas]),
-      creditos: normalizarNumero(fila[columnas.creditos]),
+      horasSemanales: normalizarNumero(fila[columnas.horas]) || 3,
+      creditos: normalizarNumero(fila[columnas.creditos]) || 0,
       tipo: normalizarTipo(fila[columnas.tipo]),
-      prerrequisitos: normalizarPrerrequisitos(fila[columnas.prerrequisitos]),
-      prerequisitos: normalizarPrerrequisitos(fila[columnas.prerrequisitos]),
-      habilitaA: [],
-      esLaboratorio: /LABORATORIO|TALLER|CURSO INTEGRADOR/i.test(nombreRaw),
       estado,
-    });
+      prerequisitos,
+      prerrequisitos: prerequisitos,
+      habilitaA: [],
+      cicloOrigen: cicloCurso,
+      esLaboratorio: /LABORATORIO|TALLER|CURSO INTEGRADOR/i.test(nombreRaw),
+      // Campos opcionales para compatibilidad con código transicional
+      ciclo: cicloCurso,
+      tipoPeriodo: 'REGULAR',
+      ubicacion: ['APROBADO', 'CONVALIDADO', 'EN_CURSO'].includes(estado) ? 'periodo' : 'banco',
+    };
+
+    cursos.push(cursoItem);
+  }
+
+  // Segunda pasada: construir relaciones inversas (habilitaA)
+  for (const curso of cursos) {
+    for (const codigoPre of curso.prerequisitos) {
+      const cursoRequerido = cursos.find((c) => c.codigo === codigoPre);
+      if (cursoRequerido && !cursoRequerido.habilitaA.includes(curso.nombre)) {
+        cursoRequerido.habilitaA.push(curso.nombre);
+      }
+    }
   }
 
   return cursos;
 };
 
+/**
+ * Parsea un archivo Excel de UTP y devuelve un diccionario indexado por código de curso,
+ * ideal para despachar directamente al `plannerStore`.
+ */
+export const parseUTPExcelToMap = async (file: File): Promise<Record<string, Curso>> => {
+  const cursos = await parseUTPExcel(file);
+  const map: Record<string, Curso> = {};
+  for (const curso of cursos) {
+    map[curso.codigo] = curso;
+  }
+  return map;
+};
 
 export class UTPExcelAdapter implements CurriculumAdapter {
   readonly universidadId = 'pe-utp';

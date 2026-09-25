@@ -62,7 +62,7 @@ export function FacultadDropdown({ idPrefix = '' }: DropdownProps) {
 
   // Mapear compatibilidad si el valor guardado es 'gestion'
   const currentKey = facultad === 'gestion' ? 'salud_gestion' : facultad;
-  const current = FACULTADES.find((f) => f.value === currentKey) ?? FACULTADES[0];
+  const current = FACULTADES.find((f) => f.value === currentKey) ?? FACULTADES[0]!;
   const CurrentIcon = current.icon;
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export function PagoDropdown({ idPrefix = '' }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[0];
+  const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[0]!;
   const CurrentIcon = current.icon;
 
   useEffect(() => {

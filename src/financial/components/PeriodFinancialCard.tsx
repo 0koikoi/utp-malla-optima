@@ -1,6 +1,7 @@
 import type { FinancialPeriod } from '../models/FinancialPeriod';
 
-const money = (value: number) => `S/ ${value.toFixed(2)}`;
+const money = (value: number) => `S/ ${(Number(value) || 0).toFixed(2)}`;
+
 
 interface PeriodFinancialCardProps {
   periodo: FinancialPeriod;

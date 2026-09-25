@@ -1,5 +1,7 @@
 /* Estilos Base y Variables (Design System Estandarizado en :root) */
 :root {
+  color-scheme: light;
+
   /* ── 1. Fondos y Superficies Base ──────────────────────────────── */
   --bg-page:           #F1F5F9;      /* Fondo de página principal */
   --bg-surface:        #FFFFFF;      /* Tarjetas, modales, menús y superficies */
@@ -186,14 +188,104 @@
   --shadow-pop:  0 10px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
 }
 
-/* Reinicio/limpieza */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg-page);
-  color: var(--t-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
+/* ── 12. Soporte para Modo Oscuro (Dark Mode — Fase 5.2) ────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg-page:           #0F172A;
+    --bg-surface:        #1E293B;
+    --bg-surface-subtle: #0B1120;
+    --bg-aside:          #111827;
+    --bg-bar:            #070A12;
+    --bg-nav:            #1E293B;
+    --bg-nav-item:       rgba(255, 255, 255, 0.08);
+
+    --t-primary:         #F8FAFC;
+    --t-secondary:       #CBD5E1;
+    --t-muted:           #94A3B8;
+    --t-dim:             #64748B;
+    --t-white:           #FFFFFF;
+
+    --border-subtle:     #334155;
+    --border-default:    #475569;
+    --border-strong:     #64748B;
+
+    --card-bg:           #1E293B;
+    --card-border:       #334155;
+    --card-border-hov:   #64748B;
+
+    --card-apr-bg:       #064E3B;
+    --card-apr-border:   #059669;
+    --card-apr-accent:   #10B981;
+    --card-apr-text:     #A7F3D0;
+
+    --chip-bg-default:   #334155;
+    --chip-t-default:    #E2E8F0;
+
+    --tier-bg-regular:   linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    --tier-bg-locked:    linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+    --tier-text-locked:  #6EE7B7;
+    --tier-bg-advanced:  linear-gradient(180deg, #3B0764 0%, #2E1065 100%);
+    --tier-bg-verano:    linear-gradient(180deg, #451A03 0%, #2A1002 100%);
+    --tier-text-verano:  #FCD34D;
+
+    --placeholder-bg:    rgba(30, 41, 59, 0.7);
+    --placeholder-border:#475569;
+
+    --menu-bg:           #1E293B;
+    --menu-border:       #334155;
+
+    --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-pop:        0 10px 25px -5px rgba(0, 0, 0, 0.65);
+  }
 }
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page:           #0F172A;
+  --bg-surface:        #1E293B;
+  --bg-surface-subtle: #0B1120;
+  --bg-aside:          #111827;
+  --bg-bar:            #070A12;
+  --bg-nav:            #1E293B;
+  --bg-nav-item:       rgba(255, 255, 255, 0.08);
+
+  --t-primary:         #F8FAFC;
+  --t-secondary:       #CBD5E1;
+  --t-muted:           #94A3B8;
+  --t-dim:             #64748B;
+  --t-white:           #FFFFFF;
+
+  --border-subtle:     #334155;
+  --border-default:    #475569;
+  --border-strong:     #64748B;
+
+  --card-bg:           #1E293B;
+  --card-border:       #334155;
+  --card-border-hov:   #64748B;
+
+  --card-apr-bg:       #064E3B;
+  --card-apr-border:   #059669;
+  --card-apr-accent:   #10B981;
+  --card-apr-text:     #A7F3D0;
+
+  --chip-bg-default:   #334155;
+  --chip-t-default:    #E2E8F0;
+
+  --tier-bg-regular:   linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  --tier-bg-locked:    linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+  --tier-text-locked:  #6EE7B7;
+  --tier-bg-advanced:  linear-gradient(180deg, #3B0764 0%, #2E1065 100%);
+  --tier-bg-verano:    linear-gradient(180deg, #451A03 0%, #2A1002 100%);
+  --tier-text-verano:  #FCD34D;
+
+  --placeholder-bg:    rgba(30, 41, 59, 0.7);
+  --placeholder-border:#475569;
+
+  --menu-bg:           #1E293B;
+  --menu-border:       #334155;
+
+  --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-pop:        0 10px 25px -5px rgba(0, 0, 0, 0.65);
+}
+

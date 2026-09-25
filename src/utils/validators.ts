@@ -18,10 +18,10 @@ export function ordenCronologico(
   veranoUbicaciones: Record<number, number> = { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 }
 ): number | null {
   const matchCiclo = ubicacion.match(/^ciclo-(\d+)$/);
-  if (matchCiclo) return parseInt(matchCiclo[1], 10);
+  if (matchCiclo && matchCiclo[1] !== undefined) return parseInt(matchCiclo[1], 10);
 
   const matchVerano = ubicacion.match(/^verano-(\d+)$/);
-  if (matchVerano) {
+  if (matchVerano && matchVerano[1] !== undefined) {
     const vNum = parseInt(matchVerano[1], 10);
     const trasCiclo = veranoUbicaciones[vNum] ?? (vNum * 2);
     return trasCiclo + 0.5;

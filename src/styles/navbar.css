@@ -398,7 +398,8 @@
   border-color: var(--blue-primary);
 }
 
-/* Botón Auto-Planificar con estilo destacado */
+/* Botón Estrategia y Asistente con estilo destacado */
+.nav-btn-strategy,
 .nav-btn-autoplanner {
   background: linear-gradient(135deg, var(--indigo-primary) 0%, var(--indigo-light) 100%);
   color: var(--t-white);
@@ -407,6 +408,7 @@
   font-weight: 700;
   letter-spacing: 0.2px;
 }
+.nav-btn-strategy:hover,
 .nav-btn-autoplanner:hover {
   background: linear-gradient(135deg, var(--indigo-hover) 0%, var(--indigo-primary) 100%);
   border-color: var(--indigo-hover);
@@ -619,3 +621,59 @@
   min-width: 32px;
   height: 32px;
 }
+
+/* ── Utilidades de Botones y Controles de Navegación ──────────────── */
+.nav-control-btn,
+.nav-action,
+.nav-cancel-move {
+  min-height: 29px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-btn);
+  background: var(--bg-nav-item);
+  color: var(--t-primary);
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all var(--tr);
+  white-space: nowrap;
+}
+.nav-control-btn { padding: 5px 12px; }
+.nav-control-btn:hover, .nav-action.secondary:hover { background: var(--bg-surface-subtle); color: var(--blue-primary); }
+.nav-action { padding: 6px 11px; }
+.nav-action.primary { background: var(--accent); border-color: var(--accent); color: var(--t-white); }
+.nav-action.primary:hover { background: var(--accent-hov); }
+.nav-action.secondary { background: var(--bg-surface); border-color: var(--border-default); color: var(--t-secondary); }
+.nav-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.nav-cancel-move { border-color: var(--amber-border); background: var(--amber-subtle); color: var(--amber-dark); padding: 6px 10px; }
+
+.discipline-control { display: flex; align-items: center; gap: 6px; color: var(--t-secondary); }
+.discipline-control select {
+  width: 100%;
+  max-width: 220px;
+  height: 32px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r);
+  outline: none;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.discipline-control option { color: var(--t-primary); background: var(--bg-surface); }
+.nav-status-chips { display: flex; align-items: center; gap: 4px; }
+.nav-status-chips span {
+  padding: 4px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--bg-surface-subtle);
+  color: var(--t-muted);
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+.nav-status-chips b { color: var(--t-primary); }
+

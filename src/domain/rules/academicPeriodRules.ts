@@ -91,9 +91,10 @@ export const determinarPeriodoEnCurso = (cursos: Curso[]): PeriodoAcademico | nu
 
   if (conteoPorPeriodo.size === 0) return null;
 
-  return [...conteoPorPeriodo.values()]
-    .sort((a, b) => b.cantidad - a.cantidad || b.periodo.orden - a.periodo.orden)[0]
-    .periodo;
+  const mejor = [...conteoPorPeriodo.values()]
+    .sort((a, b) => b.cantidad - a.cantidad || b.periodo.orden - a.periodo.orden)[0];
+
+  return mejor ? mejor.periodo : null;
 };
 
 /**
@@ -111,7 +112,7 @@ export const determinarPeriodoActual = (cursos: Curso[]): PeriodoAcademico => {
     const ultimo = aprobados
       .map(obtenerPeriodoCurso)
       .sort((a, b) => b.orden - a.orden)[0];
-    return siguientePeriodo(ultimo);
+    if (ultimo) return siguientePeriodo(ultimo);
   }
 
   return crearPeriodoRegular(1);

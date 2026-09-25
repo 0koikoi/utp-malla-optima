@@ -1,5 +1,5 @@
 import { GraduationCap } from 'lucide-react';
-import { useAcademicStore } from '../store/useAcademicStore';
+import { useAcademicStore } from '@/store/useAcademicStore';
 
 export const DisciplineSelector = () => {
   const { tarifario, disciplinaActiva, setDisciplinaActiva } = useAcademicStore();

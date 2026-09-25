@@ -166,7 +166,7 @@ export const generarPlanificacionAutomatica = (
     { length: Math.min(cicloFinal, 10) },
     (_, index) => crearPeriodoRegular(index + 1)
   ).filter((periodo) => periodo.orden >= periodoInicio.orden);
-  const ultimoPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : periodoInicio;
+  const ultimoPeriodo = periodos[periodos.length - 1] ?? periodoInicio;
 
   const pendientes = cursosBase.filter((curso) => curso.estado === 'PENDIENTE');
   const pendientesRestantes = new Map(pendientes.map((curso) => [curso.codigo, curso]));

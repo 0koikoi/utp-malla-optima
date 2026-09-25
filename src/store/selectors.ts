@@ -1,20 +1,25 @@
 // Selectores derivados del store
-// Funciones que calculan datos derivados del estado (memoizables)
+// Funciones que calculan datos derivados del estado (memoizables con useShallow)
 
-import { useMallaStore } from './mallaStore';
+import { useShallow } from 'zustand/react/shallow';
+import { usePlannerStore } from './plannerStore';
 import { calcularFinanzasCiclo, calcularCreditosElectivos } from '@/utils/finance';
 import { calcularCicloActual } from '@/utils/cicloHelper';
-import type { Curso, FinanzasCiclo } from '@/types/malla';
+import type { Curso, FinanzasCiclo } from '@/core/types';
 
 /** Cursos ubicados en un ciclo específico */
 export function useCursosPorUbicacion(ubicacion: string): Curso[] {
-  const { cursos, asignaciones } = useMallaStore();
+  const { cursos, asignaciones } = usePlannerStore(
+    useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
+  );
   return Object.values(cursos).filter((c) => asignaciones[c.codigo] === ubicacion);
 }
 
 /** Cursos en el pozo (pendientes sin asignar) */
 export function useCursosPozo(): Curso[] {
-  const { cursos, asignaciones } = useMallaStore();
+  const { cursos, asignaciones } = usePlannerStore(
+    useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
+  );
   return Object.values(cursos)
     .filter((c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo')
     .sort((a, b) => a.cicloOrigen - b.cicloOrigen);
@@ -24,14 +29,38 @@ export function useCursosPozo(): Curso[] {
  * Calcula el ciclo lectivo real/activo del estudiante.
  */
 export function useCicloActual(): number {
-  const cursos = useMallaStore((s) => s.cursos);
-  return calcularCicloActual(cursos);
+  return usePlannerStore((s) => calcularCicloActual(s.cursos));
 }
 
 /** Finanzas calculadas de todos los ciclos visibles */
 export function useFinanzasCiclos(): FinanzasCiclo[] {
-  const { cursos, asignaciones, facultad, descuento, cicloInicio, cicloFin, veranoActivo, cantVeranos } =
-    useMallaStore();
+  const {
+    cursos,
+    asignaciones,
+    facultad,
+    descuento,
+    cicloInicio,
+    cicloFin,
+    veranoActivo,
+    cantVeranos,
+    periodoIngreso,
+    veranoUbicaciones,
+    veranosHabilitados,
+  } = usePlannerStore(
+    useShallow((s) => ({
+      cursos: s.cursos,
+      asignaciones: s.asignaciones,
+      facultad: s.facultad,
+      descuento: s.descuento,
+      cicloInicio: s.cicloInicio,
+      cicloFin: s.cicloFin,
+      veranoActivo: s.veranoActivo,
+      cantVeranos: s.cantVeranos,
+      periodoIngreso: s.periodoIngreso,
+      veranoUbicaciones: s.veranoUbicaciones,
+      veranosHabilitados: s.veranosHabilitados,
+    }))
+  );
 
   const finanzas: FinanzasCiclo[] = [];
 
@@ -44,14 +73,21 @@ export function useFinanzasCiclos(): FinanzasCiclo[] {
     finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnCiclo, facultad, descuento, false));
   }
 
-  // Ciclos de verano visibles
+  // Ciclos de verano visibles: únicamente los que faltan planificar y que estén habilitados
   if (veranoActivo) {
+    const cicloActual = calcularCicloActual(cursos);
     for (let v = 1; v <= cantVeranos; v++) {
-      const cicloId = `verano-${v}`;
-      const cursosEnVerano = Object.values(cursos).filter(
-        (c) => asignaciones[c.codigo] === cicloId && c.estado === 'PENDIENTE'
-      );
-      finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnVerano, facultad, descuento, true));
+      const estaHabilitado = veranosHabilitados?.[v] !== false;
+      const trasCiclo = veranoUbicaciones?.[v] ?? (periodoIngreso === 'agosto' ? (v * 2 - 1) : (v * 2));
+      const esFuturo = trasCiclo >= cicloActual;
+
+      if (estaHabilitado && esFuturo) {
+        const cicloId = `verano-${v}`;
+        const cursosEnVerano = Object.values(cursos).filter(
+          (c) => asignaciones[c.codigo] === cicloId && c.estado === 'PENDIENTE'
+        );
+        finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnVerano, facultad, descuento, true));
+      }
     }
   }
 
@@ -66,13 +102,17 @@ export function useCuotaMaxima(): number {
 
 /** Total de créditos electivos planificados/aprobados (para R3) */
 export function useCreditosElectivos(): number {
-  const { cursos, asignaciones } = useMallaStore();
+  const { cursos, asignaciones } = usePlannerStore(
+    useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
+  );
   return calcularCreditosElectivos(cursos, asignaciones);
 }
 
 /** Cuenta de cursos pendientes en el pozo */
 export function useContadorPozo(): number {
-  const { cursos, asignaciones } = useMallaStore();
+  const { cursos, asignaciones } = usePlannerStore(
+    useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
+  );
   return Object.values(cursos).filter(
     (c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo'
   ).length;

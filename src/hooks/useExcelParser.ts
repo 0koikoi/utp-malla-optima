@@ -1,92 +1,39 @@
 // Hook para parsear el archivo .xlsx de la malla UTP
-// Migrado de app-script.js → procesarMallaExcel()
-// Agrega persistencia en localStorage (slot único)
+// Fase 3: Delega el procesamiento al adaptador canónico `utpExcelAdapter` y despacha al `plannerStore`.
 
-import { useCallback } from 'react';
-import * as XLSX from 'xlsx';
-import { useMallaStore } from '@/store/mallaStore';
-import type { Curso, EstadoCurso, TipoCurso } from '@/core/types';
+import { useCallback, useState } from 'react';
+import { usePlannerStore } from '@/store/plannerStore';
+import { parseUTPExcelToMap } from '@/adapters/utpExcelAdapter';
 
 export function useExcelParser() {
-  const setCursos = useMallaStore((s) => s.setCursos);
+  const setCursos = usePlannerStore((s) => s.setCursos);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const parsearExcel = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const data = new Uint8Array(ev.target!.result as ArrayBuffer);
-      const wb = XLSX.read(data, { type: 'array' });
-      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(
-        wb.Sheets[wb.SheetNames[0]],
-        { defval: '' }
-      );
-      const cursos = procesarJson(json);
-
-      // 1. Actualizar el store (actualiza asignaciones iniciales)
-      setCursos(cursos, file.name);
-    };
-    reader.readAsArrayBuffer(file);
-  }, [setCursos]);
-
-  return { parsearExcel };
-}
-
-/** Transforma las filas JSON del xlsx al diccionario de cursos tipado */
-function procesarJson(datos: Record<string, unknown>[]): Record<string, Curso> {
-  const diccionario: Record<string, Curso> = {};
-  let cicloActual = 1;
-
-  // Primera pasada: construir diccionario
-  for (const fila of datos) {
-    const codigoRaw = String(fila['Código Curso'] ?? '').trim();
-    if (!codigoRaw) continue;
-
-    // Detectar cabecera de ciclo o nivelación (ej: "CICLO 1" o "NIVELACIÓN")
-    if (!fila['Nombre Curso']) {
-      if (codigoRaw.toLowerCase().includes('ciclo') || codigoRaw.toLowerCase().includes('nivelaci')) {
-        const num = codigoRaw.match(/\d+/);
-        if (num) {
-          cicloActual = parseInt(num[0], 10);
+  const parsearExcel = useCallback(
+    async (file: File) => {
+      setCargando(true);
+      setError(null);
+      try {
+        const cursosMap = await parseUTPExcelToMap(file);
+        if (Object.keys(cursosMap).length === 0) {
+          throw new Error('No se encontraron cursos válidos en el archivo Excel.');
         }
+
+        // Actualizar el store unificado (reinicia asignaciones con el nuevo archivo)
+        setCursos(cursosMap, file.name);
+        return true;
+      } catch (err) {
+        const mensaje = err instanceof Error ? err.message : 'Error al procesar el archivo Excel';
+        setError(mensaje);
+        console.error('Error al procesar el Excel de la malla:', err);
+        return false;
+      } finally {
+        setCargando(false);
       }
-      continue;
-    }
+    },
+    [setCursos]
+  );
 
-    const estado: EstadoCurso = (() => {
-      const raw = String(fila['Estado(***)'] ?? '').trim().toUpperCase();
-      if (raw.includes('CONVALID')) return 'CONVALIDADO';
-      if (raw.includes('APROB')) return 'APROBADO';
-      if (raw.includes('EN CURSO') || raw.includes('EN PROCESO') || raw.includes('MATRIC')) return 'EN_CURSO';
-      return 'PENDIENTE';
-    })();
-    const tipo: TipoCurso = (() => {
-      const raw = String(fila['Tipo'] ?? '').trim().toUpperCase();
-      return raw === 'E' || raw.includes('ELECTIV') ? 'ELECTIVO' : 'OBLIGATORIO';
-    })();
-
-    diccionario[codigoRaw] = {
-      codigo: codigoRaw,
-      nombre: String(fila['Nombre Curso']).trim(),
-      horasSemanales: parseFloat(String(fila['Horas Semanales(*)'])) || 3,
-      creditos: parseFloat(String(fila['Créditos'])) || 0,
-      tipo,
-      estado,
-      prerequisitos: String(fila['Pre-Requisito'] ?? '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-      habilitaA: [],
-      cicloOrigen: cicloActual,
-    };
-  }
-
-  // Segunda pasada: construir habilitaA (inverso de prerequisitos)
-  for (const curso of Object.values(diccionario)) {
-    for (const codigoPre of curso.prerequisitos) {
-      if (diccionario[codigoPre]) {
-        diccionario[codigoPre].habilitaA.push(curso.nombre);
-      }
-    }
-  }
-
-  return diccionario;
+  return { parsearExcel, cargando, error };
 }

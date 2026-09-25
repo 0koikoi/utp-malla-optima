@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-      - dev
-      - test/integration
   pull_request:
     branches:
       - main
-      - dev
-      - test/integration
   workflow_dispatch:
 
 concurrency:
@@ -51,7 +47,7 @@ jobs:
   build-and-deploy:
     name: Build & Deploy
     needs: validate
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository

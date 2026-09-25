@@ -24,20 +24,18 @@ export function calcularCicloActual(cursos: Record<string, Curso>): number {
 
   for (const curso of cursosArr) {
     const c = curso.cicloOrigen;
-    if (!cursosPorCiclo[c]) {
-      cursosPorCiclo[c] = { total: 0, aprobados: 0, pendientes: 0 };
-    }
-    cursosPorCiclo[c].total++;
+    const entry = cursosPorCiclo[c] ?? (cursosPorCiclo[c] = { total: 0, aprobados: 0, pendientes: 0 });
+    entry.total++;
     if (['APROBADO', 'CONVALIDADO'].includes(curso.estado)) {
-      cursosPorCiclo[c].aprobados++;
+      entry.aprobados++;
     } else if (curso.estado === 'PENDIENTE') {
-      cursosPorCiclo[c].pendientes++;
+      entry.pendientes++;
     }
   }
 
   for (let k = 1; k <= 10; k++) {
     const stats = cursosPorCiclo[k];
-    if (stats.total === 0) continue;
+    if (!stats || stats.total === 0) continue;
 
     // Si completó todos los cursos del ciclo -> concluido
     if (stats.pendientes === 0 && stats.aprobados > 0) {

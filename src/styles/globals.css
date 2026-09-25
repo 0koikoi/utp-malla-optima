@@ -14,6 +14,7 @@
    ========================================================================== */
 
 @import './tokens.css';
+@import './reset.css';
 @import './layout.css';
 @import './navbar.css';
 @import './sidebar.css';
@@ -23,3 +24,4 @@
 @import './homepage.css';
 @import './responsive.css';
 @import './financial.css';
+

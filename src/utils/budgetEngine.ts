@@ -1,10 +1,11 @@
 import type {
   Curso,
+  CursoEnPlanificador,
   RangoTarifario,
   ResumenFinanciero,
   Tarifario,
-  TipoPeriodoAcademico,
-} from '../types/academic';
+  TipoPeriodo as TipoPeriodoAcademico,
+} from '@/core/types';
 
 export interface OpcionesPresupuesto {
   metodoPago?: string;
@@ -15,8 +16,18 @@ export interface OpcionesPresupuesto {
 const redondearMoneda = (valor: number): number =>
   Math.round((valor + Number.EPSILON) * 100) / 100;
 
+const fallbackTarifas = {
+  costoMatriculaRegular: 350,
+  costoHoraAdicional: 38,
+  costoPorCredito: 110,
+  costoPorHora: 45,
+  costoPorCurso: 450,
+  costoFijoLaboratorio: 0,
+  rangosPension: [],
+};
+
 const obtenerTarifas = (tarifario: Tarifario, disciplinaActiva: string) =>
-  tarifario.disciplinas[disciplinaActiva] || Object.values(tarifario.disciplinas)[0];
+  tarifario.disciplinas[disciplinaActiva] ?? Object.values(tarifario.disciplinas)[0] ?? fallbackTarifas;
 
 const obtenerRango = (rangos: RangoTarifario[], horas: number) =>
   rangos.find((rango) => horas >= rango.minHoras && horas <= rango.maxHoras);
@@ -45,13 +56,18 @@ const calcularCuotaEscalaFija = (
 };
 
 const calcularCuotaBaseRegular = (
-  cursos: Curso[],
+  cursos: (Curso | CursoEnPlanificador)[],
   tarifario: Tarifario,
   disciplinaActiva: string
 ) => {
   const tarifas = obtenerTarifas(tarifario, disciplinaActiva);
-  const creditos = cursos.reduce((s, c) => s + c.creditos, 0);
-  const horas = cursos.reduce((s, c) => s + c.horasSemanales, 0);
+  const creditos = cursos.reduce((s, c) => s + (typeof c.creditos === 'number' && !Number.isNaN(c.creditos) ? c.creditos : 0), 0);
+  const horas = cursos.reduce((s, c) => {
+    const h = typeof c.horasSemanales === 'number' && !Number.isNaN(c.horasSemanales)
+      ? c.horasSemanales
+      : (Number((c as any).horasTeoria ?? 0) + Number((c as any).horasPractica ?? 0)) || 0;
+    return s + h;
+  }, 0);
 
   switch (tarifario.modalidadPrincipal) {
     case 'ESCALA_FIJA': {
@@ -79,7 +95,7 @@ const calcularCuotaBaseRegular = (
 };
 
 export const calcularPresupuesto = (
-  cursosSeleccionados: Curso[],
+  cursosSeleccionados: (Curso | CursoEnPlanificador)[],
   tarifario: Tarifario,
   disciplinaActiva: string,
   opciones: OpcionesPresupuesto = {}

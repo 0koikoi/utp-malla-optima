@@ -26,18 +26,21 @@ export function PrerequisitoToast({ cursoNombre, faltantes, tipo = 'bloqueo', on
 
   return (
     <div
+      role="alert"
+      className="planner-toast"
       style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
+        position: 'relative',
+        bottom: 'auto',
+        right: 'auto',
         backgroundColor: '#1f2139',
         borderLeft: `4px solid ${colorBorde}`,
         color: '#ffffff',
         padding: '14px 18px',
         borderRadius: '6px',
         boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
-        zIndex: 999999,
-        maxWidth: '420px',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         fontSize: '0.78rem',
         lineHeight: '1.5',
         animation: 'slideIn 0.22s ease-out',

@@ -18,6 +18,7 @@
 
     /* Strict */
     "strict": true,
+    "noUncheckedIndexedAccess": true,
 
     /* Linting */
     "noUnusedLocals": true,

@@ -426,3 +426,52 @@
   box-shadow: 0 5px 15px rgba(0,0,0,0.15) !important;
   transform: scale(1.02);
 }
+
+/* ── Clases Canónicas y Compatibilidad de Tarjetas (Fase 5) ──────── */
+.curso-card.con-prerrequisitos { background: var(--bg-surface-subtle); border-left-color: var(--border-default); }
+.curso-card.en-curso { border-left-color: var(--purple-primary); box-shadow: inset 0 0 0 1px var(--purple-border); }
+.curso-card.curso-bloqueado { opacity: 0.45; filter: grayscale(0.7); cursor: not-allowed; pointer-events: auto; box-shadow: none; }
+.curso-card.curso-bloqueado:hover { transform: none; box-shadow: none; }
+.curso-card.seleccionado-presupuesto { outline: 2.5px solid var(--purple-primary); outline-offset: 1px; }
+
+.curso-card-head { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+.curso-codigo { flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--t-muted); font-size: 0.58rem; font-weight: 750; letter-spacing: 0.2px; }
+.curso-info-btn, .curso-budget-btn {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--t-dim);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--tr);
+}
+.curso-info-btn:hover { color: var(--accent); background: var(--accent-subtle); }
+.curso-budget-btn:hover, .curso-budget-btn.active { color: var(--purple-primary); background: var(--purple-subtle); }
+.curso-budget-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+.curso-lock { color: var(--emerald-primary); }
+.curso-estado-chip { margin-top: 4px; display: inline-flex; align-items: center; gap: 3px; color: var(--teal-primary); font-size: 0.56rem; font-weight: 800; }
+
+.curso-tooltip {
+  width: 280px;
+  z-index: 99999;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--bg-dark-2);
+  color: var(--t-white);
+  box-shadow: var(--shadow-pop);
+  pointer-events: none;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+.curso-tooltip section { display: grid; gap: 3px; }
+.curso-tooltip b { display: flex; align-items: center; gap: 4px; color: var(--rose-border); }
+.curso-tooltip .tooltip-habilita b { color: var(--blue-border); }
+.curso-tooltip hr { margin: 7px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.1); }
+
+.curso-card.curso-verano { box-shadow: 0 0 0 1px var(--amber-border), var(--shadow-card); }
+.ctag.ctag-verano { color: var(--amber-dark); background: var(--amber-tint); border: 1px solid var(--amber-border); }
+

@@ -9,25 +9,27 @@ import {
   FileSpreadsheet,
   AlertCircle,
   Info,
+  ShieldCheck,
+  Calculator,
+  CalendarRange,
 } from 'lucide-react';
 import { useMallaStore } from '@/store/mallaStore';
 import mallaSoftwareDemo from '@/data/universidades/pe-utp/malla-software-2026.json';
 
 export function Homepage() {
-  const { parsearExcel } = useExcelParser();
+  const { parsearExcel, cargando, error: parserError } = useExcelParser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
       setErrorMessage('Por favor sube un archivo Excel válido (.xlsx o .xls)');
       return;
     }
     setErrorMessage(null);
-    try {
-      parsearExcel(file);
-    } catch {
+    const ok = await parsearExcel(file);
+    if (!ok) {
       setErrorMessage('Ocurrió un error al procesar el archivo. Asegúrate de que sea tu Plan de Estudios UTP.');
     }
   }
@@ -59,6 +61,16 @@ export function Homepage() {
         cicloOrigen: c.cicloOrigen,
       };
     });
+
+    // Segunda pasada: poblar relaciones inversas (habilitaA)
+    Object.values(cursosMap).forEach((c: any) => {
+      (c.prerequisitos || []).forEach((codigoPre: string) => {
+        if (cursosMap[codigoPre] && !cursosMap[codigoPre].habilitaA.includes(c.nombre)) {
+          cursosMap[codigoPre].habilitaA.push(c.nombre);
+        }
+      });
+    });
+
     useMallaStore.getState().setCursos(cursosMap, 'Malla_Software_2026_Demo.xlsx');
   }
 
@@ -94,6 +106,51 @@ export function Homepage() {
           </div>
         </section>
 
+        {/* Preview de Funcionalidades */}
+        <section className="homepage-features-preview" aria-label="Características destacadas">
+          <div className="features-preview-grid">
+            <div className="feature-preview-card">
+              <div className="feature-icon-box">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="feature-info">
+                <h4>Validación de Prerrequisitos</h4>
+                <p>Detecta secuencias inválidas y bloqueos topológicos en tiempo real al mover cursos.</p>
+              </div>
+            </div>
+
+            <div className="feature-preview-card">
+              <div className="feature-icon-box">
+                <Sparkles size={18} />
+              </div>
+              <div className="feature-info">
+                <h4>Auto-Planificación Óptima</h4>
+                <p>Calcula automáticamente la ruta crítica nivelada para maximizar avance por ciclo.</p>
+              </div>
+            </div>
+
+            <div className="feature-preview-card">
+              <div className="feature-icon-box">
+                <Calculator size={18} />
+              </div>
+              <div className="feature-info">
+                <h4>Costos & Cuotas UTP 2026</h4>
+                <p>Estima horas semanales, tramos de pensión y presupuesto exacto por periodo.</p>
+              </div>
+            </div>
+
+            <div className="feature-preview-card">
+              <div className="feature-icon-box">
+                <CalendarRange size={18} />
+              </div>
+              <div className="feature-info">
+                <h4>Proyección de Veranos</h4>
+                <p>Simula cursos de nivelación en enero para adelantar asignaturas clave.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Zona de Carga Directa */}
         <section className="homepage-upload-section">
           <div
@@ -119,12 +176,16 @@ export function Homepage() {
             <div className="upload-icon-circle">
               <UploadCloud size={32} />
             </div>
-            <h2 className="upload-card-title">Sube tu archivo de avance curricular</h2>
+            <h2 className="upload-card-title">
+              {cargando ? 'Procesando malla curricular...' : 'Sube tu archivo de avance curricular'}
+            </h2>
             <p className="upload-card-desc">
-              Arrastra tu archivo <b>Plan_de_Estudio.xlsx</b> aquí o haz clic para buscarlo
+              {cargando
+                ? 'Analizando cursos, prerrequisitos y créditos de tu archivo UTP+...'
+                : <>Arrastra tu archivo <b>Plan_de_Estudio.xlsx</b> aquí o haz clic para buscarlo</>}
             </p>
             <span className="upload-btn-fake">
-              <FileSpreadsheet size={15} className="inline-icon" /> Seleccionar archivo Excel
+              <FileSpreadsheet size={15} className="inline-icon" /> {cargando ? 'Cargando datos...' : 'Seleccionar archivo Excel'}
             </span>
             <span className="upload-note">Soporta formatos oficiales .xlsx y .xls exportados de UTP+</span>
           </div>
@@ -154,9 +215,9 @@ export function Homepage() {
             </button>
           </div>
 
-          {errorMessage && (
+          {(errorMessage || parserError) && (
             <div className="upload-error-alert" role="alert">
-              <AlertCircle size={15} className="inline-icon" /> {errorMessage}
+              <AlertCircle size={15} className="inline-icon" /> {errorMessage || parserError}
             </div>
           )}
         </section>

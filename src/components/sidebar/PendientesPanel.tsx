@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useMallaStore } from '@/store/mallaStore';
 import { useContadorPozo } from '@/store/selectors';
 import { CursoCard } from '@/components/planner/CursoCard';
 import { DropZone } from '@/components/planner/DropZone';
 import type { Curso } from '@/types/malla';
-import { Inbox, CheckCircle2, FileSpreadsheet } from 'lucide-react';
+import { Inbox, CheckCircle2, FileSpreadsheet, Search, X } from 'lucide-react';
 
 export function PendientesPanel() {
   const {
@@ -16,15 +17,22 @@ export function PendientesPanel() {
     ejecutarMovimiento,
   } = useMallaStore();
   const totalPendientes = useContadorPozo();
+  const [busqueda, setBusqueda] = useState('');
 
   // Cursos en el pozo agrupados por cicloOrigen
   const cursosPozo = Object.values(cursos)
     .filter((c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo')
     .sort((a, b) => a.cicloOrigen - b.cicloOrigen);
 
-  const grupos = cursosPozo.reduce<Record<number, Curso[]>>((acc, c) => {
-    if (!acc[c.cicloOrigen]) acc[c.cicloOrigen] = [];
-    acc[c.cicloOrigen].push(c);
+  const q = busqueda.trim().toLowerCase();
+  const cursosFiltrados = q
+    ? cursosPozo.filter((c) => c.nombre.toLowerCase().includes(q) || c.codigo.toLowerCase().includes(q))
+    : cursosPozo;
+
+  const grupos = cursosFiltrados.reduce<Record<number, Curso[]>>((acc, c) => {
+    const list = acc[c.cicloOrigen] ?? [];
+    list.push(c);
+    acc[c.cicloOrigen] = list;
     return acc;
   }, {});
 
@@ -48,6 +56,31 @@ export function PendientesPanel() {
         </span>
         <span className="aside-count" id="pozo-count">{totalPendientes}</span>
       </div>
+
+      {hayMalla && cursosPozo.length > 3 && (
+        <div className="pozo-search-wrap">
+          <Search size={13} style={{ color: 'var(--t-muted)', flexShrink: 0 }} />
+          <input
+            type="text"
+            className="pozo-search-input"
+            placeholder="Buscar por código o nombre..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            aria-label="Buscar curso pendiente"
+          />
+          {busqueda && (
+            <button
+              type="button"
+              className="pozo-search-clear"
+              onClick={() => setBusqueda('')}
+              aria-label="Limpiar búsqueda"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      )}
+
       <p className="aside-hint">Arrastra cursos a los ciclos del planificador</p>
 
       {/* htmlId="pozo-cursos" para que apliquen los selectores CSS de globals.css */}
@@ -88,7 +121,7 @@ export function PendientesPanel() {
           .map((ciclo) => (
             <div key={ciclo}>
               <div className="separador-ciclo">Ciclo {ciclo}</div>
-              {grupos[ciclo].map((curso) => (
+              {(grupos[ciclo] ?? []).map((curso) => (
                 <CursoCard key={curso.codigo} curso={curso} compacto />
               ))}
             </div>

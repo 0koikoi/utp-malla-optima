@@ -5,20 +5,19 @@ import { CursoCard } from './CursoCard';
 import { DropZone } from './DropZone';
 import { formatSoles } from '@/utils/finance';
 import type { UbicacionCurso } from '@/types/malla';
-import { Lock, CheckCircle2, ArrowDownCircle } from 'lucide-react';
+import { Lock, CheckCircle2, ArrowDownCircle, Sun, EyeOff } from 'lucide-react';
 
 interface CicloRowProps {
   cicloNum: number;
   tipo: 'regular' | 'verano';
+  trasCiclo?: number;
+  onToggleHabilitado?: () => void;
 }
 
-export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
+export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: CicloRowProps) {
   const {
     cursos,
     asignaciones,
-    veranoUbicaciones,
-    periodoIngreso,
-    setVeranoUbicacion,
     cursoAMover,
     setCursoAMover,
     ejecutarMovimiento,
@@ -28,7 +27,6 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
 
   const cicloId: UbicacionCurso = tipo === 'regular' ? `ciclo-${cicloNum}` : `verano-${cicloNum}`;
   const finanzas = finanzasList.find((f) => f.cicloId === cicloId);
-  const trasCiclo = veranoUbicaciones[cicloNum] ?? (periodoIngreso === 'agosto' ? (cicloNum * 2 - 1) : (cicloNum * 2));
 
   // Cursos en este ciclo
   const cursosEnCiclo = Object.values(cursos).filter(
@@ -64,7 +62,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
   const nombreCiclo =
     tipo === 'regular'
       ? `Ciclo ${cicloNum}`
-      : `Verano ${cicloNum}`;
+      : 'Verano (Ene)';
 
   const horas = finanzas?.horasSemanales ?? 0;
   const creditos = finanzas?.creditos ?? 0;
@@ -84,26 +82,31 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
         id={`label-${tipo === 'regular' ? 'ciclo' : 'verano'}-${cicloNum}`}
       >
         <span className="tier-num">
-          {isLocked ? <Lock size={12} style={{ marginRight: '6px', opacity: 0.6 }} /> : null}
-          {cicloNum}
+          {tipo === 'verano' ? (
+            <Sun size={16} className="verano-icon-sun" style={{ color: '#F59E0B' }} />
+          ) : (
+            <>
+              {isLocked ? <Lock size={12} style={{ marginRight: '6px', opacity: 0.6 }} /> : null}
+              {cicloNum}
+            </>
+          )}
         </span>
-        <span className="tier-name">{nombreCiclo}</span>
+        <span className="tier-name">{tipo === 'verano' ? 'Verano' : `Ciclo ${cicloNum}`}</span>
+        {tipo === 'verano' && <span className="verano-mes-chip">Ene</span>}
 
-        {tipo === 'verano' && (
-          <div className="verano-tras-wrap" title={`Este periodo de verano se cursa tras el Ciclo ${trasCiclo}`}>
-            <select
-              className="verano-tras-select"
-              value={trasCiclo}
-              onChange={(e) => setVeranoUbicacion(cicloNum, parseInt(e.target.value, 10))}
-              title="A qué ciclo sigue cronológicamente este verano"
-              aria-label={`Ciclo previo al Verano ${cicloNum}`}
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((c) => (
-                <option key={c} value={c}>Post C{c}</option>
-              ))}
-            </select>
-          </div>
+        {/* Botón para omitir/deshabilitar este verano posterior si el estudiante no lo cursará */}
+        {tipo === 'verano' && onToggleHabilitado && (
+          <button
+            type="button"
+            className="btn-verano-omitir"
+            onClick={onToggleHabilitado}
+            title={trasCiclo ? `Omitir periodo de verano tras Ciclo ${trasCiclo}` : 'Omitir periodo de verano'}
+            aria-label="Omitir este periodo de verano"
+          >
+            <EyeOff size={11} className="inline-icon" /> Omitir
+          </button>
         )}
+
         {/* Estadísticas de la fila */}
         {isLocked ? (
           <div className="tier-stats">
@@ -130,7 +133,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
             <span className="ciclo-costo-val">
               <b className="costo-val">{formatSoles(costoFinal)}</b>
               {horas > 0 ? (
-                <span className="ciclo-mat mat-info">+S/{matricula.toFixed(0)} matrícula</span>
+                <span className="ciclo-mat mat-info">+S/{(matricula ?? 0).toFixed(0)} matrícula</span>
               ) : (
                 <span className="ciclo-mat sin-cursos">Sin proyectar</span>
               )}
@@ -158,14 +161,16 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
 
         {cursosEnCiclo.length === 0 ? (
           <div className="ciclo-placeholders-grid" aria-label={`Casillas disponibles en ${nombreCiclo}`}>
-            {[1, 2, 3, 4, 5].map((slotNum) => (
+            {(tipo === 'verano' ? [1, 2] : [1, 2, 3, 4, 5]).map((slotNum) => (
               <div key={slotNum} className="curso-card-placeholder">
                 <div className="placeholder-header">
                   <span className="placeholder-pill">Casilla {slotNum}</span>
                   <span className="placeholder-add-icon">+</span>
                 </div>
                 <span className="placeholder-title">Casilla disponible</span>
-                <span className="placeholder-hint">Arrastra o asigna un curso</span>
+                <span className="placeholder-hint">
+                  {tipo === 'verano' ? 'Máx. 2 asignaturas' : 'Arrastra o asigna un curso'}
+                </span>
               </div>
             ))}
           </div>
