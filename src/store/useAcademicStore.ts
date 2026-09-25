@@ -137,10 +137,12 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
         cicloOrigen: c.cicloOrigen,
         tipoPeriodo,
         ubicacion,
-        horasSemanales: c.horas ?? 0,
+        horasSemanales: c.horasSemanales ?? 0,
         creditos: c.creditos ?? 0,
-        tipo: c.tipo === 'E' ? 'ELECTIVO' as const : 'OBLIGATORIO' as const,
+        tipo: (c.tipo === 'E' || c.tipo === 'ELECTIVO') ? 'ELECTIVO' as const : 'OBLIGATORIO' as const,
         prerrequisitos: c.prerequisitos ?? [],
+        prerequisitos: c.prerequisitos ?? [],
+        habilitaA: [],
         estado: c.estado,
       };
     });

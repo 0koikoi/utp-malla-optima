@@ -1,117 +1,39 @@
-export type EstadoCurso = 'APROBADO' | 'CONVALIDADO' | 'EN_CURSO' | 'PENDIENTE';
-export type TipoCurso = 'OBLIGATORIO' | 'ELECTIVO';
-export type ModalidadCalculo = 'POR_CREDITO' | 'POR_HORA' | 'POR_CURSO' | 'ESCALA_FIJA';
+/**
+ * @deprecated — TRANSITIONAL SHIM
+ *
+ * Este archivo re-exporta desde @/core/types para mantener compatibilidad
+ * mientras se migran los importadores. NO añadir lógica nueva aquí.
+ *
+ * Mapeo:
+ *   - 'Curso' en este módulo = CursoEnPlanificador (tiene ciclo, tipoPeriodo,
+ *     ubicacion 'banco'|'periodo', y prerrequisitos).
+ *   - Los campos extra (tipoPeriodo, ubicacion, ciclo) se eliminarán en Fase 2
+ *     cuando useAcademicStore sea unificado con mallaStore.
+ */
 
-export type TipoPeriodoAcademico = 'REGULAR' | 'VERANO';
+export type {
+  EstadoCurso,
+  TipoCurso,
+  ModalidadCalculo,
+  TipoPeriodo as TipoPeriodoAcademico,
+  PeriodoAcademico,
+  RangoTarifario,
+  MetodoPagoTarifario,
+  TarifasDetalle,
+  Tarifario,
+  ResumenFinanciero,
+  CursoReferencia,
+  TipoNotificacionMovimiento,
+  NotificacionMovimiento,
+} from '@/core/types';
+
+// El 'Curso' del mundo academic tiene campos extra del planificador.
+// Se re-exporta CursoEnPlanificador bajo el alias Curso para mantener
+// compatibilidad con todos los importadores actuales.
+export type { CursoEnPlanificador as Curso } from '@/core/types';
+
+// UbicacionCurso en academic.ts era 'banco'|'periodo' (concepto diferente al
+// del planificador). Se mantiene como tipo local hasta que los consumidores
+// sean migrados en Fase 2.
+/** @deprecated — usar UbicacionCurso de @/core/types para el planificador */
 export type UbicacionCurso = 'banco' | 'periodo';
-
-export interface PeriodoAcademico {
-  id: `ciclo-${number}` | `verano-${number}`;
-  tipo: TipoPeriodoAcademico;
-  cicloReferencia: number;
-  orden: number;
-  etiqueta: string;
-}
-
-export interface Curso {
-  codigo: string;
-  nombre: string;
-  disciplina?: string;
-  ciclo: number;
-  cicloOrigen: number;
-  tipoPeriodo: TipoPeriodoAcademico;
-  ubicacion: UbicacionCurso;
-  horasSemanales: number;
-  creditos: number;
-  tipo: TipoCurso;
-  prerrequisitos: string[];
-  esLaboratorio?: boolean;
-  estado: EstadoCurso;
-}
-
-export interface RangoTarifario {
-  minHoras: number;
-  maxHoras: number;
-  montoCuota: number;
-}
-
-export interface MetodoPagoTarifario {
-  nombre: string;
-  descuentoPorcentaje: number;
-  requiereProntoPago?: boolean;
-}
-
-export interface TarifasDetalle {
-  costoMatriculaRegular: number;
-  costoPorCredito: number;
-  costoPorHora: number;
-  costoPorCurso: number;
-  costoFijoLaboratorio: number;
-  recargoRepitenciaPorcentaje: number;
-  rangosPension?: RangoTarifario[];
-  costoHoraAdicional?: number;
-}
-
-export interface Tarifario {
-  universidadId: string;
-  moneda: string;
-  modalidadPrincipal: ModalidadCalculo;
-  cuotasPorCiclo: number;
-  semanasPorCiclo: number;
-  disciplinas: Record<string, TarifasDetalle>;
-  sede?: string;
-  modalidadEstudio?: string;
-  vigencia?: string;
-  metodosPago?: Record<string, MetodoPagoTarifario>;
-  multiplicadorCostoVerano?: number;
-  cuotasPorVerano?: number;
-  costoMatriculaVerano?: number;
-  descuentoPagoUnicoRegular?: number;
-  costoProgramaSaludEstudiantil?: number;
-  limitesAcademicos?: {
-    creditosMinimos: number;
-    creditosMaximos: number;
-  };
-}
-
-export interface ResumenFinanciero {
-  totalCreditos: number;
-  totalHorasSemanales: number;
-  horasTarifarias: number;
-  tipoPeriodo: TipoPeriodoAcademico;
-  costoMatricula: number;
-  cuotaBase: number;
-  descuentoPorcentaje: number;
-  descuentoMontoPorCuota: number;
-  costoEnsenanzaTotal: number;
-  costoTotalCiclo: number;
-  montoPorCuota: number;
-  numeroCuotas: number;
-  horasExceso: number;
-  costoHorasExcesoPorCuota: number;
-  pagoUnico: boolean;
-  descuentoPagoUnicoMonto: number;
-}
-
-export interface CursoReferencia {
-  codigo: string;
-  nombre: string;
-}
-
-export type TipoNotificacionMovimiento =
-  | 'PRERREQUISITOS'
-  | 'INMOVIBLE'
-  | 'PERIODO_ANTERIOR'
-  | 'PERIODO_ACTUAL'
-  | 'LIMITE_CREDITOS_VERANO'
-  | 'LIMITE_HORAS';
-
-export interface NotificacionMovimiento {
-  tipo: TipoNotificacionMovimiento;
-  cursoNombre: string;
-  faltantes?: CursoReferencia[];
-  mensaje?: string;
-  periodoDestino?: string;
-  limite?: number;
-  valorActual?: number;
-}

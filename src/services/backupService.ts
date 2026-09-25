@@ -74,11 +74,11 @@ export function leerRespaldoJSON(file: File): Promise<RespaldoMalla> {
             cursosMap[c.codigo] = {
               codigo: c.codigo,
               nombre: c.nombre,
-              horas: c.horasSemanales ?? c.horas ?? 0,
+              horasSemanales: c.horasSemanales ?? c.horas ?? 0,
               creditos: c.creditos ?? 0,
-              tipo: c.tipo === 'ELECTIVO' ? 'E' : (c.tipo === 'OBLIGATORIO' ? 'O' : (c.tipo ?? 'O')),
+              tipo: (c.tipo === 'ELECTIVO' || c.tipo === 'E') ? 'ELECTIVO' as const : 'OBLIGATORIO' as const,
               estado: c.estado ?? 'PENDIENTE',
-              prerequisitos: c.prerrequisitos ?? c.prerequisitos ?? [],
+              prerequisitos: c.prerequisitos ?? c.prerrequisitos ?? [],
               habilitaA: [],
               cicloOrigen: c.cicloOrigen ?? c.ciclo ?? 1,
             };

@@ -5,7 +5,7 @@
 import { useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { useMallaStore } from '@/store/mallaStore';
-import type { Curso, EstadoCurso, TipoCurso } from '@/types/malla';
+import type { Curso, EstadoCurso, TipoCurso } from '@/core/types';
 
 export function useExcelParser() {
   const setCursos = useMallaStore((s) => s.setCursos);
@@ -51,15 +51,24 @@ function procesarJson(datos: Record<string, unknown>[]): Record<string, Curso> {
       continue;
     }
 
-    const estado = String(fila['Estado(***)'] ?? 'PENDIENTE').trim().toUpperCase() as EstadoCurso;
-    const tipoBruto = String(fila['Tipo'] ?? 'O').trim().toUpperCase() as TipoCurso;
+    const estado: EstadoCurso = (() => {
+      const raw = String(fila['Estado(***)'] ?? '').trim().toUpperCase();
+      if (raw.includes('CONVALID')) return 'CONVALIDADO';
+      if (raw.includes('APROB')) return 'APROBADO';
+      if (raw.includes('EN CURSO') || raw.includes('EN PROCESO') || raw.includes('MATRIC')) return 'EN_CURSO';
+      return 'PENDIENTE';
+    })();
+    const tipo: TipoCurso = (() => {
+      const raw = String(fila['Tipo'] ?? '').trim().toUpperCase();
+      return raw === 'E' || raw.includes('ELECTIV') ? 'ELECTIVO' : 'OBLIGATORIO';
+    })();
 
     diccionario[codigoRaw] = {
       codigo: codigoRaw,
       nombre: String(fila['Nombre Curso']).trim(),
-      horas: parseFloat(String(fila['Horas Semanales(*)'])) || 3,
+      horasSemanales: parseFloat(String(fila['Horas Semanales(*)'])) || 3,
       creditos: parseFloat(String(fila['Créditos'])) || 0,
-      tipo: tipoBruto,
+      tipo,
       estado,
       prerequisitos: String(fila['Pre-Requisito'] ?? '')
         .split(',')

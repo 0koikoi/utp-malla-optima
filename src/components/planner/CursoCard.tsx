@@ -39,9 +39,9 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
   });
 
   const claseEst = esAprobado ? curso.estado.toLowerCase() : '';
-  const claseT = curso.tipo === 'O' ? 'obligatorio' : 'electivo';
-  const textoT = curso.tipo === 'O' ? 'Obligatorio' : 'Electivo';
-  const claseTag = curso.tipo === 'O' ? 'obl' : 'ele';
+  const claseT = curso.tipo === 'OBLIGATORIO' ? 'obligatorio' : 'electivo';
+  const textoT = curso.tipo === 'OBLIGATORIO' ? 'Obligatorio' : 'Electivo';
+  const claseTag = curso.tipo === 'OBLIGATORIO' ? 'obl' : 'ele';
   const sinSucesores = !esAprobado && curso.habilitaA.length === 0;
 
   function handleInfoEnter(e: React.MouseEvent) {
@@ -80,7 +80,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
       <div
         ref={esArrastrable ? setNodeRef : undefined}
         className={cardClasses}
-        data-horas={curso.horas}
+        data-horas={curso.horasSemanales}
         data-creditos={curso.creditos}
         data-estado={curso.estado}
         data-ciclo-origen={curso.cicloOrigen}
@@ -131,7 +131,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
         </div>
         <div className="curso-tags">
           <span className="ctag">C{curso.cicloOrigen}</span>
-          <span className="ctag ctag-horas">{curso.horas}h</span>
+          <span className="ctag ctag-horas">{curso.horasSemanales}h</span>
           <span className="ctag ctag-creditos">{curso.creditos} crd</span>
           {esAprobado ? (
             <span className="ctag ctag-aprobado">✓ Aprobado</span>

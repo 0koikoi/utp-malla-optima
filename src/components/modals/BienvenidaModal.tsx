@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useMallaStore, type PeriodoIngreso } from '@/store/mallaStore';
 import { Layers, Calendar, Sun, Check, X } from 'lucide-react';
 
@@ -13,9 +13,11 @@ export function BienvenidaModal() {
   const [selectedPeriodo, setSelectedPeriodo] = useState<PeriodoIngreso>(periodoIngreso);
   const checkRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const [prevPeriodo, setPrevPeriodo] = useState<PeriodoIngreso>(periodoIngreso);
+  if (prevPeriodo !== periodoIngreso) {
+    setPrevPeriodo(periodoIngreso);
     setSelectedPeriodo(periodoIngreso);
-  }, [periodoIngreso]);
+  }
 
   function handleGuardarYComenzar() {
     setPeriodoIngreso(selectedPeriodo);

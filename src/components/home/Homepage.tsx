@@ -50,11 +50,11 @@ export function Homepage() {
       cursosMap[c.codigo] = {
         codigo: c.codigo,
         nombre: c.nombre,
-        horas: c.horasSemanales,
+        horasSemanales: c.horasSemanales,
         creditos: c.creditos,
-        tipo: c.tipo === 'ELECTIVO' ? 'E' : 'O',
+        tipo: c.tipo === 'ELECTIVO' ? 'ELECTIVO' as const : 'OBLIGATORIO' as const,
         estado: c.estado,
-        prerequisitos: c.prerrequisitos,
+        prerequisitos: (c as any).prerequisitos ?? (c as any).prerrequisitos ?? [],
         habilitaA: [],
         cicloOrigen: c.cicloOrigen,
       };

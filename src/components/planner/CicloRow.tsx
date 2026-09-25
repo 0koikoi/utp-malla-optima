@@ -66,7 +66,7 @@ export function CicloRow({ cicloNum, tipo }: CicloRowProps) {
       ? `Ciclo ${cicloNum}`
       : `Verano ${cicloNum}`;
 
-  const horas = finanzas?.horas ?? 0;
+  const horas = finanzas?.horasSemanales ?? 0;
   const creditos = finanzas?.creditos ?? 0;
   const costoFinal = finanzas?.costoFinal ?? 0;
   const matricula = finanzas?.matricula ?? 0;

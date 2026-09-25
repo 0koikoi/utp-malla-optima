@@ -39,7 +39,7 @@ export function calcularFinanzasCiclo(
   let credBrutos = 0;
 
   for (const c of cursosPendientes) {
-    horasBrutas += c.horas;
+    horasBrutas += c.horasSemanales;
     credBrutos += c.creditos;
   }
 
@@ -58,7 +58,7 @@ export function calcularFinanzasCiclo(
 
   return {
     cicloId,
-    horas,
+    horasSemanales: horas,
     creditos,
     costoFinal,
     matricula: esVerano ? COSTOS_FIJOS.matriculaVerano : COSTOS_FIJOS.matriculaRegular,
@@ -76,7 +76,7 @@ export function calcularCreditosElectivos(
 
   return Object.values(cursos)
     .filter((c) => {
-      if (c.tipo !== 'E') return false;
+      if (c.tipo !== 'ELECTIVO') return false;
       // Cuenta si está aprobado/convalidado O si está asignado a un ciclo (planificado)
       const aprobado = estadosValidos.includes(c.estado);
       const planificado = asignaciones[c.codigo] && asignaciones[c.codigo] !== 'pozo';
