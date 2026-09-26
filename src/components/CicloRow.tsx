@@ -10,19 +10,21 @@ import {
   determinarPeriodoEnCurso,
   esPeriodoAnterior,
 } from '../domain/rules/academicPeriodRules';
+import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
 import {
   calcularHorasEfectivas,
   LIMITE_CREDITOS_VERANO,
 } from '../domain/rules/planningRules';
-import { calcularPresupuesto } from '../utils/budgetEngine';
+import { FinancialPlanningService } from '../financial/services/FinancialPlanningService';
 
 interface Props {
   numCiclo: number;
   cursos: Curso[];
   tipoPeriodo?: TipoPeriodoAcademico;
+  habilitado?: boolean;
 }
 
-export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR' }: Props) => {
+export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = true }: Props) => {
   const [isOver, setIsOver] = useState(false);
   const {
     moverCursoAPeriodo,
@@ -30,13 +32,20 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR' }: Props) =
     cursos: todosLosCursos,
     tarifario,
     disciplinaActiva,
+    cicloActual,
   } = useAcademicStore();
   const periodo = crearPeriodoAcademico(tipoPeriodo, numCiclo);
   const periodoActual = determinarPeriodoActual(todosLosCursos);
   const periodoEnCurso = determinarPeriodoEnCurso(todosLosCursos);
-  const esPeriodoActual = periodoEnCurso?.id === periodo.id;
-  const esPeriodoPasado = esPeriodoAnterior(periodo, periodoActual);
-  const esPeriodoBloqueado = esPeriodoPasado || esPeriodoActual;
+  const esPeriodoActual = cicloActual
+    ? tipoPeriodo === 'REGULAR' && numCiclo === cicloActual
+    : periodoEnCurso?.id === periodo.id;
+  const esPeriodoPasado = cicloActual
+    ? (tipoPeriodo === 'REGULAR' ? numCiclo < cicloActual : numCiclo < cicloActual)
+    : esPeriodoAnterior(periodo, periodoActual);
+  const esPeriodoBloqueado = !habilitado || (cicloActual
+    ? periodoBloqueadoPorCicloActual(periodo, cicloActual)
+    : esPeriodoPasado || esPeriodoActual);
   const esVerano = tipoPeriodo === 'VERANO';
 
   const cursosOrdenados = [...cursos].sort((a, b) => {
@@ -62,11 +71,8 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR' }: Props) =
     const cursosPendientesPeriodo = cursos.filter((curso) => curso.estado === 'PENDIENTE');
     if (cursosPendientesPeriodo.length === 0) return null;
 
-    const resumen = calcularPresupuesto(cursosPendientesPeriodo, tarifario, disciplinaActiva, {
-      tipoPeriodo,
-    });
-
-    return resumen.cuotaBase;
+    const resumen = FinancialPlanningService.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva);
+    return resumen.periodos[0]?.resumen.cuotaBase ?? null;
   }, [cursos, tarifario, disciplinaActiva, tipoPeriodo]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -79,7 +85,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR' }: Props) =
 
   return (
     <div
-      className={`tier-row ${esVerano ? 'summer-row' : ''} ${esPeriodoPasado ? 'period-past' : ''} ${esPeriodoActual ? 'period-current' : ''} ${isOver ? 'is-over' : ''}`}
+      className={`tier-row ${esVerano ? 'summer-row' : ''} ${esPeriodoPasado ? 'period-past' : ''} ${esPeriodoActual ? 'period-current' : ''} ${!habilitado ? 'period-unavailable' : ''} ${isOver ? 'is-over' : ''}`}
       data-periodo={periodo.id}
     >
       <div
@@ -95,7 +101,9 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR' }: Props) =
           )}
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
         </div>
-        {esPeriodoPasado ? (
+        {!habilitado ? (
+          <span className="tier-lock-note"><LockKeyhole size={10} /> verano no habilitado</span>
+        ) : esPeriodoPasado ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> periodo pasado</span>
         ) : esPeriodoActual ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> ciclo actual</span>

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { Curso } from '../types/academic';
+import type { PeriodoIngreso } from '../types/academic';
 import type { Tarifario } from '../types/financial';
 import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 
@@ -10,6 +11,8 @@ export interface UserAcademicProfile {
   disciplinaActiva: string;
   fechaActualizacion: string;
   nombreArchivoCargado?: string;
+  periodoIngreso?: PeriodoIngreso;
+  cicloActual?: number;
 }
 
 export class AcademicDatabase extends Dexie {

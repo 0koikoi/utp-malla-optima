@@ -1,5 +1,6 @@
 import type { Curso, PeriodoAcademico, TipoPeriodoAcademico } from '../../types/academic';
-import { determinarPeriodoActual, determinarPeriodoEnCurso, esPeriodoAnterior } from './academicPeriodRules';
+import { crearPeriodoRegular, determinarPeriodoActual, determinarPeriodoEnCurso, esPeriodoAnterior } from './academicPeriodRules';
+import { periodoBloqueadoPorCicloActual } from './academicContextRules';
 
 export const LIMITE_HORAS_PERIODO = 26;
 export const FACTOR_HORAS_VERANO = 2;
@@ -66,22 +67,26 @@ export const validarLimiteCreditosVerano = (cursos: Curso[]): ResultadoLimite =>
  */
 export const validarDestinoNoAnterior = (
   cursos: Curso[],
-  destino: PeriodoAcademico
+  destino: PeriodoAcademico,
+  cicloActualExplicito?: number | null
 ): {
   valido: boolean;
   periodoActual: PeriodoAcademico;
   esPeriodoActualBloqueado: boolean;
 } => {
-  const periodoActual = determinarPeriodoActual(cursos);
+  const periodoActual = cicloActualExplicito
+    ? crearPeriodoRegular(cicloActualExplicito)
+    : determinarPeriodoActual(cursos);
   const periodoEnCurso = determinarPeriodoEnCurso(cursos);
   const esPeriodoActualBloqueado = Boolean(
-    periodoEnCurso && destino.orden === periodoActual.orden
+    (cicloActualExplicito || periodoEnCurso) && destino.orden === periodoActual.orden
   );
 
   return {
     valido:
-      !esPeriodoAnterior(destino, periodoActual) &&
-      !esPeriodoActualBloqueado,
+      (cicloActualExplicito
+        ? !periodoBloqueadoPorCicloActual(destino, cicloActualExplicito)
+        : !esPeriodoAnterior(destino, periodoActual) && !esPeriodoActualBloqueado),
     periodoActual,
     esPeriodoActualBloqueado,
   };

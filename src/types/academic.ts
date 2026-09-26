@@ -1,4 +1,5 @@
 export type EstadoCurso = 'APROBADO' | 'CONVALIDADO' | 'EN_CURSO' | 'PENDIENTE';
+export type PeriodoIngreso = 'marzo' | 'agosto';
 export type TipoCurso = 'OBLIGATORIO' | 'ELECTIVO';
 export type ModalidadCalculo = 'POR_CREDITO' | 'POR_HORA' | 'POR_CURSO' | 'ESCALA_FIJA';
 
@@ -40,7 +41,8 @@ export type TipoNotificacionMovimiento =
   | 'PERIODO_ANTERIOR'
   | 'PERIODO_ACTUAL'
   | 'LIMITE_CREDITOS_VERANO'
-  | 'LIMITE_HORAS';
+  | 'LIMITE_HORAS'
+  | 'IMPACTO_DESCENDIENTE';
 
 export interface NotificacionMovimiento {
   tipo: TipoNotificacionMovimiento;

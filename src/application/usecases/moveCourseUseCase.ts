@@ -1,4 +1,4 @@
-import type { Curso, PeriodoAcademico } from '../../types/academic';
+import type { Curso, PeriodoAcademico, PeriodoIngreso } from '../../types/academic';
 import { cursoBloqueado } from '../../domain/rules/courseRules';
 import {
   validarDestinoNoAnterior,
@@ -7,6 +7,7 @@ import {
 } from '../../domain/rules/planningRules';
 import { validarPrerequisitosParaPeriodo } from '../../utils/academicGraph';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
+import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
 
 export type MoveCourseFailureReason =
   | 'NOT_FOUND'
@@ -15,12 +16,15 @@ export type MoveCourseFailureReason =
   | 'CURRENT_PERIOD'
   | 'PREREQUISITES'
   | 'SUMMER_CREDIT_LIMIT'
-  | 'HOUR_LIMIT';
+  | 'HOUR_LIMIT'
+  | 'SUMMER_NOT_AVAILABLE'
+  | 'SOURCE_PERIOD_LOCKED';
 
 export function moveCourseUseCase(
   cursos: Curso[],
   codigo: string,
-  periodo: PeriodoAcademico
+  periodo: PeriodoAcademico,
+  contexto: { cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null } = {}
 ) {
   const curso = cursos.find((item) => item.codigo === codigo);
   if (!curso) return { ok: false as const, reason: 'NOT_FOUND' as MoveCourseFailureReason };
@@ -28,7 +32,17 @@ export function moveCourseUseCase(
     return { ok: false as const, reason: 'LOCKED' as MoveCourseFailureReason };
   }
 
-  const periodoValido = validarDestinoNoAnterior(cursos, periodo);
+  if (contexto.cicloActual && curso.ubicacion === 'periodo' &&
+      periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), contexto.cicloActual)) {
+    return { ok: false as const, reason: 'SOURCE_PERIOD_LOCKED' as MoveCourseFailureReason };
+  }
+
+  if (periodo.tipo === 'VERANO' && contexto.periodoIngreso &&
+      !permiteVeranoDespuesDe(periodo.cicloReferencia, contexto.periodoIngreso)) {
+    return { ok: false as const, reason: 'SUMMER_NOT_AVAILABLE' as MoveCourseFailureReason };
+  }
+
+  const periodoValido = validarDestinoNoAnterior(cursos, periodo, contexto.cicloActual);
   if (!periodoValido.valido) {
     return {
       ok: false as const,

@@ -3,7 +3,7 @@ import type { DragEvent } from 'react';
 import type { Curso } from '../types/academic';
 import { CourseCard } from './CourseCard';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { ChevronDown, ChevronUp, Inbox, MoveDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, Inbox, MoveDown, Search } from 'lucide-react';
 
 interface Props {
   cursosPendientes: Curso[];
@@ -12,16 +12,21 @@ interface Props {
 export const BancoPendientes = ({ cursosPendientes }: Props) => {
   const [isOver, setIsOver] = useState(false);
   const [expandido, setExpandido] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
   const { moverCursoABanco, cursoAMover, cursos } = useAcademicStore();
   const hayMalla = cursos.length > 0;
+  const filtrados = cursosPendientes.filter((curso) => {
+    const texto = busqueda.trim().toLocaleLowerCase('es');
+    return !texto || curso.nombre.toLocaleLowerCase('es').includes(texto) || curso.codigo.toLocaleLowerCase('es').includes(texto);
+  });
 
   const grupos = useMemo(() => {
-    return cursosPendientes.reduce<Record<number, Curso[]>>((acc, curso) => {
+    return filtrados.reduce<Record<number, Curso[]>>((acc, curso) => {
       if (!acc[curso.cicloOrigen]) acc[curso.cicloOrigen] = [];
       acc[curso.cicloOrigen].push(curso);
       return acc;
     }, {});
-  }, [cursosPendientes]);
+  }, [filtrados]);
 
   const handleDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
@@ -62,6 +67,10 @@ export const BancoPendientes = ({ cursosPendientes }: Props) => {
             Solo aparecen aquí los cursos pendientes que todavía no has planificado.
           </p>
 
+          {cursosPendientes.length > 3 && <label className="pozo-search-wrap"><Search size={14} />
+            <input type="search" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} placeholder="Buscar curso o código" aria-label="Buscar cursos pendientes" />
+          </label>}
+
           {cursoAMover && (
             <button
               type="button"
@@ -73,10 +82,10 @@ export const BancoPendientes = ({ cursosPendientes }: Props) => {
           )}
 
           <div id="pozo-cursos">
-            {cursosPendientes.length === 0 ? (
+            {filtrados.length === 0 ? (
               <div className="pozo-empty">
                 <span>{hayMalla ? '✓' : '↑'}</span>
-                <p>{hayMalla ? 'Todos los cursos pendientes están planificados.' : 'Sube tu Plan_de_Estudio.xlsx para comenzar.'}</p>
+                <p>{busqueda ? 'No hay cursos que coincidan con la búsqueda.' : hayMalla ? 'Todos los cursos pendientes están planificados.' : 'Sube tu Plan_de_Estudio.xlsx para comenzar.'}</p>
               </div>
             ) : (
               Object.keys(grupos)

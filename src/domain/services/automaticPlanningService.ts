@@ -52,6 +52,7 @@ export interface ResultadoPlanificacionAutomatica {
 interface OpcionesPlanificacion {
   limiteCreditos?: number;
   totalCiclos?: number;
+  cicloActual?: number | null;
 }
 
 const ESTADOS_COMPLETADOS = new Set(['APROBADO', 'CONVALIDADO']);
@@ -151,7 +152,9 @@ export const generarPlanificacionAutomatica = (
   const cursosBase = cursosEntrada.map((curso) => ({ ...curso }));
   const porCodigo = new Map(cursosBase.map((curso) => [curso.codigo, curso]));
   const cicloFinal = determinarTotalCiclos(cursosBase, opciones.totalCiclos);
-  const periodoInicio = determinarPrimerPeriodoPlanificable(cursosBase);
+  const periodoInicio = opciones.cicloActual
+    ? crearPeriodoRegular(opciones.cicloActual + 1)
+    : determinarPrimerPeriodoPlanificable(cursosBase);
   const limiteCreditos =
     opciones.limiteCreditos && opciones.limiteCreditos > 0
       ? opciones.limiteCreditos
@@ -163,12 +166,15 @@ export const generarPlanificacionAutomatica = (
   // No se generan periodos de verano ni se usan como pasos intermedios.
   // La planificación manual continúa permitiendo verano.
   const periodos = Array.from(
-    { length: Math.min(cicloFinal, 10) },
+    { length: Math.min(cicloFinal, 12) },
     (_, index) => crearPeriodoRegular(index + 1)
   ).filter((periodo) => periodo.orden >= periodoInicio.orden);
   const ultimoPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : periodoInicio;
 
-  const pendientes = cursosBase.filter((curso) => curso.estado === 'PENDIENTE');
+  const pendientes = cursosBase.filter((curso) =>
+    curso.estado === 'PENDIENTE' &&
+    !(opciones.cicloActual && curso.ubicacion === 'periodo' &&
+      obtenerPeriodoCurso(curso).orden < periodoInicio.orden));
   const pendientesRestantes = new Map(pendientes.map((curso) => [curso.codigo, curso]));
   const asignaciones = new Map<string, PeriodoAcademico>();
   const ciclos: CicloPlanificadoResumen[] = [];
@@ -229,6 +235,8 @@ export const generarPlanificacionAutomatica = (
 
   const cursosResultado = cursosBase.map((curso) => {
     if (curso.estado !== 'PENDIENTE') return curso;
+    if (opciones.cicloActual && curso.ubicacion === 'periodo' &&
+        obtenerPeriodoCurso(curso).orden < periodoInicio.orden) return curso;
 
     const periodoAsignado = asignaciones.get(curso.codigo);
     if (!periodoAsignado) {

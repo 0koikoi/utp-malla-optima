@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado } from '../utils/academicGraph';
+import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
+import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
 import { Calculator, CircleCheck, Info, LockKeyhole } from 'lucide-react';
 
 interface Props {
@@ -18,13 +20,16 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
     toggleSeleccionMatricula,
     cursoAMover,
     setCursoAMover,
+    cicloActual,
   } = useAcademicStore();
 
   const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
   const estaSeleccionado = cursosSeleccionadosParaMatricula.includes(curso.codigo);
   const desbloqueado = isCursoDesbloqueado(curso, cursos);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
-  const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO';
+  const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO' ||
+    Boolean(cicloActual && curso.ubicacion === 'periodo' &&
+      periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual));
   const esSeleccionMovil = cursoAMover === curso.codigo;
   const habilitaA = cursos.filter((item) => item.prerrequisitos.includes(curso.codigo));
 

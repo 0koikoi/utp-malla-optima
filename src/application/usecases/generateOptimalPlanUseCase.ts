@@ -8,6 +8,7 @@ export interface GenerateOptimalPlanInput {
   cursos: Curso[];
   limiteCreditos?: number;
   totalCiclos?: number;
+  cicloActual?: number | null;
 }
 
 export const generateOptimalPlanUseCase = (
@@ -16,4 +17,5 @@ export const generateOptimalPlanUseCase = (
   generarPlanificacionAutomatica(input.cursos, {
     limiteCreditos: input.limiteCreditos,
     totalCiclos: input.totalCiclos,
+    cicloActual: input.cicloActual,
   });

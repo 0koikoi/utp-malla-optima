@@ -71,6 +71,25 @@ export const validarPrerequisitosParaCiclo = (
 ): { valido: boolean; faltantes: CursoReferencia[] } =>
   validarPrerequisitosParaPeriodo(curso, todosLosCursos, crearPeriodoRegular(cicloDestino));
 
+/** Cursos planificados que pierden una secuencia válida tras cambiar otra asignación. */
+export const detectarNuevosConflictosDescendientes = (
+  anteriores: Curso[],
+  siguientes: Curso[],
+  codigoMovido: string
+): CursoReferencia[] => {
+  const porCodigoAnterior = new Map(anteriores.map((curso) => [curso.codigo, curso]));
+  return siguientes
+    .filter((curso) => curso.codigo !== codigoMovido && curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo')
+    .filter((curso) => {
+      const anterior = porCodigoAnterior.get(curso.codigo);
+      if (!anterior || anterior.ubicacion !== 'periodo') return false;
+      const antes = validarPrerequisitosParaPeriodo(anterior, anteriores, obtenerPeriodoCurso(anterior));
+      const despues = validarPrerequisitosParaPeriodo(curso, siguientes, obtenerPeriodoCurso(curso));
+      return antes.valido && !despues.valido;
+    })
+    .map((curso) => ({ codigo: curso.codigo, nombre: curso.nombre }));
+};
+
 /**
  * Genera una representación del grafo académico.
  * Las claves representan cursos y los valores sus dependientes.

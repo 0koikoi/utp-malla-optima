@@ -18,6 +18,8 @@ export function PrerequisitoToast() {
   const titulo =
     tipo === 'INMOVIBLE'
       ? 'Curso bloqueado'
+      : tipo === 'IMPACTO_DESCENDIENTE'
+        ? 'Impacto en cursos posteriores'
       : tipo === 'PRERREQUISITOS'
         ? 'Prerrequisitos pendientes'
         : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'
@@ -52,8 +54,11 @@ export function PrerequisitoToast() {
 
       {tipo === 'INMOVIBLE' ? (
         <p>
-          <b>{notificacionMovimiento.cursoNombre}</b> ya figura como aprobado, convalidado o en curso y no puede cambiarse de periodo.
+          <b>{notificacionMovimiento.cursoNombre}</b>: {notificacionMovimiento.mensaje ?? 'El curso ya figura como aprobado, convalidado o en curso y no puede cambiarse de periodo.'}
         </p>
+      ) : tipo === 'IMPACTO_DESCENDIENTE' ? (
+        <><p><b>{notificacionMovimiento.cursoNombre}</b>: {notificacionMovimiento.mensaje}</p>
+          <ul>{faltantes.map((curso) => <li key={curso.codigo}><span>{curso.codigo}</span><strong>{curso.nombre}</strong></li>)}</ul></>
       ) : tipo === 'PRERREQUISITOS' ? (
         <>
           <p>
