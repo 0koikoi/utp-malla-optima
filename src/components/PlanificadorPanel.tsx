@@ -3,8 +3,7 @@ import { AlertTriangle, Calculator, CreditCard, Sparkles, X } from "lucide-react
 import type { ResultadoPlanificacionAutomatica } from "../domain/services/automaticPlanningService";
 import { useAcademicStore } from "../store/useAcademicStore";
 import { DisciplineSelector } from "./DisciplineSelector";
-import { FinancialEngine } from "../financial/engine/FinancialEngine";
-import { Utp2026Rules } from "../financial/rules/utp/Utp2026Rules";
+import { FinancialPlanningService } from "../financial/services/FinancialPlanningService";
 import { PeriodFinancialCard } from "../financial/components/PeriodFinancialCard";
 import { FinancialTotalCard } from "../financial/components/FinancialTotalCard";
 
@@ -39,8 +38,7 @@ export const PlanificadorPanel = () => {
   const resumen = useMemo(() => {
     if (!tarifario) return null;
 
-    const engine = new FinancialEngine(new Utp2026Rules());
-    return engine.calcular(cursos, tarifario, disciplinaActiva, {
+    return FinancialPlanningService.calcular(cursos, tarifario, disciplinaActiva, {
       metodoPago,
       pagoUnicoPorPeriodo,
     });

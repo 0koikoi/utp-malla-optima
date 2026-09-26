@@ -1,4 +1,5 @@
-import type { Curso, Tarifario, ResumenFinanciero } from '../../types/academic';
+import type { Curso } from '../../types/academic';
+import type { Tarifario, ResumenFinanciero } from '../../types/financial';
 
 export interface UniversityFinancialRules {
   calcular(cursos: Curso[], tarifario: Tarifario, disciplina: string, opciones?: {

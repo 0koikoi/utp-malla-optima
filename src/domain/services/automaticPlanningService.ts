@@ -1,7 +1,6 @@
 import type { Curso, PeriodoAcademico } from '../../types/academic';
 import {
   determinarPrimerPeriodoPlanificable,
-  generarSecuenciaPeriodos,
   obtenerPeriodoCurso,
   crearPeriodoRegular,
 } from '../rules/academicPeriodRules';

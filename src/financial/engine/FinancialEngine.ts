@@ -1,14 +1,19 @@
-import type { Curso, Tarifario } from '../../types/academic';
+import type { Curso } from '../../types/academic';
+import type { Tarifario } from '../../types/financial';
 import type { FinancialPeriod, FinancialSummary } from '../models/FinancialPeriod';
 import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules';
 
-interface FinancialEngineOptions {
+export interface FinancialEngineOptions {
   metodoPago?: string;
   pagoUnicoPorPeriodo?: Record<string, boolean>;
 }
 
 export class FinancialEngine {
-  constructor(private readonly rules: UniversityFinancialRules) {}
+  private readonly rules: UniversityFinancialRules;
+
+  constructor(rules: UniversityFinancialRules) {
+    this.rules = rules;
+  }
 
   calcular(
     cursos: Curso[],

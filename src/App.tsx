@@ -16,8 +16,7 @@ import { DisciplineSelector } from './components/DisciplineSelector';
 import { PrerequisitoToast } from './components/PrerequisitoToast';
 import { BackupControls } from './components/BackupControls';
 import { PDFReport } from './components/PDFReport';
-import defaultCostos from './data/universidades/pe-utp/costos.json';
-import type { Tarifario } from './types/academic';
+import { FinancialConfigurationProvider } from './infrastructure/configuration/FinancialConfigurationProvider';
 
 export const App = () => {
   const {
@@ -39,11 +38,10 @@ export const App = () => {
   useEffect(() => {
     const inicializar = async () => {
       await cargarDesdeDB();
-      // costos.json es la configuración base versionada del proyecto. Se vuelve
-      // a sincronizar al iniciar para que una copia antigua persistida en
-      // IndexedDB no conserve límites/tarifas obsoletos después de actualizar
-      // la aplicación.
-      await setTarifario(defaultCostos as unknown as Tarifario);
+      // La configuración versionada se compone y valida desde university.json,
+      // el tarifario UTP versionado y academic.json. Se vuelve a sincronizar al iniciar para
+      // que IndexedDB no conserve límites o tarifas obsoletos tras una actualización.
+      await setTarifario(FinancialConfigurationProvider.load());
     };
     void inicializar();
   }, [cargarDesdeDB, setTarifario]);

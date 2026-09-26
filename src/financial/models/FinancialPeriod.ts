@@ -1,4 +1,5 @@
-import type { Curso, ResumenFinanciero } from '../../types/academic';
+import type { Curso } from '../../types/academic';
+import type { ResumenFinanciero } from '../../types/financial';
 
 export interface FinancialPeriod {
   id: string;

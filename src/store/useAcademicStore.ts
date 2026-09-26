@@ -1,17 +1,13 @@
 import { create } from 'zustand';
-import type {
-  Curso,
-  EstadoCurso,
-  NotificacionMovimiento,
-  PeriodoAcademico,
-  Tarifario,
-} from '../types/academic';
+import type { Curso, EstadoCurso, NotificacionMovimiento, PeriodoAcademico } from '../types/academic';
+import type { Tarifario } from '../types/financial';
 import { db } from '../services/db';
 import { generateOptimalPlanUseCase } from '../application/usecases/generateOptimalPlanUseCase';
 import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 import { cursoBloqueado, normalizarCurso, ordenarCursos } from '../domain/rules/courseRules';
 import { crearPeriodoRegular, crearPeriodoVerano } from '../domain/rules/academicPeriodRules';
+import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 
 interface AcademicStore {
   cursos: Curso[];
@@ -291,14 +287,15 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
   },
 
   setTarifario: async (tarifario) => {
-    const disciplinas = Object.keys(tarifario.disciplinas);
+    const tarifarioNormalizado = migrateLegacyFinancialRulesReference(tarifario);
+    const disciplinas = Object.keys(tarifarioNormalizado.disciplinas);
     const disciplinaActual = get().disciplinaActiva;
     const disciplinaValida = disciplinas.includes(disciplinaActual)
       ? disciplinaActual
       : (disciplinas[0] ?? disciplinaActual);
 
-    set({ tarifario, disciplinaActiva: disciplinaValida });
-    await db.customCosts.put(tarifario);
+    set({ tarifario: tarifarioNormalizado, disciplinaActiva: disciplinaValida });
+    await db.customCosts.put(tarifarioNormalizado);
 
     const perfilActual = await db.profile.get('current_profile');
     if (perfilActual && perfilActual.disciplinaActiva !== disciplinaValida) {
@@ -350,7 +347,15 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
       if (necesitaMigracion) await db.courses.bulkPut(cursosNormalizados);
     }
 
-    if (tarifariosDB.length > 0) set({ tarifario: tarifariosDB[0] });
+    if (tarifariosDB.length > 0) {
+      const tarifarioPersistido = tarifariosDB[0];
+      const tarifarioMigrado = migrateLegacyFinancialRulesReference(tarifarioPersistido);
+      set({ tarifario: tarifarioMigrado });
+
+      if (tarifarioMigrado !== tarifarioPersistido) {
+        await db.customCosts.put(tarifarioMigrado);
+      }
+    }
     if (profileDB) {
       set({
         disciplinaActiva: profileDB.disciplinaActiva,
