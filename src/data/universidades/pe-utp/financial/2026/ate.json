@@ -1,14 +1,8 @@
 {
-  "universidadId": "pe-utp-ate-pregrado-2026",
-  "moneda": "PEN",
   "modalidadPrincipal": "ESCALA_FIJA",
   "cuotasPorCiclo": 5,
   "cuotasPorVerano": 2,
   "semanasPorCiclo": 16,
-  "sede": "Ate",
-  "modalidadEstudio": "Pregrado regular",
-  "vigencia": "Marzo 2026",
-  "multiplicadorCostoVerano": 3,
   "costoMatriculaVerano": 198,
   "costoProgramaSaludEstudiantil": 45,
   "metodosPago": {
@@ -91,10 +85,6 @@
         }
       ]
     }
-  },
-  "limitesAcademicos": {
-    "creditosMinimos": 12,
-    "creditosMaximos": 40
   },
   "descuentoPagoUnicoRegular": 7.5
 }

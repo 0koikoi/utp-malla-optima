@@ -2,7 +2,7 @@ import type { CursoEnPlanificador, Tarifario } from '@/core/types';
 import type { FinancialPeriod, FinancialSummary } from '../models/FinancialPeriod';
 import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules';
 
-interface FinancialEngineOptions {
+export interface FinancialEngineOptions {
   metodoPago?: string;
   pagoUnicoPorPeriodo?: Record<string, boolean>;
 }

@@ -124,6 +124,9 @@ export interface TarifasDetalle {
 
 export interface Tarifario {
   universidadId: string;
+  reglasFinancierasId?: string;
+  tarifarioVersion?: string;
+  sedeId?: string;
   moneda: string;
   modalidadPrincipal: ModalidadCalculo;
   cuotasPorCiclo: number;
@@ -133,6 +136,7 @@ export interface Tarifario {
   modalidadEstudio?: string;
   vigencia?: string;
   metodosPago?: Record<string, MetodoPagoTarifario>;
+  multiplicadorHorasVerano?: number;
   multiplicadorCostoVerano?: number;
   cuotasPorVerano?: number;
   costoMatriculaVerano?: number;

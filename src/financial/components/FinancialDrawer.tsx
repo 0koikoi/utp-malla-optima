@@ -15,8 +15,7 @@ import { calcularRutaCritica } from '@/domain/services/recommendationService';
 import { useAcademicStore } from '@/store/useAcademicStore';
 import { usePlannerStore } from '@/store/plannerStore';
 import { DisciplineSelector } from '@/components/controls/DisciplineSelector';
-import { FinancialEngine } from '../engine/FinancialEngine';
-import { Utp2026Rules } from '../rules/utp/Utp2026Rules';
+import { FinancialPlanningService } from '../services/FinancialPlanningService';
 import { PeriodFinancialCard } from './PeriodFinancialCard';
 import { FinancialTotalCard } from './FinancialTotalCard';
 
@@ -63,8 +62,7 @@ export const FinancialDrawer = () => {
   const resumen = useMemo(() => {
     if (!tarifario) return null;
 
-    const engine = new FinancialEngine(new Utp2026Rules());
-    return engine.calcular(cursos, tarifario, disciplinaActiva, {
+    return FinancialPlanningService.calcular(cursos, tarifario, disciplinaActiva, {
       metodoPago,
       pagoUnicoPorPeriodo,
     });

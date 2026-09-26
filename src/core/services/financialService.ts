@@ -20,7 +20,7 @@ import {
   type FacultadKey,
   type DescuentoKey,
 } from '@/data/tarifario';
-import defaultCostosJSON from '@/data/universidades/pe-utp/costos.json';
+import { FinancialConfigurationProvider } from '@/infrastructure/configuration/FinancialConfigurationProvider';
 
 // ─── Tipos del Servicio Financiero ───────────────────────────────────────────
 
@@ -64,8 +64,9 @@ const redondear = (valor: number): number =>
  */
 export function adaptarFacultadATarifario(
   facultadKey: FacultadKey | string,
-  tarifarioBase: Tarifario = defaultCostosJSON as unknown as Tarifario
+  tarifarioBase?: Tarifario
 ): { tarifario: Tarifario; disciplina: string } {
+  const base = tarifarioBase ?? FinancialConfigurationProvider.load();
   const key = (facultadKey as FacultadKey) in ESTRUCTURA_TARIFARIA
     ? (facultadKey as FacultadKey)
     : 'ingenieria';
@@ -73,16 +74,16 @@ export function adaptarFacultadATarifario(
   const disciplina = MAPA_FACULTAD_A_DISCIPLINA[key] ?? 'Ingeniería y Arquitectura';
 
   // Si el tarifario base ya cuenta con la disciplina configurada, se reutiliza
-  if (tarifarioBase.disciplinas[disciplina]) {
-    return { tarifario: tarifarioBase, disciplina };
+  if (base.disciplinas[disciplina]) {
+    return { tarifario: base, disciplina };
   }
 
   // De lo contrario, se genera la disciplina en base a ESTRUCTURA_TARIFARIA
   const datosFacultad = ESTRUCTURA_TARIFARIA[key];
   const nuevoTarifario: Tarifario = {
-    ...tarifarioBase,
+    ...base,
     disciplinas: {
-      ...tarifarioBase.disciplinas,
+      ...base.disciplinas,
       [disciplina]: {
         costoMatriculaRegular: COSTOS_FIJOS.matriculaRegular,
         costoPorCredito: 0,
@@ -142,7 +143,7 @@ export function calcularFinanzasCiclo(
 
   const { tarifario, disciplina } = adaptarFacultadATarifario(
     facultadKey,
-    cfg.tarifario ?? (defaultCostosJSON as unknown as Tarifario)
+    cfg.tarifario ?? FinancialConfigurationProvider.load()
   );
 
   const disciplinaActiva = cfg.disciplina ?? disciplina;

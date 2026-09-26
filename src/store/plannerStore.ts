@@ -28,7 +28,7 @@ import {
 import { calcularCicloActual } from '@/utils/cicloHelper';
 import { generarPlanificacionOptima, type PlanificacionResumen } from '@/services/autoPlannerService';
 import type { RespaldoMalla } from '@/adapters/backupAdapter';
-import defaultCostos from '@/data/universidades/pe-utp/costos.json';
+import { FinancialConfigurationProvider } from '@/infrastructure/configuration/FinancialConfigurationProvider';
 
 // ─── Tipos exportados ─────────────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ export const usePlannerStore = create<PlannerState>()(
       periodoIngreso: 'marzo',
       veranoUbicaciones: { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 },
       veranosHabilitados: { 1: true, 2: true, 3: true, 4: true, 5: true },
-      tarifario: defaultCostos as unknown as Tarifario,
+      tarifario: FinancialConfigurationProvider.load(),
       disciplinaActiva: 'Ingeniería y Arquitectura',
 
       bienvenidaModalOpen:

@@ -37,3 +37,4 @@ export type { CursoEnPlanificador as Curso } from '@/core/types';
 // sean migrados en Fase 2.
 /** @deprecated — usar UbicacionCurso de @/core/types para el planificador */
 export type UbicacionCurso = 'banco' | 'periodo';
+

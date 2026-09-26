@@ -107,7 +107,10 @@ export const calcularPresupuesto = (
 
   const esVerano = tipoPeriodo === 'VERANO';
 
-  const horasTarifarias = esVerano ? baseRegular.horas * 2 : baseRegular.horas;
+  const multiplicadorHorasVerano = Math.max(1, tarifario.multiplicadorHorasVerano ?? 2);
+  const horasTarifarias = esVerano
+    ? baseRegular.horas * multiplicadorHorasVerano
+    : baseRegular.horas;
 
   const baseCalculada = esVerano
     ? calcularCuotaEscalaFija(horasTarifarias, tarifas.rangosPension ?? [], tarifas.costoHoraAdicional ?? 0)

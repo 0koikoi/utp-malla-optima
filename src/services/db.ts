@@ -1,5 +1,7 @@
 import Dexie, { type Table } from 'dexie';
-import type { Curso, Tarifario } from '../types/academic';
+import type { Curso } from '../types/academic';
+import type { Tarifario } from '../types/financial';
+import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 
 export interface UserAcademicProfile {
   id: string;
@@ -46,6 +48,21 @@ export class AcademicDatabase extends Dexie {
           if (!legacy.tipoPeriodo) curso.tipoPeriodo = 'REGULAR';
         });
       });
+
+    this.version(6)
+      .stores({
+        profile: 'id, disciplinaActiva',
+        courses: 'codigo, ciclo, cicloOrigen, tipoPeriodo, estado, ubicacion',
+        customCosts: 'universidadId',
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table('customCosts').toCollection().modify((registro) => {
+          const tarifario = registro as Tarifario;
+          const migrado = migrateLegacyFinancialRulesReference(tarifario);
+          if (migrado !== tarifario) Object.assign(registro, migrado);
+        });
+      });
+
   }
 }
 

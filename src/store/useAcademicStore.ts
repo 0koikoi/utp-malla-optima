@@ -17,6 +17,8 @@
 import { create } from 'zustand';
 import { usePlannerStore, type PlannerState } from './plannerStore';
 import { generateOptimalPlanUseCase } from '@/application/usecases/generateOptimalPlanUseCase';
+import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
+import { db } from '../services/db';
 import type {
   CursoEnPlanificador,
   Curso,
@@ -210,7 +212,8 @@ const createAcademicActions = () => ({
   },
 
   setTarifario: async (tarifario: Tarifario) => {
-    usePlannerStore.getState().setTarifario(tarifario);
+    const tarifarioNormalizado = migrateLegacyFinancialRulesReference(tarifario);
+    usePlannerStore.getState().setTarifario(tarifarioNormalizado);
   },
 
   setDisciplinaActiva: async (disciplina: string) => {
@@ -230,7 +233,18 @@ const createAcademicActions = () => ({
   },
 
   cargarDesdeDB: async () => {
-    // No-op: los datos persisten automáticamente en localStorage mediante plannerStore.
+    try {
+      const tarifariosDB = await db.customCosts.toArray();
+      if (tarifariosDB.length > 0) {
+        const tarifarioPersistido = tarifariosDB[0];
+        if (tarifarioPersistido) {
+          const tarifarioMigrado = migrateLegacyFinancialRulesReference(tarifarioPersistido);
+          usePlannerStore.getState().setTarifario(tarifarioMigrado);
+        }
+      }
+    } catch {
+      // Ignorar si no hay datos en IndexedDB
+    }
   },
 
   importarCursos: async (cursosImportados: CursoEnPlanificador[]) => {

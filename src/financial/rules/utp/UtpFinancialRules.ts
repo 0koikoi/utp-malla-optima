@@ -2,7 +2,7 @@ import type { CursoEnPlanificador, Tarifario, ResumenFinanciero } from '@/core/t
 import { calcularPresupuesto } from '../../../utils/budgetEngine';
 import type { UniversityFinancialRules } from '../UniversityFinancialRules';
 
-export class Utp2026Rules implements UniversityFinancialRules {
+export class UtpFinancialRules implements UniversityFinancialRules {
   calcular(cursos: CursoEnPlanificador[], tarifario: Tarifario, disciplina: string, opciones = {}): ResumenFinanciero {
     return calcularPresupuesto(cursos, tarifario, disciplina, {
       ...opciones,
@@ -10,3 +10,5 @@ export class Utp2026Rules implements UniversityFinancialRules {
     });
   }
 }
+
+export { UtpFinancialRules as Utp2026Rules };
