@@ -16,7 +16,6 @@ export interface EstructuraFacultad {
 }
 
 export type FacultadKey = 'ingenieria' | 'salud_gestion' | 'farmacia' | 'gestion';
-export type DescuentoKey = 'ninguno' | 'bcp' | 'scotiabank';
 
 export const ESTRUCTURA_TARIFARIA: Record<FacultadKey, EstructuraFacultad> = {
   ingenieria: {
@@ -70,11 +69,7 @@ export const ESTRUCTURA_TARIFARIA: Record<FacultadKey, EstructuraFacultad> = {
   },
 };
 
-export const DESCUENTOS: Record<DescuentoKey, number> = {
-  ninguno: 0.0,
-  bcp: 0.025,
-  scotiabank: 0.05,
-};
+
 
 export const COSTOS_FIJOS = {
   matriculaRegular: 398.0,

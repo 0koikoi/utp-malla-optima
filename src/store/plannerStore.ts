@@ -19,7 +19,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Curso, UbicacionCurso, Tarifario, NotificacionMovimiento } from '@/core/types';
-import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
+import type { FacultadKey } from '@/data/tarifario';
 import {
   validarPrerequisitos,
   verificarRupturasEnCascada,
@@ -43,7 +43,7 @@ export interface PlannerState {
 
   // ── Config ──────────────────────────────────────────────────────────────────
   facultad: FacultadKey;
-  descuento: DescuentoKey;
+  metodoPago: string;
   cicloInicio: number;
   cicloFin: number;
   veranoActivo: boolean;
@@ -88,7 +88,7 @@ export interface PlannerState {
 
   // ── Acciones Config ────────────────────────────────────────────────────────
   setFacultad: (facultad: FacultadKey) => void;
-  setDescuento: (descuento: DescuentoKey) => void;
+  setMetodoPago: (metodo: string) => void;
   setCicloInicio: (ciclo: number) => void;
   setCicloFin: (ciclo: number) => void;
   setVeranoActivo: (activo: boolean) => void;
@@ -130,7 +130,7 @@ export const usePlannerStore = create<PlannerState>()(
       nombreArchivoCargado: null,
 
       facultad: 'ingenieria',
-      descuento: 'scotiabank',
+      metodoPago: 'sin_descuento',
       cicloInicio: 1,
       cicloFin: 12,
       veranoActivo: true,
@@ -376,7 +376,7 @@ export const usePlannerStore = create<PlannerState>()(
           cursos: respaldo.cursos,
           asignaciones: respaldo.asignaciones,
           facultad: respaldo.facultad,
-          descuento: respaldo.descuento,
+          metodoPago: respaldo.descuento === 'bcp' ? 'bcp_interbank' : (respaldo.descuento === 'scotiabank' ? 'scotiabank_bbva' : 'sin_descuento'),
           cicloInicio: respaldo.cicloInicio,
           cicloFin: respaldo.cicloFin,
           veranoActivo: respaldo.veranoActivo,
@@ -399,7 +399,7 @@ export const usePlannerStore = create<PlannerState>()(
           fecha: new Date().toISOString(),
           nombreArchivoCargado: s.nombreArchivoCargado,
           facultad: s.facultad,
-          descuento: s.descuento,
+          metodoPago: s.metodoPago,
           cicloInicio: s.cicloInicio,
           cicloFin: s.cicloFin,
           veranoActivo: s.veranoActivo,
@@ -414,7 +414,7 @@ export const usePlannerStore = create<PlannerState>()(
       // ── Acciones Config ────────────────────────────────────────────────────
 
       setFacultad: (facultad) => set({ facultad }),
-      setDescuento: (descuento) => set({ descuento }),
+      setMetodoPago: (metodoPago) => set({ metodoPago }),
       setCicloInicio: (ciclo) => set({ cicloInicio: Math.min(14, Math.max(1, ciclo)) }),
       setCicloFin: (ciclo) => set({ cicloFin: Math.min(14, Math.max(1, ciclo)) }),
       setVeranoActivo: (activo) => set({ veranoActivo: activo }),
@@ -538,7 +538,7 @@ export const usePlannerStore = create<PlannerState>()(
         cursos: state.cursos,
         asignaciones: state.asignaciones,
         facultad: state.facultad,
-        descuento: state.descuento,
+        metodoPago: state.metodoPago,
         cicloInicio: state.cicloInicio,
         cicloFin: state.cicloFin,
         veranoActivo: state.veranoActivo,

@@ -1,4 +1,4 @@
-import type { Tarifario } from '../../types/financial';
+import type { Tarifario } from '@/core/types';
 
 const normalizeId = (value: string): string => value.trim().toLowerCase();
 const CURRENT_UTP_RULES_ID = 'utp';

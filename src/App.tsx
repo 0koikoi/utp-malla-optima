@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Homepage } from '@/components/home/Homepage';
 import { BienvenidaModal } from '@/components/modals/BienvenidaModal';
@@ -13,7 +12,6 @@ import { ToastContainer } from '@/components/common/ToastContainer';
 import { FinancialDrawer } from '@/financial/components/FinancialDrawer';
 import { usePlannerStore } from '@/store/plannerStore';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
-import { FinancialConfigurationProvider } from './infrastructure/configuration/FinancialConfigurationProvider';
 
 import { Pointer, X } from 'lucide-react';
 
@@ -23,21 +21,9 @@ export default function App() {
     nombreArchivoCargado,
     cursoAMover,
     setCursoAMover,
-    setTarifario,
   } = usePlannerStore();
 
   const { activeCurso, sensors, handleDragStart, handleDragEnd } = useDragAndDrop();
-
-  useEffect(() => {
-    try {
-      const tarifario = FinancialConfigurationProvider.load();
-      if (tarifario) {
-        setTarifario(tarifario);
-      }
-    } catch (err) {
-      console.warn('No se pudo cargar la configuración financiera versionada:', err);
-    }
-  }, [setTarifario]);
 
   const hayMallaCargada = !!nombreArchivoCargado && Object.keys(cursos).length > 0;
 

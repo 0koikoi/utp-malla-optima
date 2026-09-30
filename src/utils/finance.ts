@@ -9,7 +9,7 @@
  */
 
 import type { Curso, FinanzasCiclo } from '@/core/types';
-import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
+import type { FacultadKey } from '@/data/tarifario';
 import {
   calcularFinanzasCiclo as calcularFinanzasCicloCanonica,
   calcularCostoBase,
@@ -31,13 +31,13 @@ export function calcularFinanzasCiclo(
   cicloId: string,
   cursosPendientes: Curso[],
   facultad: FacultadKey,
-  descuento: DescuentoKey,
+  metodoPago: string,
   esVerano: boolean
 ): FinanzasCiclo {
   return calcularFinanzasCicloCanonica(cursosPendientes, {
     cicloId,
     facultad,
-    descuento,
+    metodoPago,
     esVerano,
   });
 }

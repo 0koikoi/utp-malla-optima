@@ -7,15 +7,19 @@
  */
 
 import type { Curso, UbicacionCurso } from '@/core/types';
-import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
+import type { FacultadKey } from '@/data/tarifario';
 import type { PlannerState } from '@/store/plannerStore';
+
+type LegacyDescuentoKey = 'ninguno' | 'bcp' | 'scotiabank';
 
 export interface RespaldoJSON {
   version: string;
   fecha: string;
   nombreArchivoCargado: string | null;
   facultad: FacultadKey;
-  descuento: DescuentoKey;
+  metodoPago?: string;
+  /** @deprecated Conservado para retrocompatibilidad con respaldos antiguos */
+  descuento?: LegacyDescuentoKey;
   cicloInicio: number;
   cicloFin: number;
   veranoActivo: boolean;
@@ -50,7 +54,8 @@ export function serializar(state: PlannerState | Omit<RespaldoJSON, 'version' | 
     fecha: new Date().toISOString(),
     nombreArchivoCargado: state.nombreArchivoCargado,
     facultad: state.facultad,
-    descuento: state.descuento,
+    metodoPago: (state as any).metodoPago ?? 'sin_descuento',
+    descuento: (state as any).descuento,
     cicloInicio: state.cicloInicio,
     cicloFin: state.cicloFin,
     veranoActivo: state.veranoActivo,
@@ -123,7 +128,7 @@ export function deserializar(json: unknown): RespaldoJSON {
       cursos: cursosMap,
       asignaciones,
       facultad: 'ingenieria',
-      descuento: 'ninguno',
+      metodoPago: 'sin_descuento',
       cicloInicio: 1,
       cicloFin: Math.max(12, ...Object.values(cursosMap).map((c) => c.cicloOrigen)),
       veranoActivo: Object.values(asignaciones).some((u) => u.startsWith('verano-')),
@@ -165,7 +170,8 @@ export function deserializar(json: unknown): RespaldoJSON {
     fecha: parsed.fecha ?? new Date().toISOString(),
     nombreArchivoCargado: parsed.nombreArchivoCargado ?? null,
     facultad: parsed.facultad ?? 'ingenieria',
-    descuento: parsed.descuento ?? 'scotiabank',
+    metodoPago: parsed.metodoPago ?? (parsed.descuento === 'bcp' ? 'bcp_interbank' : (parsed.descuento === 'scotiabank' ? 'scotiabank_bbva' : 'sin_descuento')),
+    descuento: parsed.descuento,
     cicloInicio: parsed.cicloInicio ?? 1,
     cicloFin: parsed.cicloFin ?? 12,
     veranoActivo: Boolean(parsed.veranoActivo),

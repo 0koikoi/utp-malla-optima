@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { usePlannerStore } from '@/store/plannerStore';
 import { useExcelParser } from '@/hooks/useExcelParser';
-import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
+import { FacultadDropdown, PagoDropdown } from '@/components/controls/FacultadDropdown';
 
 import { RangoCiclos } from '@/components/controls/RangoCiclos';
 import { VeranoToggle } from '@/components/controls/VeranoToggle';
@@ -103,6 +103,12 @@ export function ConfigSidebar() {
           
           <div className="config-section">
             <FacultadDropdown idPrefix="cfg-" />
+          </div>
+
+          <div className="config-divider" />
+          
+          <div className="config-section">
+            <PagoDropdown idPrefix="cfg-pago-" />
           </div>
 
 

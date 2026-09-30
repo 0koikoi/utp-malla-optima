@@ -1,5 +1,5 @@
 import type { Curso } from '../../types/academic';
-import type { Tarifario } from '../../types/financial';
+import type { Tarifario } from '@/core/types';
 
 export const superaLimiteCreditos = (
   cursos: Curso[],

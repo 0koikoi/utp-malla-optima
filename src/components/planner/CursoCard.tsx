@@ -80,7 +80,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
       <div
         ref={esArrastrable ? setNodeRef : undefined}
         className={cardClasses}
-        data-horas={curso.horasSemanales}
+        data-horas={typeof curso.horasSemanales === 'number' ? curso.horasSemanales : ((curso as any).horas || 0)}
         data-creditos={curso.creditos}
         data-estado={curso.estado}
         data-ciclo-origen={curso.cicloOrigen}
@@ -131,7 +131,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
         </div>
         <div className="curso-tags">
           <span className="ctag">C{curso.cicloOrigen}</span>
-          <span className="ctag ctag-horas">{curso.horasSemanales}h</span>
+          <span className="ctag ctag-horas">{typeof curso.horasSemanales === 'number' ? curso.horasSemanales : ((curso as any).horas || 0)}h</span>
           <span className="ctag ctag-creditos">{curso.creditos} crd</span>
           {esAprobado ? (
             <span className="ctag ctag-aprobado">✓ Aprobado</span>

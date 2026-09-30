@@ -1,5 +1,5 @@
 import type { Curso } from '../../types/academic';
-import type { Tarifario } from '../../types/financial';
+import type { Tarifario } from '@/core/types';
 import { migrateLegacyFinancialRulesReference } from '../../financial/rules/financialRulesCompatibility';
 import { CURRENT_ACADEMIC_BACKUP_VERSION } from './academicBackupVersion';
 

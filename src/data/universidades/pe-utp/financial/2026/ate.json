@@ -11,13 +11,13 @@
       "descuentoPorcentaje": 0,
       "requiereProntoPago": false
     },
-    "interbank_scotiabank": {
-      "nombre": "Interbank / Scotiabank — pronto pago",
+    "scotiabank_bbva": {
+      "nombre": "Scotiabank / BBVA — pronto pago",
       "descuentoPorcentaje": 5,
       "requiereProntoPago": true
     },
-    "bcp_bbva": {
-      "nombre": "BCP / BBVA — pronto pago",
+    "bcp_interbank": {
+      "nombre": "BCP / Interbank — pronto pago",
       "descuentoPorcentaje": 2.5,
       "requiereProntoPago": true
     }

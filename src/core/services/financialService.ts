@@ -15,10 +15,8 @@ import type {
 } from '@/core/types';
 import {
   ESTRUCTURA_TARIFARIA,
-  DESCUENTOS,
   COSTOS_FIJOS,
   type FacultadKey,
-  type DescuentoKey,
 } from '@/data/tarifario';
 import { FinancialConfigurationProvider } from '@/infrastructure/configuration/FinancialConfigurationProvider';
 
@@ -27,7 +25,6 @@ import { FinancialConfigurationProvider } from '@/infrastructure/configuration/F
 export interface ConfigFinanciera {
   facultad?: FacultadKey | string;
   disciplina?: string;
-  descuento?: DescuentoKey | string;
   metodoPago?: string;
   pagoUnico?: boolean;
   esVerano?: boolean;
@@ -47,11 +44,7 @@ export const MAPA_FACULTAD_A_DISCIPLINA: Record<string, string> = {
   farmacia: 'Ingeniería y Arquitectura',
 };
 
-export const MAPA_DESCUENTO_A_METODO_PAGO: Record<string, string> = {
-  ninguno: 'sin_descuento',
-  bcp: 'bcp_bbva',
-  scotiabank: 'interbank_scotiabank',
-};
+
 
 const redondear = (valor: number): number =>
   Math.round((valor + Number.EPSILON) * 100) / 100;
@@ -161,7 +154,7 @@ export function calcularFinanzasCiclo(
   for (const c of cursos) {
     const h = typeof c.horasSemanales === 'number' && !Number.isNaN(c.horasSemanales)
       ? c.horasSemanales
-      : (Number((c as any).horasTeoria ?? 0) + Number((c as any).horasPractica ?? 0)) || 0;
+      : (Number((c as any).horas) || Number((c as any).horasTeoria ?? 0) + Number((c as any).horasPractica ?? 0)) || 0;
     const cr = typeof c.creditos === 'number' && !Number.isNaN(c.creditos) ? c.creditos : 0;
     horasSemanalesBrutas += h;
     creditosBrutos += cr;
@@ -197,14 +190,12 @@ export function calcularFinanzasCiclo(
   const cuotaBase = redondear(cuotaBaseCalculada);
 
   // Determinación del método de pago y descuento aplicable
-  const claveMetodoPago = cfg.metodoPago ?? (cfg.descuento ? MAPA_DESCUENTO_A_METODO_PAGO[cfg.descuento] : 'sin_descuento');
+  const claveMetodoPago = cfg.metodoPago ?? 'sin_descuento';
   const metodoPago = !esVerano && claveMetodoPago ? tarifario.metodosPago?.[claveMetodoPago] : undefined;
 
   let factorDescuento = 0;
   if (!esVerano) {
-    if (cfg.descuento && (cfg.descuento as DescuentoKey) in DESCUENTOS) {
-      factorDescuento = DESCUENTOS[cfg.descuento as DescuentoKey];
-    } else if (metodoPago?.descuentoPorcentaje) {
+    if (metodoPago?.descuentoPorcentaje) {
       factorDescuento = metodoPago.descuentoPorcentaje / 100;
     }
   }

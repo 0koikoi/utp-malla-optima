@@ -38,7 +38,7 @@ export function useFinanzasCiclos(): FinanzasCiclo[] {
     cursos,
     asignaciones,
     facultad,
-    descuento,
+    metodoPago,
     cicloInicio,
     cicloFin,
     veranoActivo,
@@ -51,7 +51,7 @@ export function useFinanzasCiclos(): FinanzasCiclo[] {
       cursos: s.cursos,
       asignaciones: s.asignaciones,
       facultad: s.facultad,
-      descuento: s.descuento,
+      metodoPago: s.metodoPago,
       cicloInicio: s.cicloInicio,
       cicloFin: s.cicloFin,
       veranoActivo: s.veranoActivo,
@@ -70,7 +70,7 @@ export function useFinanzasCiclos(): FinanzasCiclo[] {
     const cursosEnCiclo = Object.values(cursos).filter(
       (c) => asignaciones[c.codigo] === cicloId && c.estado === 'PENDIENTE'
     );
-    finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnCiclo, facultad, descuento, false));
+    finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnCiclo, facultad, metodoPago, false));
   }
 
   // Ciclos de verano visibles: únicamente los que faltan planificar y que estén habilitados
@@ -86,7 +86,7 @@ export function useFinanzasCiclos(): FinanzasCiclo[] {
         const cursosEnVerano = Object.values(cursos).filter(
           (c) => asignaciones[c.codigo] === cicloId && c.estado === 'PENDIENTE'
         );
-        finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnVerano, facultad, descuento, true));
+        finanzas.push(calcularFinanzasCiclo(cicloId, cursosEnVerano, facultad, metodoPago, true));
       }
     }
   }
@@ -147,7 +147,7 @@ export function useCursosAcademicArray(): CursoEnPlanificador[] {
     const horasSemanales =
       typeof curso.horasSemanales === 'number' && !Number.isNaN(curso.horasSemanales)
         ? curso.horasSemanales
-        : (Number((curso as any).horasTeoria ?? 0) + Number((curso as any).horasPractica ?? 0)) || 0;
+        : (Number((curso as any).horas) || Number((curso as any).horasTeoria ?? 0) + Number((curso as any).horasPractica ?? 0)) || 0;
 
     const creditos =
       typeof curso.creditos === 'number' && !Number.isNaN(curso.creditos)

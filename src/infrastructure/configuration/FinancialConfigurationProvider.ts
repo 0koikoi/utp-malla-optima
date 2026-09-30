@@ -1,4 +1,4 @@
-import type { Tarifario } from '../../types/financial';
+import type { Tarifario } from '@/core/types';
 import { AcademicConfigLoader } from './AcademicConfigLoader';
 import { UtpFinancialConfigProvider } from './utp/UtpFinancialConfigProvider';
 import { UniversityConfigLoader } from './UniversityConfigLoader';

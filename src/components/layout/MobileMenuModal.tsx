@@ -32,7 +32,7 @@ export function MobileMenuModal() {
     cursos,
     asignaciones,
     facultad,
-    descuento,
+    metodoPago,
     cicloInicio,
     cicloFin,
     veranoActivo,
@@ -64,7 +64,7 @@ export function MobileMenuModal() {
     descargarRespaldoJSON({
       nombreArchivoCargado,
       facultad,
-      descuento,
+      metodoPago,
       cicloInicio,
       cicloFin,
       veranoActivo,

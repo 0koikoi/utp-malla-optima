@@ -32,7 +32,8 @@ export const FinancialDrawer = () => {
   const pestanaEstrategia = usePlannerStore((s) => s.pestanaEstrategia);
   const setPestanaEstrategia = usePlannerStore((s) => s.setPestanaEstrategia);
 
-  const [metodoPago, setMetodoPago] = useState('sin_descuento');
+  const metodoPago = usePlannerStore((s) => s.metodoPago);
+  const setMetodoPago = usePlannerStore((s) => s.setMetodoPago);
   const [confirmarAutomatico, setConfirmarAutomatico] = useState(false);
   const [resultadoAutomatico, setResultadoAutomatico] = useState<ResultadoPlanificacionAutomatica | null>(null);
   const [generandoAutomatico, setGenerandoAutomatico] = useState(false);

@@ -28,7 +28,7 @@ export function NavBar() {
     cursos,
     asignaciones,
     facultad,
-    descuento,
+    metodoPago,
     cicloInicio,
     cicloFin,
     veranoActivo,
@@ -113,7 +113,7 @@ export function NavBar() {
     descargarRespaldoJSON({
       nombreArchivoCargado,
       facultad,
-      descuento,
+      metodoPago,
       cicloInicio,
       cicloFin,
       veranoActivo,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePlannerStore } from '@/store/plannerStore';
-import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
+import type { FacultadKey } from '@/data/tarifario';
 import {
   GraduationCap,
   Briefcase,
@@ -148,26 +148,22 @@ export function FacultadDropdown({ idPrefix = '' }: DropdownProps) {
 
 // ── Pago ─────────────────────────────────────────────────────────────────────
 
-interface PagoOption {
-  value: DescuentoKey;
-  label: string;
-  shortLabel: string;
-  icon: typeof Ban;
-  porcentaje: string;
-}
 
-const PAGOS: PagoOption[] = [
-  { value: 'ninguno', label: 'Sin descuento', shortLabel: 'Sin descuento', icon: Ban, porcentaje: '0%' },
-  { value: 'bcp', label: 'BCP/Interbank', shortLabel: 'BCP (2.5%)', icon: Landmark, porcentaje: '2.5%' },
-  { value: 'scotiabank', label: 'Scotiabank/BBVA', shortLabel: 'Scotiabank (5%)', icon: Building2, porcentaje: '5%' },
-];
 
 export function PagoDropdown({ idPrefix = '' }: DropdownProps) {
-  const { descuento, setDescuento } = usePlannerStore();
+  const { tarifario, metodoPago, setMetodoPago } = usePlannerStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const current = PAGOS.find((p) => p.value === descuento) ?? PAGOS[0]!;
+  const metodosDisponibles = Object.entries(tarifario?.metodosPago ?? {}).map(([key, config]) => ({
+    value: key,
+    label: config.nombre,
+    shortLabel: `${config.nombre.split('—')[0]?.trim() || config.nombre} (${config.descuentoPorcentaje}%)`,
+    porcentaje: `${config.descuentoPorcentaje}%`,
+    icon: config.descuentoPorcentaje === 0 ? Ban : (config.descuentoPorcentaje >= 5 ? Building2 : Landmark),
+  }));
+
+  const current = metodosDisponibles.find((p) => p.value === metodoPago) ?? metodosDisponibles[0] ?? { shortLabel: 'Sin descuento', icon: Ban };
   const CurrentIcon = current.icon;
 
   useEffect(() => {
@@ -216,16 +212,16 @@ export function PagoDropdown({ idPrefix = '' }: DropdownProps) {
             className={`dropdown-menu${isOpen ? ' show' : ''}`}
             style={{ display: isOpen ? 'block' : 'none' }}
           >
-            {PAGOS.map((p) => {
+            {metodosDisponibles.map((p) => {
               const ItemIcon = p.icon;
-              const isSelected = descuento === p.value;
+              const isSelected = metodoPago === p.value;
               return (
                 <li key={p.value}>
                   <button
                     type="button"
                     className={`dropdown-item${isSelected ? ' active' : ''}`}
                     onClick={() => {
-                      setDescuento(p.value);
+                      setMetodoPago(p.value);
                       setIsOpen(false);
                     }}
                   >
