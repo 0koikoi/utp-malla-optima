@@ -62,6 +62,7 @@ export const FinancialDrawer = () => {
   const [iaHistorial, setIaHistorial] = useState<
     Array<{ role: "ai" | "user"; text: string; responseData?: AIResponseV1 }>
   >([]);
+  const [cursosCriticosExpandido, setCursosCriticosExpandido] = useState(false);
 
   const metodoPagoActivo = tarifario?.metodosPago?.[metodoPago];
 
@@ -211,6 +212,7 @@ export const FinancialDrawer = () => {
       <aside
         className="budget-drawer strategy-drawer open"
         aria-label="Estrategia de Matrícula"
+        style={{ overflowY: "auto", display: "flex", flexDirection: "column" }}
       >
         <div className="budget-drawer-head">
           <div className="strategy-head-info">
@@ -262,75 +264,61 @@ export const FinancialDrawer = () => {
             role="tabpanel"
             aria-labelledby="tab-academico"
             className="strategy-tab-content"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              paddingBottom: "16px",
+            }}
           >
-            {/* Tarjeta de Asistente IA (Roadmap hacia IA) */}
-            <div className="advisor-ai-card">
-              <div className="advisor-ai-header">
-                <span className="advisor-ai-chip">
-                  <Sparkles size={11} /> Motor Algorítmico & IA
-                </span>
-                <span className="advisor-status-badge">UTP 2026</span>
+            {/* Banner introductorio — solo visible si el chat está vacío (Modo Enfoque) */}
+            {(!iaConsentimiento || iaHistorial.length === 0) && (
+              <div className="advisor-ai-card" style={{ flexShrink: 0 }}>
+                <div className="advisor-ai-header">
+                  <span className="advisor-ai-chip">
+                    <Sparkles size={11} /> Motor Algorítmico & IA
+                  </span>
+                  <span className="advisor-status-badge">UTP 2026</span>
+                </div>
+                <h3 className="advisor-ai-title">
+                  Asistente Curricular Inteligente
+                </h3>
+                <p className="advisor-ai-desc">
+                  Analiza las cadenas de prerrequisitos de tu plan de estudios,
+                  detecta cursos cuello de botella y calcula una distribución
+                  equilibrada respetando los límites de horas y créditos.
+                </p>
               </div>
-              <h3 className="advisor-ai-title">
-                Asistente Curricular Inteligente
-              </h3>
-              <p className="advisor-ai-desc">
-                Analiza las cadenas de prerrequisitos de tu plan de estudios,
-                detecta cursos cuello de botella y calcula una distribución
-                equilibrada respetando los límites de horas y créditos.
-              </p>
-            </div>
+            )}
 
-            {/* 4. Bloque Condicional del Chat y Consentimiento de IA */}
+            {/* Bloque Condicional del Chat y Consentimiento de IA */}
             {!iaConsentimiento ? (
+              /* ── Pantalla de consentimiento ── */
               <div
-                className="strategy-block mt-4"
+                className="strategy-block"
                 style={{
+                  flexShrink: 0,
                   borderLeft: "3px solid #3b82f6",
                   padding: "16px",
-                  backgroundColor: "rgba(59, 130, 246, 0.05)",
-                  borderRadius: "8px",
+                  backgroundColor: "rgba(59, 130, 246, 0.06)",
+                  borderRadius: "10px",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <Bot color="#3b82f6" size={24} />
+                <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                  <Bot color="#3b82f6" size={24} style={{ flexShrink: 0, marginTop: "2px" }} />
                   <div>
-                    <h4
-                      style={{
-                        color: "#fff",
-                        fontSize: "14px",
-                        marginBottom: "6px",
-                      }}
-                    >
+                    <h4 style={{ color: "#fff", fontSize: "14px", marginBottom: "6px", fontWeight: 600 }}>
                       Activar Asistente de IA
                     </h4>
-                    <p
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "12px",
-                        marginBottom: "12px",
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      El asesor analizará tu progreso actual para sugerir
-                      límites de créditos o rutas óptimas. Los datos académicos
-                      se enviarán temporalmente al proveedor configurado para
-                      generar respuestas.
+                    <p style={{ color: "#94a3b8", fontSize: "12px", marginBottom: "14px", lineHeight: "1.5" }}>
+                      El asesor analizará tu progreso académico para sugerir
+                      límites de créditos o rutas óptimas. Los datos se enviarán
+                      temporalmente al proveedor configurado.
                     </p>
                     <button
                       onClick={() => setIaConsentimiento(true)}
                       className="strategy-apply-btn"
-                      style={{
-                        width: "auto",
-                        padding: "6px 12px",
-                        fontSize: "12px",
-                      }}
+                      style={{ width: "auto", padding: "7px 16px", fontSize: "12px", borderRadius: "8px" }}
                     >
                       Acepto y deseo continuar
                     </button>
@@ -338,44 +326,47 @@ export const FinancialDrawer = () => {
                 </div>
               </div>
             ) : (
+              /* ── Contenedor de Chat con altura controlada ── */
               <div
-                className="strategy-block mt-4"
                 style={{
-                  padding: 0,
                   display: "flex",
                   flexDirection: "column",
-                  height: "380px",
-                  overflow: "hidden",
+                  flexShrink: 0,
                   backgroundColor: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  borderRadius: "8px",
+                  border: "1px solid rgba(148, 163, 184, 0.12)",
+                  borderRadius: "12px",
+                  overflow: "hidden",
                 }}
               >
-                {/* Historial de Chat */}
+                {/* Historial de mensajes — altura fija con scroll propio */}
                 <div
                   style={{
-                    flex: 1,
+                    height: "40vh",
+                    minHeight: "300px",
                     overflowY: "auto",
                     padding: "16px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "16px",
+                    gap: "14px",
+                    scrollbarWidth: "thin",
+                    scrollbarColor: "rgba(148,163,184,0.2) transparent",
                   }}
                 >
                   {iaHistorial.length === 0 ? (
                     <div
                       style={{
-                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
                         color: "#64748b",
                         fontSize: "12px",
-                        marginTop: "20px",
+                        paddingTop: "24px",
                       }}
                     >
-                      <Bot
-                        size={32}
-                        style={{ margin: "0 auto 8px", opacity: 0.5 }}
-                      />
-                      Escribe "hola" para probar el simulador.
+                      <Bot size={30} style={{ opacity: 0.4 }} />
+                      <span>Escribe un mensaje para iniciar la consulta.</span>
                     </div>
                   ) : (
                     iaHistorial.map((msg, idx) => (
@@ -384,36 +375,44 @@ export const FinancialDrawer = () => {
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems:
-                            msg.role === "user" ? "flex-end" : "flex-start",
+                          alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                          gap: "4px",
                         }}
                       >
+                        {/* Etiqueta del emisor */}
                         <span
                           style={{
                             fontSize: "10px",
                             textTransform: "uppercase",
-                            fontWeight: "bold",
-                            marginBottom: "4px",
-                            color: msg.role === "user" ? "#3b82f6" : "#a855f7",
+                            fontWeight: 700,
+                            letterSpacing: "0.05em",
+                            color: msg.role === "user" ? "#60a5fa" : "#c084fc",
                           }}
                         >
                           {msg.role === "user" ? "Tú" : "Asesor IA"}
                         </span>
+
+                        {/* Burbuja del mensaje */}
                         <div
                           style={{
                             fontSize: "13px",
+                            lineHeight: "1.55",
                             padding: "10px 14px",
-                            borderRadius: "8px",
-                            maxWidth: "90%",
+                            borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+                            maxWidth: "88%",
                             backgroundColor:
                               msg.role === "user"
-                                ? "#3b82f6"
-                                : "rgba(255, 255, 255, 0.05)",
-                            color: "#fff",
+                                ? "#2563eb"
+                                : "rgba(139, 92, 246, 0.12)",
+                            color: "#f1f5f9",
                             border:
                               msg.role === "user"
-                                ? "none"
-                                : "1px solid rgba(255, 255, 255, 0.1)",
+                                ? "1px solid rgba(96,165,250,0.3)"
+                                : "1px solid rgba(192,132,252,0.2)",
+                            boxShadow:
+                              msg.role === "user"
+                                ? "0 2px 8px rgba(37,99,235,0.25)"
+                                : "0 2px 8px rgba(0,0,0,0.2)",
                           }}
                         >
                           {msg.text}
@@ -422,104 +421,164 @@ export const FinancialDrawer = () => {
                     ))
                   )}
 
+                  {/* Indicador de carga */}
                   {iaCargando && (
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
-                        color: "#a855f7",
+                        color: "#c084fc",
                         fontSize: "12px",
+                        paddingLeft: "4px",
                       }}
                     >
-                      <Loader2 className="animate-spin" size={14} /> Analizando
-                      tu malla...
+                      <Loader2 className="animate-spin" size={14} />
+                      <span>Analizando tu malla...</span>
                     </div>
                   )}
                 </div>
 
-                {/* Input de Chat */}
+                {/* Input de Chat — siempre visible en la parte inferior del chat */}
                 <div
                   style={{
                     padding: "12px",
-                    borderTop: "1px solid rgba(255,255,255,0.05)",
+                    borderTop: "1px solid rgba(148,163,184,0.1)",
                     display: "flex",
                     gap: "8px",
-                    backgroundColor: "rgba(0,0,0,0.2)",
+                    alignItems: "center",
+                    backgroundColor: "rgba(2,6,23,0.4)",
+                    flexShrink: 0,
                   }}
                 >
                   <input
                     type="text"
                     value={iaMensaje}
                     onChange={(e) => setIaMensaje(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleEnviarMensajeIA()
-                    }
-                    placeholder="Ej: Quiero pocos créditos..."
+                    onKeyDown={(e) => e.key === "Enter" && handleEnviarMensajeIA()}
+                    placeholder="Ej: Quiero pocos créditos este ciclo..."
                     style={{
                       flex: 1,
-                      backgroundColor: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      color: "#fff",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
+                      backgroundColor: "rgba(30, 41, 59, 0.8)",
+                      border: "1px solid rgba(100, 116, 139, 0.5)",
+                      color: "#f1f5f9",
+                      padding: "10px 14px",
+                      borderRadius: "10px",
                       fontSize: "13px",
                       outline: "none",
+                      transition: "border-color 0.15s ease",
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "rgba(147,51,234,0.7)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "rgba(100,116,139,0.5)";
                     }}
                     disabled={iaCargando}
                   />
                   <button
                     onClick={handleEnviarMensajeIA}
                     disabled={!iaMensaje.trim() || iaCargando}
+                    title="Enviar mensaje"
                     style={{
-                      backgroundColor: "#9333ea",
+                      backgroundColor: !iaMensaje.trim() || iaCargando ? "rgba(147,51,234,0.35)" : "#9333ea",
                       color: "#fff",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      cursor:
-                        !iaMensaje.trim() || iaCargando
-                          ? "not-allowed"
-                          : "pointer",
-                      opacity: !iaMensaje.trim() || iaCargando ? 0.5 : 1,
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      border: "none",
+                      cursor: !iaMensaje.trim() || iaCargando ? "not-allowed" : "pointer",
+                      transition: "background-color 0.15s ease, transform 0.1s ease",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <Send size={16} />
+                    <Send size={15} />
                   </button>
                 </div>
               </div>
             )}
 
+            {/* ── Cursos Críticos — Accordion colapsado cuando hay mensajes en el chat ── */}
             {cursosCriticos.length > 0 && (
-              <div className="strategy-block">
-                <div className="strategy-block-title">
-                  <AlertCircle size={13} className="text-amber" />
-                  <span>Cursos Críticos (Mayor Desbloqueo)</span>
-                </div>
-                <p className="strategy-block-desc">
-                  Materias pendientes con mayor cantidad de cursos dependientes
-                  aguas abajo:
-                </p>
-                <div className="critical-courses-grid">
-                  {cursosCriticos.map((c) => (
-                    <div key={c.codigo} className="critical-course-pill">
-                      <span className="critical-course-code">{c.codigo}</span>
-                      <span className="critical-course-name" title={c.nombre}>
-                        {c.nombre}
-                      </span>
-                      <span
-                        className="critical-course-unlock"
-                        title={`Desbloquea ${c.desbloquea} materias en la malla`}
-                      >
-                        🔓 {c.desbloquea}
-                      </span>
+              <div
+                className="strategy-block"
+                style={{ flexShrink: 0, padding: 0, border: "1px solid rgba(148,163,184,0.1)", borderRadius: "10px", overflow: "hidden" }}
+              >
+                {/* Cabecera del accordion */}
+                <button
+                  type="button"
+                  onClick={() => setCursosCriticosExpandido((v) => !v)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    backgroundColor: "rgba(255,255,255,0.03)",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#cbd5e1",
+                  }}
+                  aria-expanded={cursosCriticosExpandido}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600 }}>
+                    <AlertCircle size={13} className="text-amber" />
+                    <span>Cursos Críticos</span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        backgroundColor: "rgba(245,158,11,0.15)",
+                        color: "#fbbf24",
+                        padding: "1px 7px",
+                        borderRadius: "20px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {cursosCriticos.length}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#64748b",
+                      transition: "transform 0.2s ease",
+                      display: "inline-block",
+                      transform: cursosCriticosExpandido ? "rotate(180deg)" : "rotate(0deg)",
+                    }}
+                  >
+                    ▼
+                  </span>
+                </button>
+
+                {/* Contenido colapsable */}
+                {cursosCriticosExpandido && (
+                  <div style={{ padding: "12px 14px 14px" }}>
+                    <p className="strategy-block-desc" style={{ marginBottom: "10px" }}>
+                      Materias pendientes con mayor cantidad de cursos dependientes aguas abajo:
+                    </p>
+                    <div className="critical-courses-grid">
+                      {cursosCriticos.map((c) => (
+                        <div key={c.codigo} className="critical-course-pill">
+                          <span className="critical-course-code">{c.codigo}</span>
+                          <span className="critical-course-name" title={c.nombre}>{c.nombre}</span>
+                          <span
+                            className="critical-course-unlock"
+                            title={`Desbloquea ${c.desbloquea} materias en la malla`}
+                          >
+                            🔓 {c.desbloquea}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Generador de Ruta Curricular */}
-            <div className="strategy-block">
+            {/* ── Generador de Ruta Curricular ── */}
+            <div className="strategy-block" style={{ flexShrink: 0 }}>
               <div className="strategy-action-header">
                 <div className="strategy-block-title">
                   <TrendingUp size={13} className="text-blue" />
@@ -533,9 +592,7 @@ export const FinancialDrawer = () => {
                 >
                   <Sparkles size={14} />
                   <span>
-                    {generandoAutomatico
-                      ? "Calculando ruta..."
-                      : "Generar Propuesta Óptima"}
+                    {generandoAutomatico ? "Calculando ruta..." : "Generar Propuesta Óptima"}
                   </span>
                 </button>
               </div>
@@ -545,12 +602,10 @@ export const FinancialDrawer = () => {
                   <div className="strategy-result-meta-row">
                     <span className="strategy-meta-chip">
                       <CheckCircle2 size={13} className="text-emerald" />
-                      <b>{resultadoAutomatico.totalPlanificados}</b> cursos
-                      organizados
+                      <b>{resultadoAutomatico.totalPlanificados}</b> cursos organizados
                     </span>
                     <span className="strategy-meta-chip">
-                      <b>{resultadoAutomatico.ciclos.length}</b> ciclos
-                      regulares
+                      <b>{resultadoAutomatico.ciclos.length}</b> ciclos regulares
                     </span>
                   </div>
 
@@ -682,9 +737,9 @@ export const FinancialDrawer = () => {
             <span className="footer-kpi-value highlight">
               {resumen?.totalGeneral !== undefined
                 ? `S/ ${resumen.totalGeneral.toLocaleString("es-PE", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
                 : "S/ 0.00"}
             </span>
           </div>
