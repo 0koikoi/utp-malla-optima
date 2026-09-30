@@ -1,4 +1,4 @@
-import type { Curso } from '../../types/academic';
+import type { Curso } from '@/core/types';
 import { db } from '../../services/db';
 import type { CourseRepository } from '../../domain/repositories/CourseRepository';
 

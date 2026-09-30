@@ -1,8 +1,8 @@
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { GraduationCap, SlidersHorizontal } from 'lucide-react';
 
 export function TopBar() {
-  const setMenuMobOpen = useMallaStore((s) => s.setMenuMobOpen);
+  const setMenuMobOpen = usePlannerStore((s) => s.setMenuMobOpen);
 
   return (
     <div id="app-topbar">

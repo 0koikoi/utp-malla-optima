@@ -25,8 +25,7 @@ import {
   verificarRupturasEnCascada,
   obtenerTodosCursosRotos,
 } from '@/utils/validators';
-import { calcularCicloActual } from '@/utils/cicloHelper';
-import { generarPlanificacionOptima, type PlanificacionResumen } from '@/services/autoPlannerService';
+import { generarPlanificacionAutomatica, type ResultadoPlanificacionAutomatica } from '@/domain/services/automaticPlanningService';
 import type { RespaldoMalla } from '@/adapters/backupAdapter';
 import { FinancialConfigurationProvider } from '@/infrastructure/configuration/FinancialConfigurationProvider';
 
@@ -82,7 +81,7 @@ export interface PlannerState {
   moverCurso: (codigoCurso: string, destino: UbicacionCurso) => void;
   ejecutarMovimiento: (codigoCurso: string, destino: UbicacionCurso) => boolean;
   resetAsignaciones: () => void;
-  autoPlanificar: () => PlanificacionResumen | null;
+  autoPlanificar: () => ResultadoPlanificacionAutomatica | null;
   aplicarPlanAcademico: (academicCursos: any[]) => void;
   cargarRespaldo: (respaldo: RespaldoMalla) => void;
   exportarRespaldo: () => RespaldoMalla;
@@ -323,16 +322,35 @@ export const usePlannerStore = create<PlannerState>()(
       autoPlanificar: () => {
         const state = get();
         if (Object.keys(state.cursos).length === 0) return null;
-        const cicloActivo = calcularCicloActual(state.cursos);
-        const { nuevasAsignaciones, resumen } = generarPlanificacionOptima(
-          state.cursos,
-          state.asignaciones,
-          cicloActivo,
-          state.cicloFin,
-          22
+        
+        const cursosArray = Object.values(state.cursos).map(curso => {
+          const asig = state.asignaciones[curso.codigo] ?? 'pozo';
+          let ciclo = curso.cicloOrigen;
+          let tipoPeriodo: 'REGULAR' | 'VERANO' = 'REGULAR';
+          let ubicacion: 'banco' | 'periodo' = 'banco';
+
+          if (asig === 'pozo') {
+            ubicacion = 'banco';
+          } else if (asig.startsWith('verano-')) {
+            ubicacion = 'periodo';
+            tipoPeriodo = 'VERANO';
+            ciclo = parseInt(asig.replace('verano-', ''), 10) || curso.cicloOrigen;
+          } else if (asig.startsWith('ciclo-')) {
+            ubicacion = 'periodo';
+            ciclo = parseInt(asig.replace('ciclo-', ''), 10) || curso.cicloOrigen;
+          }
+          return { ...curso, ciclo, tipoPeriodo, ubicacion };
+        });
+
+        const totalCiclos = cursosArray.reduce(
+          (mayor, curso) => Math.max(mayor, curso.cicloOrigen || curso.ciclo || 1),
+          1
         );
-        set({ asignaciones: nuevasAsignaciones, cursosConPrereqRoto: [] });
-        return resumen;
+
+        return generarPlanificacionAutomatica(cursosArray as any[], {
+          limiteCreditos: state.tarifario?.limitesAcademicos?.creditosMaximos,
+          totalCiclos
+        });
       },
 
       /** Aplica el plan curricular del motor algorítmico a las asignaciones visuales */

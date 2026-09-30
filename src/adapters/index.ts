@@ -6,5 +6,3 @@ export * from './utpExcelAdapter';
 export * from './backupAdapter';
 export * from './CurriculumAdapter';
 export * from './AdapterRegistry';
-export * from './pdfAdapter';
-

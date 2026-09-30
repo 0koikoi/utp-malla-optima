@@ -1,5 +1,5 @@
 // PlannerSection — sección de ciclos regulares con ciclos de verano intercalados cronológicamente
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { useCicloActual } from '@/store/selectors';
 import { CicloRow } from './CicloRow';
 import { CalendarCheck, Sun, Plus } from 'lucide-react';
@@ -14,7 +14,7 @@ export function PlannerSection() {
     periodoIngreso,
     veranosHabilitados,
     toggleVeranoHabilitado,
-  } = useMallaStore();
+  } = usePlannerStore();
 
   const cicloActual = useCicloActual();
 

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useMallaStore, type PeriodoIngreso } from '@/store/mallaStore';
+import { usePlannerStore, type PeriodoIngreso } from '@/store/plannerStore';
 import { Layers, Calendar, Sun, Check, X } from 'lucide-react';
 
 export function BienvenidaModal() {
@@ -8,7 +8,7 @@ export function BienvenidaModal() {
     setBienvenidaModalOpen,
     periodoIngreso,
     setPeriodoIngreso,
-  } = useMallaStore();
+  } = usePlannerStore();
 
   const [selectedPeriodo, setSelectedPeriodo] = useState<PeriodoIngreso>(periodoIngreso);
   const checkRef = useRef<HTMLInputElement>(null);

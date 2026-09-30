@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDraggable } from '@dnd-kit/core';
 import type { Curso } from '@/types/malla';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { Pointer, AlertTriangle, X, Info, Lock, Unlock, Key, Ban } from 'lucide-react';
 
 interface CursoCardProps {
@@ -23,7 +23,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
     cursosConPrereqRoto,
     cursoAMover,
     setCursoAMover,
-  } = useMallaStore();
+  } = usePlannerStore();
 
   const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
   const esArrastrable = !esAprobado && !isOverlay;

@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { useExcelParser } from '@/hooks/useExcelParser';
 import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
-import { PagoDropdown } from '@/components/controls/PagoDropdown';
+
 import { RangoCiclos } from '@/components/controls/RangoCiclos';
 import { VeranoToggle } from '@/components/controls/VeranoToggle';
 import { FileSpreadsheet, Upload, X, Calendar, HelpCircle } from 'lucide-react';
@@ -15,7 +15,7 @@ export function ConfigSidebar() {
     periodoIngreso,
     setPeriodoIngreso,
     setBienvenidaModalOpen,
-  } = useMallaStore();
+  } = usePlannerStore();
   const { parsearExcel } = useExcelParser();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,11 +105,6 @@ export function ConfigSidebar() {
             <FacultadDropdown idPrefix="cfg-" />
           </div>
 
-          <div className="config-divider" />
-          
-          <div className="config-section">
-            <PagoDropdown idPrefix="cfg-" />
-          </div>
 
           <div className="config-divider" />
           

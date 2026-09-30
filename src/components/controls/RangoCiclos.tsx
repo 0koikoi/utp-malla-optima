@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { CalendarRange } from 'lucide-react';
 
 function clamp(val: number, min: number, max: number) {
@@ -11,7 +11,7 @@ interface RangoCiclosProps {
 }
 
 export function RangoCiclos({ idPrefix = '' }: RangoCiclosProps) {
-  const { cursos, cicloInicio, cicloFin, setCicloInicio, setCicloFin } = useMallaStore();
+  const { cursos, cicloInicio, cicloFin, setCicloInicio, setCicloFin } = usePlannerStore();
 
   const inicioId = `${idPrefix}sim-inicio`;
   const finId = `${idPrefix}sim-fin`;

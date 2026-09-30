@@ -1,5 +1,5 @@
 // CicloRow — fila de un ciclo en el planificador con DropZone integrado
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { useFinanzasCiclos, useCicloActual } from '@/store/selectors';
 import { CursoCard } from './CursoCard';
 import { DropZone } from './DropZone';
@@ -21,7 +21,7 @@ export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: Cicl
     cursoAMover,
     setCursoAMover,
     ejecutarMovimiento,
-  } = useMallaStore();
+  } = usePlannerStore();
   const finanzasList = useFinanzasCiclos();
   const cicloActual = useCicloActual();
 

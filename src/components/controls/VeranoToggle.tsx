@@ -1,4 +1,4 @@
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { Sun } from 'lucide-react';
 
 interface VeranoToggleProps {
@@ -6,7 +6,7 @@ interface VeranoToggleProps {
 }
 
 export function VeranoToggle({ idPrefix = '' }: VeranoToggleProps) {
-  const { veranoActivo, setVeranoActivo } = useMallaStore();
+  const { veranoActivo, setVeranoActivo } = usePlannerStore();
   const toggleId = `${idPrefix}toggle-verano`;
 
   return (

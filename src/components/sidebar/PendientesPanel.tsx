@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { useContadorPozo } from '@/store/selectors';
 import { CursoCard } from '@/components/planner/CursoCard';
 import { DropZone } from '@/components/planner/DropZone';
@@ -15,7 +15,7 @@ export function PendientesPanel() {
     cursoAMover,
     setCursoAMover,
     ejecutarMovimiento,
-  } = useMallaStore();
+  } = usePlannerStore();
   const totalPendientes = useContadorPozo();
   const [busqueda, setBusqueda] = useState('');
 

@@ -3,7 +3,7 @@
 // Iconografía moderna con Lucide React
 
 import { useRef, useState, useEffect } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import { useCreditosElectivos } from '@/store/selectors';
 import { useExport } from '@/hooks/useExport';
 import { descargarRespaldoJSON, leerRespaldoJSON } from '@/services/backupService';
@@ -20,8 +20,8 @@ import {
   Database,
   HelpCircle,
 } from 'lucide-react';
-import { useAcademicStore } from '@/store/useAcademicStore';
-import { usePlannerStore } from '@/store/plannerStore';
+
+
 
 export function NavBar() {
   const {
@@ -39,7 +39,7 @@ export function NavBar() {
     cargarRespaldo,
     setConfigSidebarOpen,
     setBienvenidaModalOpen,
-  } = useMallaStore();
+  } = usePlannerStore();
 
   const creditosElectivos = useCreditosElectivos();
   const { exportarPNG, exportarPDF, exportando } = useExport();
@@ -174,7 +174,7 @@ export function NavBar() {
                 mostrarFeedback('Primero debes cargar tu malla para acceder a la estrategia y finanzas.', 'info');
                 return;
               }
-              useAcademicStore.getState().sincronizarConMalla(cursos, asignaciones);
+              
               usePlannerStore.getState().abrirEstrategia('academico');
             }}
             aria-label="Estrategia de Matrícula: Asesor Curricular y Finanzas"

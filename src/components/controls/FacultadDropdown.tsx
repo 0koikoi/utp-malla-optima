@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import type { FacultadKey, DescuentoKey } from '@/data/tarifario';
 import {
   GraduationCap,
@@ -56,7 +56,7 @@ interface DropdownProps {
 }
 
 export function FacultadDropdown({ idPrefix = '' }: DropdownProps) {
-  const { facultad, setFacultad } = useMallaStore();
+  const { facultad, setFacultad } = usePlannerStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -163,7 +163,7 @@ const PAGOS: PagoOption[] = [
 ];
 
 export function PagoDropdown({ idPrefix = '' }: DropdownProps) {
-  const { descuento, setDescuento } = useMallaStore();
+  const { descuento, setDescuento } = usePlannerStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

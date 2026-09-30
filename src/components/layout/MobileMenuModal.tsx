@@ -1,14 +1,12 @@
 // MobileMenuModal.tsx — Menú modal de controles y opciones para móvil (≤ 768px)
 import { useRef } from 'react';
-import { useMallaStore } from '@/store/mallaStore';
 import { usePlannerStore } from '@/store/plannerStore';
-import { useAcademicStore } from '@/store/useAcademicStore';
 import { useCreditosElectivos } from '@/store/selectors';
 import { useExcelParser } from '@/hooks/useExcelParser';
 import { useExport } from '@/hooks/useExport';
 import { descargarRespaldoJSON, leerRespaldoJSON } from '@/services/backupService';
 import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
-import { PagoDropdown } from '@/components/controls/PagoDropdown';
+
 import { RangoCiclos } from '@/components/controls/RangoCiclos';
 import { VeranoToggle } from '@/components/controls/VeranoToggle';
 import {
@@ -43,7 +41,7 @@ export function MobileMenuModal() {
     nombreArchivoCargado,
     resetAsignaciones,
     cargarRespaldo,
-  } = useMallaStore();
+  } = usePlannerStore();
 
   const creditosElectivos = useCreditosElectivos();
   const { parsearExcel } = useExcelParser();
@@ -142,7 +140,7 @@ export function MobileMenuModal() {
               onClick={() => {
                 setMenuMobOpen(false);
                 if (Object.keys(cursos).length === 0) return;
-                useAcademicStore.getState().sincronizarConMalla(cursos, asignaciones);
+                
                 usePlannerStore.getState().abrirEstrategia('academico');
               }}
             >
@@ -156,10 +154,6 @@ export function MobileMenuModal() {
             <FacultadDropdown idPrefix="mob-" />
           </div>
 
-          {/* 4. Método de pago */}
-          <div className="mob-menu-section">
-            <PagoDropdown idPrefix="mob-" />
-          </div>
 
           {/* 5. Rango de Ciclos */}
           <div className="mob-menu-section">

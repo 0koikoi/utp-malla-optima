@@ -13,7 +13,7 @@ import {
   Calculator,
   CalendarRange,
 } from 'lucide-react';
-import { useMallaStore } from '@/store/mallaStore';
+import { usePlannerStore } from '@/store/plannerStore';
 import mallaSoftwareDemo from '@/data/universidades/pe-utp/malla-software-2026.json';
 
 export function Homepage() {
@@ -71,7 +71,7 @@ export function Homepage() {
       });
     });
 
-    useMallaStore.getState().setCursos(cursosMap, 'Malla_Software_2026_Demo.xlsx');
+    usePlannerStore.getState().setCursos(cursosMap, 'Malla_Software_2026_Demo.xlsx');
   }
 
   return (

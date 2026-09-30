@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Organizador Curricular Universitario',
-        short_name: 'AcademicPlanner',
+        name: 'UTP Malla Óptima',
+        short_name: 'UTPMalla',
         description: 'Planificador curricular y presupuestario offline-first',
         theme_color: '#2b2d42',
         background_color: '#f8f8fa',

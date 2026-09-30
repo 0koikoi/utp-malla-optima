@@ -12,22 +12,22 @@ import {
 } from 'lucide-react';
 import type { ResultadoPlanificacionAutomatica } from '@/domain/services/automaticPlanningService';
 import { calcularRutaCritica } from '@/domain/services/recommendationService';
-import { useAcademicStore } from '@/store/useAcademicStore';
 import { usePlannerStore } from '@/store/plannerStore';
+import { useCursosAcademicArray } from '@/store/selectors';
 import { DisciplineSelector } from '@/components/controls/DisciplineSelector';
 import { FinancialPlanningService } from '../services/FinancialPlanningService';
 import { PeriodFinancialCard } from './PeriodFinancialCard';
 import { FinancialTotalCard } from './FinancialTotalCard';
 
 export const FinancialDrawer = () => {
+  const cursos = useCursosAcademicArray();
   const {
-    cursos,
     tarifario,
     disciplinaActiva,
     panelPlanificadorAbierto,
     setPanelPlanificadorAbierto,
-    generarPlanificacionOptima,
-  } = useAcademicStore();
+    autoPlanificar,
+  } = usePlannerStore();
 
   const pestanaEstrategia = usePlannerStore((s) => s.pestanaEstrategia);
   const setPestanaEstrategia = usePlannerStore((s) => s.setPestanaEstrategia);
@@ -78,7 +78,7 @@ export const FinancialDrawer = () => {
   const handleGenerarPlan = async () => {
     setGenerandoAutomatico(true);
     try {
-      const res = await generarPlanificacionOptima();
+      const res = autoPlanificar();
       setResultadoAutomatico(res);
     } finally {
       setGenerandoAutomatico(false);
