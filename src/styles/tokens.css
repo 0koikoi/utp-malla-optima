@@ -1,0 +1,291 @@
+/* Estilos Base y Variables (Design System Estandarizado en :root) */
+:root {
+  color-scheme: light;
+
+  /* ── 1. Fondos y Superficies Base ──────────────────────────────── */
+  --bg-page:           #F1F5F9;      /* Fondo de página principal */
+  --bg-surface:        #FFFFFF;      /* Tarjetas, modales, menús y superficies */
+  --bg-surface-subtle: #F8FAFC;      /* Fondos secundarios sutiles */
+  --bg-aside:          #F8FAFC;      /* Panel de pendientes */
+  --bg-bar:            #0F172A;      /* Topbar institucional */
+  --bg-nav:            #FFFFFF;      /* Barra de navegación superior */
+  --bg-nav-item:       rgba(0, 0, 0, 0.04);
+
+  /* Superficies oscuras auxiliares */
+  --bg-dark-1:         #0F172A;          
+  --bg-dark-2:         #1E293B;          
+  --bg-dark-3:         #334155;          
+  --bg-dark-4:         #475569;          
+
+  /* ── 2. Tipografía de Alto Contraste ────────────────────────────── */
+  --t-primary:         #0F172A;      /* Texto primario de máxima jerarquía */
+  --t-secondary:       #334155;      /* Texto secundario de alta legibilidad */
+  --t-muted:           #64748B;      /* Etiquetas secundarias */
+  --t-dim:             #475569;      /* Texto medio */
+  --t-white:           #FFFFFF;      /* Texto blanco puro */
+
+  /* Escalas tipográficas estandarizadas */
+  --fs-2xs:  0.60rem;               
+  --fs-xs:   0.68rem;               
+  --fs-sm:   0.75rem;               
+  --fs-base: 0.875rem;              
+  --fs-md:   0.95rem;               
+  --fs-lg:   1.10rem;                
+
+  /* ── 3. Bordes y Divisores Estandarizados ───────────────────────── */
+  --border-subtle:     #E2E8F0;      /* Divisores ligeros */
+  --border-default:    #CBD5E1;      /* Bordes estándar de tarjetas y paneles */
+  --border-strong:     #94A3B8;      /* Bordes activos o hover */
+
+  /* ── 4. Paleta de Acentos de Marca (UTP & UI) ────────────────────── */
+  --accent:            #EF233C;      /* Rojo carmesí institucional UTP */
+  --accent-hov:        #D90429;
+  --accent-subtle:     #FEF2F2;
+  --accent-border:     #FECACA;
+
+  --blue-primary:      #2563EB;      /* Azul real para cursos obligatorios y acciones */
+  --blue-hover:        #1D4ED8;
+  --blue-dark:         #1E40AF;
+  --blue-subtle:       #EFF6FF;
+  --blue-border:       #BFDBFE;
+
+  --purple-primary:    #7C3AED;      /* Violeta intenso para cursos electivos */
+  --purple-hover:      #6D28D9;
+  --purple-subtle:     #F5F3FF;
+  --purple-border:     #DDD6FE;
+
+  --emerald-primary:   #10B981;      /* Verde esmeralda para aprobados y éxito */
+  --emerald-dark:      #047857;
+  --emerald-darker:    #064E3B;
+  --emerald-subtle:    #ECFDF5;
+  --emerald-border:    #86EFAC;
+  --emerald-bright:    #6EE7B7;
+
+  --amber-primary:     #F59E0B;      /* Ámbar para veranos y avisos */
+  --amber-hover:       #D97706;
+  --amber-dark:        #B45309;
+  --amber-darker:      #92400E;
+  --amber-subtle:      #FFFBEB;
+  --amber-border:      #FCD34D;
+  --amber-bright:      #FDE047;
+  --amber-tint:        #FFFDF7;
+
+  --rose-primary:      #EF4444;      /* Rose/Rojo para alertas y peligro */
+  --rose-hover:        #DC2626;
+  --rose-dark:         #B91C1C;
+  --rose-darker:       #7F1D1D;
+  --rose-subtle:       #FEF2F2;
+  --rose-border:       #FCA5A5;
+
+  --indigo-primary:    #4F46E5;      /* Índigo para gradientes de exportación */
+  --indigo-hover:      #4338CA;
+  --indigo-light:      #6366F1;
+
+  --teal-primary:      #0D9488;      /* Teal para terminales */
+
+  /* ── 5. Tokens de Tarjetas de Curso (Cards) ─────────────────────── */
+  --card-width:        148px;
+  --card-min-h:        72px;
+  --card-bg:           var(--bg-surface);
+  --card-border:       var(--border-default);
+  --card-border-hov:   var(--border-strong);
+  --card-obl-accent:   var(--blue-primary);
+  --card-ele-accent:   var(--purple-primary);
+
+  /* Estado Aprobado / Convalidado */
+  --card-apr-bg:       #F0FDF4;
+  --card-apr-border:   var(--emerald-border);
+  --card-apr-accent:   var(--emerald-primary);
+  --card-apr-text:     #064E3B;
+
+  /* Chips de las tarjetas */
+  --chip-bg-default:   #F1F5F9;
+  --chip-t-default:    #1E293B;
+  --chip-crd-bg:       var(--blue-subtle);
+  --chip-crd-t:        var(--blue-hover);
+  --chip-crd-border:   var(--blue-border);
+  --chip-hrs-bg:       var(--emerald-subtle);
+  --chip-hrs-t:        var(--emerald-dark);
+  --chip-hrs-border:   #A7F3D0;
+  --chip-obl-bg:       var(--accent-subtle);
+  --chip-obl-t:        #DC2626;
+  --chip-obl-border:   var(--accent-border);
+  --chip-ele-bg:       var(--purple-subtle);
+  --chip-ele-t:        var(--purple-primary);
+  --chip-ele-border:   var(--purple-border);
+  --chip-apr-bg:       #DCFCE7;
+  --chip-apr-t:        #15803D;
+  --chip-apr-border:   var(--emerald-border);
+
+  /* Placeholders / Casillas Vacías */
+  --placeholder-bg:         rgba(248, 250, 252, 0.75);
+  --placeholder-border:     var(--border-default);
+  --placeholder-hover-bg:   var(--blue-subtle);
+  --placeholder-hover-border:#3B82F6;
+
+  /* ── 6. Tokens de Planificador (Tiers) ──────────────────────────── */
+  --tier-bg-regular:   linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  --tier-accent-regular: var(--blue-primary);
+  --tier-bg-locked:    linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%);
+  --tier-accent-locked: var(--emerald-primary);
+  --tier-text-locked:  var(--emerald-dark);
+  --tier-bg-advanced:  linear-gradient(180deg, #F5F3FF 0%, #EDE9FE 100%);
+  --tier-accent-advanced: var(--purple-primary);
+  --tier-bg-peligro:   linear-gradient(180deg, #FEF2F2 0%, #FEE2E2 100%);
+  --tier-accent-peligro: #EF4444;
+  --tier-bg-verano:    linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+  --tier-accent-verano: var(--amber-primary);
+  --tier-text-verano:  var(--amber-dark);
+
+  /* ── 7. Tokens de Subida (Upload Button) ─────────────────────────── */
+  --upload-bg:         var(--blue-subtle);
+  --upload-border:     #3B82F6;
+  --upload-text:       var(--blue-hover);
+  --upload-hover-bg:   #DBEAFE;
+  --upload-loaded-bg:  var(--emerald-subtle);
+  --upload-loaded-border: var(--emerald-primary);
+  --upload-loaded-text: var(--emerald-dark);
+
+  /* ── 8. Tokens de Menús y Botones (Dropdowns & Actions) ──────────── */
+  --menu-bg:           var(--bg-surface);
+  --menu-border:       var(--border-default);
+  --menu-hover-bg:     var(--blue-subtle);
+  --menu-hover-text:   var(--blue-hover);
+  --menu-active-bg:    #EEF2FF;
+  --menu-active-text:  #4338CA;
+
+  /* Feedback Toasts */
+  --toast-success-bg:     var(--emerald-subtle);
+  --toast-success-text:   var(--emerald-dark);
+  --toast-success-border: #6EE7B7;
+  --toast-warn-bg:        var(--amber-subtle);
+  --toast-warn-text:      var(--amber-dark);
+  --toast-warn-border:    var(--amber-border);
+
+  /* Topbar Badge */
+  --topbar-badge-bg:      rgba(239, 35, 60, 0.18);
+  --topbar-badge-border:  rgba(239, 35, 60, 0.4);
+  --topbar-badge-text:    #FF6B7E;
+
+  /* ── 9. Radios de Borde ─────────────────────────────────────────── */
+  --r:       6px;                   /* radio base */
+  --r-card:  6px;                   /* cards */
+  --r-btn:   6px;                   /* botones */
+  --r-modal: 12px;                  /* modals */
+  --r-sheet: 16px;                  /* bottom sheets */
+  --r-pill:  20px;                  /* pills y chips */
+  --r-lg:    12px;                  /* elementos grandes */
+
+  /* ── 10. Dimensiones Layout ─────────────────────────────────────── */
+  --topbar-h: 34px;
+  --nav-h:    54px;
+  --chrome-h: 88px;                 /* topbar + nav */
+  --aside-w:  272px;
+
+  /* ── 11. Transiciones y Sombras ─────────────────────────────────── */
+  --tr: 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-pop:  0 10px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+}
+
+/* ── 12. Soporte para Modo Oscuro (Dark Mode — Fase 5.2) ────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg-page:           #0F172A;
+    --bg-surface:        #1E293B;
+    --bg-surface-subtle: #0B1120;
+    --bg-aside:          #111827;
+    --bg-bar:            #070A12;
+    --bg-nav:            #1E293B;
+    --bg-nav-item:       rgba(255, 255, 255, 0.08);
+
+    --t-primary:         #F8FAFC;
+    --t-secondary:       #CBD5E1;
+    --t-muted:           #94A3B8;
+    --t-dim:             #64748B;
+    --t-white:           #FFFFFF;
+
+    --border-subtle:     #334155;
+    --border-default:    #475569;
+    --border-strong:     #64748B;
+
+    --card-bg:           #1E293B;
+    --card-border:       #334155;
+    --card-border-hov:   #64748B;
+
+    --card-apr-bg:       #064E3B;
+    --card-apr-border:   #059669;
+    --card-apr-accent:   #10B981;
+    --card-apr-text:     #A7F3D0;
+
+    --chip-bg-default:   #334155;
+    --chip-t-default:    #E2E8F0;
+
+    --tier-bg-regular:   linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    --tier-bg-locked:    linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+    --tier-text-locked:  #6EE7B7;
+    --tier-bg-advanced:  linear-gradient(180deg, #3B0764 0%, #2E1065 100%);
+    --tier-bg-verano:    linear-gradient(180deg, #451A03 0%, #2A1002 100%);
+    --tier-text-verano:  #FCD34D;
+
+    --placeholder-bg:    rgba(30, 41, 59, 0.7);
+    --placeholder-border:#475569;
+
+    --menu-bg:           #1E293B;
+    --menu-border:       #334155;
+
+    --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-pop:        0 10px 25px -5px rgba(0, 0, 0, 0.65);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-page:           #0F172A;
+  --bg-surface:        #1E293B;
+  --bg-surface-subtle: #0B1120;
+  --bg-aside:          #111827;
+  --bg-bar:            #070A12;
+  --bg-nav:            #1E293B;
+  --bg-nav-item:       rgba(255, 255, 255, 0.08);
+
+  --t-primary:         #F8FAFC;
+  --t-secondary:       #CBD5E1;
+  --t-muted:           #94A3B8;
+  --t-dim:             #64748B;
+  --t-white:           #FFFFFF;
+
+  --border-subtle:     #334155;
+  --border-default:    #475569;
+  --border-strong:     #64748B;
+
+  --card-bg:           #1E293B;
+  --card-border:       #334155;
+  --card-border-hov:   #64748B;
+
+  --card-apr-bg:       #064E3B;
+  --card-apr-border:   #059669;
+  --card-apr-accent:   #10B981;
+  --card-apr-text:     #A7F3D0;
+
+  --chip-bg-default:   #334155;
+  --chip-t-default:    #E2E8F0;
+
+  --tier-bg-regular:   linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  --tier-bg-locked:    linear-gradient(180deg, #064E3B 0%, #022C22 100%);
+  --tier-text-locked:  #6EE7B7;
+  --tier-bg-advanced:  linear-gradient(180deg, #3B0764 0%, #2E1065 100%);
+  --tier-bg-verano:    linear-gradient(180deg, #451A03 0%, #2A1002 100%);
+  --tier-text-verano:  #FCD34D;
+
+  --placeholder-bg:    rgba(30, 41, 59, 0.7);
+  --placeholder-border:#475569;
+
+  --menu-bg:           #1E293B;
+  --menu-border:       #334155;
+
+  --shadow-card:       0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-pop:        0 10px 25px -5px rgba(0, 0, 0, 0.65);
+}
+
