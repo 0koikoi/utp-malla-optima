@@ -203,12 +203,15 @@ export const FinancialDrawer = () => {
                 </div>
                 <button
                   type="button"
-                  className="planning-generate-btn"
-                  disabled={generandoAutomatico}
+                  disabled={generandoAutomatico || resultadoAutomatico !== null}
                   onClick={handleGenerarPlan}
                 >
                   <Sparkles size={14} />
-                  <span>{generandoAutomatico ? 'Calculando ruta...' : 'Generar Propuesta Óptima'}</span>
+                  <span>
+                    {generandoAutomatico 
+                      ? 'Calculando ruta...' 
+                      : (resultadoAutomatico ? 'Propuesta Generada' : 'Generar Propuesta Óptima')}
+                  </span>
                 </button>
               </div>
 

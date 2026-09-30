@@ -2,10 +2,8 @@
 // Garantiza la captura fidedigna de la malla y descarga de archivos binarios válidos
 
 import { useCallback, useState } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-
 async function capturarCanvasMalla(): Promise<HTMLCanvasElement | null> {
+  const html2canvas = (await import('html2canvas')).default;
   const mallaContainer = document.getElementById('malla-container');
   if (!mallaContainer) {
     console.error('[useExport] No se encontró #malla-container.');
@@ -151,6 +149,7 @@ export function useExport() {
       const canvas = await capturarCanvasMalla();
       if (!canvas) return false;
 
+      const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',

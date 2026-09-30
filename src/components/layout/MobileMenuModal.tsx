@@ -5,7 +5,7 @@ import { useCreditosElectivos } from '@/store/selectors';
 import { useExcelParser } from '@/hooks/useExcelParser';
 import { useExport } from '@/hooks/useExport';
 import { descargarRespaldoJSON, leerRespaldoJSON } from '@/services/backupService';
-import { FacultadDropdown } from '@/components/controls/FacultadDropdown';
+import { FacultadDropdown, PagoDropdown } from '@/components/controls/FacultadDropdown';
 
 import { RangoCiclos } from '@/components/controls/RangoCiclos';
 import { VeranoToggle } from '@/components/controls/VeranoToggle';
@@ -154,6 +154,10 @@ export function MobileMenuModal() {
             <FacultadDropdown idPrefix="mob-" />
           </div>
 
+          {/* 4. Método de Pago */}
+          <div className="mob-menu-section">
+            <PagoDropdown idPrefix="mob-pago-" />
+          </div>
 
           {/* 5. Rango de Ciclos */}
           <div className="mob-menu-section">

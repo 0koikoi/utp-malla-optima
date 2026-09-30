@@ -11,7 +11,7 @@
   flex-direction: column;
   width: var(--card-width);
   min-height: var(--card-min-h);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--tr), box-shadow var(--tr), border-color var(--tr);
   user-select: none;
 }
@@ -23,7 +23,7 @@
 }
 .curso-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-md);
   border-color: var(--card-border-hov);
   z-index: 2;
 }
@@ -41,7 +41,7 @@
   border-left: 4.5px solid var(--card-apr-accent);
   opacity: 0.95;
   filter: none;
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+  box-shadow: var(--shadow-sm);
   pointer-events: none;
 }
 .curso-card.aprobado .curso-titulo,

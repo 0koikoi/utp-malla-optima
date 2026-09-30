@@ -3,13 +3,13 @@
   color-scheme: light;
 
   /* ── 1. Fondos y Superficies Base ──────────────────────────────── */
-  --bg-page:           #F1F5F9;      /* Fondo de página principal */
+  --bg-page:           #FAFAFC;      /* Fondo de página principal - Más limpio y claro */
   --bg-surface:        #FFFFFF;      /* Tarjetas, modales, menús y superficies */
-  --bg-surface-subtle: #F8FAFC;      /* Fondos secundarios sutiles */
+  --bg-surface-subtle: #F4F5F7;      /* Fondos secundarios sutiles */
   --bg-aside:          #F8FAFC;      /* Panel de pendientes */
-  --bg-bar:            #0F172A;      /* Topbar institucional */
-  --bg-nav:            #FFFFFF;      /* Barra de navegación superior */
-  --bg-nav-item:       rgba(0, 0, 0, 0.04);
+  --bg-bar:            #111827;      /* Topbar institucional más moderno (gris casi negro) */
+  --bg-nav:            rgba(255, 255, 255, 0.85); /* Nav bar tipo glassmorphism */
+  --bg-nav-item:       rgba(0, 0, 0, 0.03);
 
   /* Superficies oscuras auxiliares */
   --bg-dark-1:         #0F172A;          
@@ -33,9 +33,12 @@
   --fs-lg:   1.10rem;                
 
   /* ── 3. Bordes y Divisores Estandarizados ───────────────────────── */
-  --border-subtle:     #E2E8F0;      /* Divisores ligeros */
-  --border-default:    #CBD5E1;      /* Bordes estándar de tarjetas y paneles */
-  --border-strong:     #94A3B8;      /* Bordes activos o hover */
+  --border-subtle:     #E5E7EB;      /* Divisores ligeros */
+  --border-default:    #D1D5DB;      /* Bordes estándar de tarjetas y paneles */
+  --border-strong:     #9CA3AF;      /* Bordes activos o hover */
+  --shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:         0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:         0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
   /* ── 4. Paleta de Acentos de Marca (UTP & UI) ────────────────────── */
   --accent:            #EF233C;      /* Rojo carmesí institucional UTP */
@@ -118,10 +121,10 @@
   --chip-apr-border:   var(--emerald-border);
 
   /* Placeholders / Casillas Vacías */
-  --placeholder-bg:         rgba(248, 250, 252, 0.75);
-  --placeholder-border:     var(--border-default);
-  --placeholder-hover-bg:   var(--blue-subtle);
-  --placeholder-hover-border:#3B82F6;
+  --placeholder-bg:         rgba(244, 245, 247, 0.6);
+  --placeholder-border:     #E5E7EB;
+  --placeholder-hover-bg:   #EFF6FF;
+  --placeholder-hover-border:#93C5FD;
 
   /* ── 6. Tokens de Planificador (Tiers) ──────────────────────────── */
   --tier-bg-regular:   linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
