@@ -6,7 +6,7 @@ import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado } from '../utils/academicGraph';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
-import { Calculator, CircleCheck, Info, LockKeyhole } from 'lucide-react';
+import { Calculator, CircleCheck, Clock3, Info, LockKeyhole } from 'lucide-react';
 
 interface Props {
   curso: Curso;
@@ -133,6 +133,9 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
           <div className="curso-estado-chip">
             <CircleCheck size={11} /> {curso.estado === 'APROBADO' ? 'Aprobado' : 'Convalidado'}
           </div>
+        )}
+        {curso.estado === 'EN_CURSO' && (
+          <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
         )}
       </div>
 

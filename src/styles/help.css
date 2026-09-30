@@ -1,0 +1,87 @@
+.help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(6, 13, 26, 0.72);
+}
+.help-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 720px);
+  max-height: min(92vh, 760px);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-modal);
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  box-shadow: var(--shadow-pop);
+}
+.help-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  background: var(--bg-dark-1);
+  color: #F8FAFC;
+}
+.help-modal-heading { display: flex; align-items: center; gap: 12px; }
+.help-modal-heading > svg { color: #FF8A9B; flex: none; }
+.help-modal-heading span { display: block; color: #CBD5E1; font-size: 0.62rem; font-weight: 750; letter-spacing: 0.1em; }
+.help-modal-heading h2 { margin: 2px 0 0; color: #FFFFFF; font-size: 1.1rem; }
+.help-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--r-btn);
+  background: rgba(255, 255, 255, 0.08);
+  color: #F8FAFC;
+}
+.help-close:hover { background: rgba(255, 255, 255, 0.18); }
+.help-close:focus-visible { outline: 2px solid #FBBF24; outline-offset: 2px; }
+.help-modal-body { overflow-y: auto; overscroll-behavior: contain; padding: 20px 22px 24px; }
+.help-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 9px; color: var(--t-primary); font-size: 0.9rem; }
+.help-section h3 svg { color: var(--accent); flex: none; }
+.help-section > p { margin: 0 0 14px; color: var(--t-secondary); font-size: 0.76rem; line-height: 1.55; }
+.help-summer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.help-summer-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--blue-primary);
+  border-radius: 8px;
+  background: var(--bg-surface-subtle);
+}
+.help-summer-card:nth-child(2) { border-left-color: var(--purple-primary); }
+.help-period { color: var(--t-muted); font-size: 0.61rem; font-weight: 800; letter-spacing: 0.07em; }
+.help-summer-card h4 { margin: 5px 0 7px; color: var(--t-primary); font-size: 0.82rem; }
+.help-summer-card p { min-height: 45px; margin: 0 0 11px; color: var(--t-secondary); font-size: 0.72rem; line-height: 1.45; }
+.help-route { padding: 8px 10px; border-radius: 5px; background: var(--bg-dark-2); color: #FDE68A; font-size: 0.69rem; font-weight: 750; }
+.help-section > .help-hint { margin: 11px 0 0; color: var(--t-muted); }
+.help-notice { display: flex; align-items: flex-start; gap: 9px; margin: 19px 0; padding: 11px 12px; border: 1px solid var(--amber-border); border-radius: 7px; background: var(--amber-subtle); color: var(--amber-darker); font-size: 0.72rem; line-height: 1.5; }
+.help-notice svg { flex: none; margin-top: 1px; }
+.help-steps { list-style: none; counter-reset: help-step; display: grid; gap: 8px; margin: 12px 0 0; padding: 0; }
+.help-steps li { counter-increment: help-step; display: flex; align-items: flex-start; gap: 10px; color: var(--t-secondary); font-size: 0.75rem; line-height: 1.45; }
+.help-steps li::before { content: counter(help-step); display: grid; place-items: center; flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg-dark-3); color: #FFFFFF; font-size: 0.65rem; font-weight: 800; }
+.help-view-section { margin-top: 19px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+.help-view-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.help-view-controls > div { padding: 11px 12px; border: 1px solid var(--border-default); border-radius: 7px; background: var(--bg-surface-subtle); }
+.help-view-controls strong { color: var(--t-primary); font-size: 0.76rem; }
+.help-view-controls p { margin: 6px 0 0; color: var(--t-secondary); font-size: 0.71rem; line-height: 1.5; }
+.help-last-section { margin-top: 19px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
+.help-last-section > p { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .help-backdrop { padding: 8px; }
+  .help-modal { max-height: calc(100vh - 16px); }
+  .help-modal-head { padding: 13px 15px; }
+  .help-modal-body { padding: 16px 15px 20px; }
+  .help-summer-grid { grid-template-columns: 1fr; }
+  .help-view-controls { grid-template-columns: 1fr; }
+  .help-summer-card p { min-height: 0; }
+}

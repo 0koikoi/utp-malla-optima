@@ -17,7 +17,7 @@
   gap: 8px;
 }
 .topbar-logo-icon {
-  color: var(--accent);
+  color: #FF8A9B;
 }
 .topbar-title {
   font-size: 0.8rem;
@@ -38,7 +38,7 @@
 .topbar-sep { flex: 1; }
 .topbar-note {
   font-size: 0.62rem;
-  color: var(--t-dim);
+  color: #CBD5E1;
 }
 .topbar-mob-menu-btn {
   display: none;
@@ -57,6 +57,44 @@
 .topbar-mob-menu-btn:hover {
   background: var(--accent);
   border-color: var(--accent);
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 25px;
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: var(--r-btn);
+  background: rgba(255, 255, 255, 0.09);
+  color: #F8FAFC;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--tr), border-color var(--tr);
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.5); }
+.theme-toggle:focus-visible { outline: 2px solid #FBBF24; outline-offset: 2px; }
+.topbar-help-btn {
+  display: grid;
+  place-items: center;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: var(--r-btn);
+  background: rgba(255, 255, 255, 0.09);
+  color: #F8FAFC;
+  cursor: pointer;
+  transition: background var(--tr), border-color var(--tr);
+}
+.topbar-help-btn:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.5); }
+.topbar-help-btn:focus-visible { outline: 2px solid #FBBF24; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .topbar-title-extended, .theme-toggle-label { display: none; }
+  .theme-toggle { width: 30px; min-width: 30px; padding: 4px; }
 }
 
 
@@ -81,4 +119,3 @@
 #malla-container {
   width: 100%;
 }
-

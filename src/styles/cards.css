@@ -396,7 +396,7 @@
   top: 3px;
   left: 3px;
   background: var(--amber-primary);
-  color: var(--t-white);
+  color: var(--amber-darker);
   font-size: 0.6rem;
   font-weight: 700;
   border-radius: 3px;
@@ -429,8 +429,22 @@
 
 /* ── Clases Canónicas y Compatibilidad de Tarjetas (Fase 5) ──────── */
 .curso-card.con-prerrequisitos { background: var(--bg-surface-subtle); border-left-color: var(--border-default); }
-.curso-card.en-curso { border-left-color: var(--purple-primary); box-shadow: inset 0 0 0 1px var(--purple-border); }
-.curso-card.curso-bloqueado { opacity: 0.45; filter: grayscale(0.7); cursor: not-allowed; pointer-events: auto; box-shadow: none; }
+.curso-card.en-curso {
+  background: var(--purple-subtle);
+  border-color: var(--purple-border);
+  border-left-color: var(--purple-primary);
+  box-shadow: var(--shadow-card);
+}
+.curso-card.curso-bloqueado {
+  background: var(--card-apr-bg);
+  border-color: var(--card-apr-border);
+  border-left-color: var(--card-apr-accent);
+  opacity: 1;
+  filter: none;
+  cursor: not-allowed;
+  pointer-events: auto;
+  box-shadow: var(--shadow-card);
+}
 .curso-card.curso-bloqueado:hover { transform: none; box-shadow: none; }
 .curso-card.seleccionado-presupuesto { outline: 2.5px solid var(--purple-primary); outline-offset: 1px; }
 
@@ -454,6 +468,8 @@
 .curso-budget-btn:disabled { cursor: not-allowed; opacity: 0.45; }
 .curso-lock { color: var(--emerald-primary); }
 .curso-estado-chip { margin-top: 4px; display: inline-flex; align-items: center; gap: 3px; color: var(--teal-primary); font-size: 0.56rem; font-weight: 800; }
+.curso-estado-chip.en-curso-chip { color: var(--purple-hover); }
+.curso-card.en-curso .curso-lock { color: var(--purple-hover); }
 
 .curso-tooltip {
   width: 280px;
@@ -474,4 +490,3 @@
 
 .curso-card.curso-verano { box-shadow: 0 0 0 1px var(--amber-border), var(--shadow-card); }
 .ctag.ctag-verano { color: var(--amber-dark); background: var(--amber-tint); border: 1px solid var(--amber-border); }
-

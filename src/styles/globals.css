@@ -9,7 +9,7 @@
    - planner.css: Contenedor planificador, filas de ciclo (tier-row), veranos
    - cards.css: Tarjetas de cursos, etiquetas, drag-and-drop y modo selección
    - modals.css: Tooltips globales, ConfigSidebar, BienvenidaModal, BottomSheet
-   - homepage.css: Pantalla inicial de bienvenida y subida de archivos
+   - upload.css: Carga de Excel y estado vacío del planificador
    - responsive.css: Reglas y adaptaciones para tablets y móviles
    ========================================================================== */
 
@@ -21,7 +21,7 @@
 @import './planner.css';
 @import './cards.css';
 @import './modals.css';
-@import './homepage.css';
+@import './upload.css';
+@import './help.css';
 @import './responsive.css';
 @import './financial.css';
-

@@ -42,7 +42,7 @@
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--accent, #ef233c);
+  color: #ff9aab;
   letter-spacing: 0.5px;
   margin-bottom: 2px;
 }
@@ -90,7 +90,7 @@
 .budget-control-block > label {
   display: block;
   margin-bottom: 6px;
-  color: rgba(255, 255, 255, 0.55);
+  color: #dbe2ef;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -100,7 +100,7 @@
 .budget-config-note {
   display: block;
   margin-top: 6px;
-  color: rgba(255, 255, 255, 0.45);
+  color: #cbd5e1;
   font-size: 0.68rem;
   line-height: 1.45;
 }
@@ -145,7 +145,7 @@
 .budget-empty {
   text-align: center;
   padding: 30px 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #cbd5e1;
   font-size: 0.85rem;
 }
 
@@ -220,7 +220,7 @@
 
 .period-financial-lines p span {
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.55);
+  color: #dbe2ef;
 }
 
 .period-discount-line {
@@ -593,7 +593,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
   color: #ffffff;
   border: 0;
   border-radius: 6px;
@@ -606,7 +606,7 @@
 }
 
 .strategy-apply-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
   transform: translateY(-1px);
 }
 
@@ -731,4 +731,3 @@
 .text-amber { color: #f59e0b; }
 .text-blue { color: #3b82f6; }
 .text-emerald { color: #10b981; }
-
