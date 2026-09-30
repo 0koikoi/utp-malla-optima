@@ -2,16 +2,16 @@
 .curso-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-left: 4.5px solid var(--border-strong);
-  border-radius: var(--r-card);
-  padding: 7px 9px;
+  border-top: 4px solid var(--border-strong);
+  border-radius: 8px; /* Redondeo más pronunciado */
+  padding: 10px 12px; /* Más aire (padding) interior */
   cursor: grab;
   position: relative;
   display: flex;
   flex-direction: column;
   width: var(--card-width);
   min-height: var(--card-min-h);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md); /* Sombra suave de elevación */
   transition: transform var(--tr), box-shadow var(--tr), border-color var(--tr);
   user-select: none;
 }
@@ -22,23 +22,23 @@
   padding: 6px 10px 6px 11px;
 }
 .curso-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
   border-color: var(--card-border-hov);
   z-index: 2;
 }
 .curso-card:active { cursor: grabbing; transform: scale(0.98); }
 
 /* Color de acento por tipo vívido */
-.curso-card.obligatorio { border-left-color: var(--card-obl-accent); }
-.curso-card.electivo    { border-left-color: var(--card-ele-accent); }
+.curso-card.obligatorio { border-top-color: var(--card-obl-accent); }
+.curso-card.electivo    { border-top-color: var(--card-ele-accent); }
 
 /* Aprobados / Convalidados: Vívidos y legibles (NO opacos ni en escala de grises) */
 .curso-card.aprobado,
 .curso-card.convalidado {
   background: var(--card-apr-bg);
   border: 1px solid var(--card-apr-border);
-  border-left: 4.5px solid var(--card-apr-accent);
+  border-top: 4px solid var(--card-apr-accent);
   opacity: 0.95;
   filter: none;
   box-shadow: var(--shadow-sm);
@@ -47,6 +47,20 @@
 .curso-card.aprobado .curso-titulo,
 .curso-card.convalidado .curso-titulo {
   color: var(--card-apr-text);
+  font-weight: 700;
+}
+
+/* En Curso: Notorio, ámbar Notion, activo y protegido */
+.curso-card.en-curso {
+  background: #FFFDF7;
+  border: 1px solid var(--amber-border);
+  border-top: 4px solid var(--amber-primary);
+  opacity: 1;
+  filter: none;
+  box-shadow: var(--shadow-sm);
+}
+.curso-card.en-curso .curso-titulo {
+  color: var(--t-primary);
   font-weight: 700;
 }
 
@@ -83,9 +97,9 @@
 .no-hab-mark:hover {
   color: var(--amber-primary);
 }
-.curso-card.no-habilita { border-left-color: var(--teal-primary); }
-.curso-card.obligatorio.no-habilita { border-left-color: var(--rose-primary); }
-.curso-card.electivo.no-habilita    { border-left-color: var(--blue-primary); }
+.curso-card.no-habilita { border-top-color: var(--teal-primary); }
+.curso-card.obligatorio.no-habilita { border-top-color: var(--rose-primary); }
+.curso-card.electivo.no-habilita    { border-top-color: var(--blue-primary); }
 
 /* Tags de subinfo con colores vívidos */
 .curso-tags {
@@ -132,6 +146,18 @@
   background: var(--chip-apr-bg); 
   color: var(--chip-apr-t); 
   border-color: var(--chip-apr-border); 
+  font-weight: 800; 
+}
+.ctag.ctag-convalidado { 
+  background: var(--chip-apr-bg); 
+  color: var(--chip-apr-t); 
+  border-color: var(--chip-apr-border); 
+  font-weight: 800; 
+}
+.ctag.ctag-en-curso { 
+  background: var(--amber-subtle); 
+  color: var(--amber-dark); 
+  border-color: var(--amber-border); 
   font-weight: 800; 
 }
 

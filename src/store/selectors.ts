@@ -21,7 +21,11 @@ export function useCursosPozo(): Curso[] {
     useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
   );
   return Object.values(cursos)
-    .filter((c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo')
+    .filter(
+      (c) =>
+        asignaciones[c.codigo] === 'pozo' &&
+        !['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'EN CURSO'].includes(c.estado)
+    )
     .sort((a, b) => a.cicloOrigen - b.cicloOrigen);
 }
 
@@ -114,7 +118,9 @@ export function useContadorPozo(): number {
     useShallow((s) => ({ cursos: s.cursos, asignaciones: s.asignaciones }))
   );
   return Object.values(cursos).filter(
-    (c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo'
+    (c) =>
+      asignaciones[c.codigo] === 'pozo' &&
+      !['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'EN CURSO'].includes(c.estado)
   ).length;
 }
 

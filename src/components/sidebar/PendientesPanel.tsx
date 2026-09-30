@@ -21,7 +21,11 @@ export function PendientesPanel() {
 
   // Cursos en el pozo agrupados por cicloOrigen
   const cursosPozo = Object.values(cursos)
-    .filter((c) => c.estado === 'PENDIENTE' && asignaciones[c.codigo] === 'pozo')
+    .filter(
+      (c) =>
+        asignaciones[c.codigo] === 'pozo' &&
+        !['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'EN CURSO'].includes(c.estado)
+    )
     .sort((a, b) => a.cicloOrigen - b.cicloOrigen);
 
   const q = busqueda.trim().toLowerCase();

@@ -32,14 +32,21 @@ export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: Cicl
   const cursosEnCiclo = Object.values(cursos).filter(
     (c) => asignaciones[c.codigo] === cicloId
   );
-  const cursosPendientes = cursosEnCiclo.filter((c) => c.estado === 'PENDIENTE');
   const cursosAprobados = cursosEnCiclo.filter((c) =>
     ['APROBADO', 'CONVALIDADO'].includes(c.estado)
   );
+  const cursosEnCurso = cursosEnCiclo.filter((c) =>
+    c.estado === 'EN_CURSO' || c.estado === 'EN CURSO'
+  );
+  const cursosPendientes = cursosEnCiclo.filter((c) => c.estado === 'PENDIENTE');
+  const otrosCursos = cursosEnCiclo.filter((c) =>
+    !['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'EN CURSO', 'PENDIENTE'].includes(c.estado)
+  );
 
   const isLocked = tipo === 'regular' && cicloNum < cicloActual;
+  const tieneEnCurso = cursosEnCurso.length > 0;
 
-  // Estado visual del label (aprobado/adelantado/locked)
+  // Estado visual del label (aprobado/adelantado/en-curso/locked)
   const aprobadosCount = cursosAprobados.length;
   const creditosAprobados = cursosAprobados.reduce((acc, c) => acc + c.creditos, 0);
   const totalCreditos = cursosEnCiclo.reduce((acc, c) => acc + c.creditos, 0);
@@ -51,9 +58,11 @@ export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: Cicl
       ? 'locked'
       : aprobadosCount === cursosEnCiclo.length && cursosEnCiclo.length > 0
         ? 'ciclo-aprobado'
-        : (aprobadosCount >= 3 || (porcentajeAprobado >= 0.5 && cursosEnCiclo.length > 0))
-          ? 'ciclo-adelantado'
-          : '',
+        : tieneEnCurso
+          ? 'ciclo-en-curso'
+          : (aprobadosCount >= 3 || (porcentajeAprobado >= 0.5 && cursosEnCiclo.length > 0))
+            ? 'ciclo-adelantado'
+            : '',
     finanzas?.excesoHoras || finanzas?.excesoCreditosVerano ? 'peligro' : '',
   ]
     .filter(Boolean)
@@ -122,6 +131,25 @@ export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: Cicl
               <span className="hist-lbl">Histórico</span>
             </span>
           </div>
+        ) : tieneEnCurso ? (
+          <div className="tier-stats">
+            <span className="stat-chip stat-en-curso" style={{
+              background: 'var(--amber-subtle)',
+              color: 'var(--amber-dark)',
+              borderColor: 'var(--amber-border)',
+              fontWeight: 800,
+            }}>
+              ⏳ En Curso
+            </span>
+            <span className="stat-chip">
+              <span className="contador-creditos">
+                {Math.round(cursosEnCiclo.reduce((sum, c) => sum + c.creditos, 0) * 10) / 10}
+              </span> crd
+            </span>
+            <span className="ciclo-costo-val historico">
+              <span className="hist-lbl" style={{ color: 'var(--amber-dark)' }}>Actual</span>
+            </span>
+          </div>
         ) : (
           <div className="tier-stats">
             <span className="stat-chip stat-horas">
@@ -175,7 +203,7 @@ export function CicloRow({ cicloNum, tipo, trasCiclo, onToggleHabilitado }: Cicl
             ))}
           </div>
         ) : (
-          [...cursosAprobados, ...cursosPendientes].map((curso) => (
+          [...cursosAprobados, ...cursosEnCurso, ...cursosPendientes, ...otrosCursos].map((curso) => (
             <CursoCard key={curso.codigo} curso={curso} isLocked={isLocked} />
           ))
         )}

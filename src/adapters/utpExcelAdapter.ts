@@ -184,9 +184,16 @@ const normalizarEstado = (valor: ExcelCell): EstadoCurso => {
   return 'PENDIENTE';
 };
 
-const normalizarTipo = (valor: ExcelCell): TipoCurso => {
+const normalizarTipo = (valor: ExcelCell, nombreCurso = ''): TipoCurso => {
   const tipo = normalizarTexto(valor);
-  return tipo === 'E' || tipo.includes('ELECTIV') ? 'ELECTIVO' : 'OBLIGATORIO';
+  const nombre = normalizarTexto(nombreCurso);
+
+  // Un curso es ELECTIVO si contiene 'ELECTIV' en su nombre o tipo (ej: 'ELECTIVO', 'ELEC')
+  // Nota: En UTP la letra 'E' en la columna Tipo refiere a 'Estudios Específicos', NO a Electivo.
+  if (nombre.includes('ELECTIV') || tipo.includes('ELECTIV') || tipo === 'ELEC') {
+    return 'ELECTIVO';
+  }
+  return 'OBLIGATORIO';
 };
 
 const normalizarNumero = (valor: ExcelCell): number => {
@@ -326,7 +333,7 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       nombre: nombreRaw,
       horasSemanales: normalizarNumero(fila[columnas.horas]) || 3,
       creditos: normalizarNumero(fila[columnas.creditos]) || 0,
-      tipo: normalizarTipo(fila[columnas.tipo]),
+      tipo: normalizarTipo(fila[columnas.tipo], nombreRaw),
       estado,
       prerequisitos,
       prerrequisitos: prerequisitos,

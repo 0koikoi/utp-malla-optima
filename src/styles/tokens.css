@@ -2,27 +2,27 @@
 :root {
   color-scheme: light;
 
-  /* ── 1. Fondos y Superficies Base ──────────────────────────────── */
-  --bg-page:           #FAFAFC;      /* Fondo de página principal - Más limpio y claro */
-  --bg-surface:        #FFFFFF;      /* Tarjetas, modales, menús y superficies */
-  --bg-surface-subtle: #F4F5F7;      /* Fondos secundarios sutiles */
-  --bg-aside:          #F8FAFC;      /* Panel de pendientes */
-  --bg-bar:            #111827;      /* Topbar institucional más moderno (gris casi negro) */
-  --bg-nav:            rgba(255, 255, 255, 0.85); /* Nav bar tipo glassmorphism */
+  /* ── 1. Fondos y Superficies Base (Notion Style) ──────────────────────────────── */
+  --bg-page:           #FFFFFF;      /* Blanco puro */
+  --bg-surface:        #FFFFFF;      /* Tarjetas, modales, menús */
+  --bg-surface-subtle: #F7F7F5;      /* Tonos muy ligeros para hovers o fondos de tags */
+  --bg-aside:          #F7F7F5;      /* Panel lateral */
+  --bg-bar:            #FFFFFF;      /* Topbar limpio */
+  --bg-nav:            rgba(255, 255, 255, 0.9);
   --bg-nav-item:       rgba(0, 0, 0, 0.03);
 
   /* Superficies oscuras auxiliares */
-  --bg-dark-1:         #0F172A;          
-  --bg-dark-2:         #1E293B;          
-  --bg-dark-3:         #334155;          
-  --bg-dark-4:         #475569;          
+  --bg-dark-1:         #2F2E2E;          
+  --bg-dark-2:         #37352F;          
+  --bg-dark-3:         #5A5A55;          
+  --bg-dark-4:         #787774;          
 
   /* ── 2. Tipografía de Alto Contraste ────────────────────────────── */
-  --t-primary:         #0F172A;      /* Texto primario de máxima jerarquía */
-  --t-secondary:       #334155;      /* Texto secundario de alta legibilidad */
-  --t-muted:           #64748B;      /* Etiquetas secundarias */
-  --t-dim:             #475569;      /* Texto medio */
-  --t-white:           #FFFFFF;      /* Texto blanco puro */
+  --t-primary:         #37352F;      /* Negro tenue típico de texto */
+  --t-secondary:       #787774;      /* Gris secundario para descripciones */
+  --t-muted:           #9F9E99;      /* Gris muy tenue */
+  --t-dim:             #5A5A55;      
+  --t-white:           #FFFFFF;
 
   /* Escalas tipográficas estandarizadas */
   --fs-2xs:  0.60rem;               
@@ -33,58 +33,45 @@
   --fs-lg:   1.10rem;                
 
   /* ── 3. Bordes y Divisores Estandarizados ───────────────────────── */
-  --border-subtle:     #E5E7EB;      /* Divisores ligeros */
-  --border-default:    #D1D5DB;      /* Bordes estándar de tarjetas y paneles */
-  --border-strong:     #9CA3AF;      /* Bordes activos o hover */
-  --shadow-sm:         0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md:         0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg:         0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --border-subtle:     #EAEAEA;      /* Divisores casi invisibles */
+  --border-default:    #E3E3E3;      /* Bordes estándar para tarjetas */
+  --border-strong:     #CCCCCC;      /* Bordes en hover */
+  --shadow-sm:         0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md:         0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg:         0 12px 24px rgba(0, 0, 0, 0.08);
 
-  /* ── 4. Paleta de Acentos de Marca (UTP & UI) ────────────────────── */
-  --accent:            #EF233C;      /* Rojo carmesí institucional UTP */
-  --accent-hov:        #D90429;
-  --accent-subtle:     #FEF2F2;
-  --accent-border:     #FECACA;
+  /* ── 4. Paleta de Acentos de Marca (Pasteles minimalistas) ────────────────────── */
+  --accent:            #37352F;      /* Neutral oscuro (negro) para interacciones primarias */
+  --accent-hov:        #2F2E2E;
+  --accent-subtle:     #FDF5EC;      /* Naranja tenue */
+  --accent-border:     #F3D6B5;
 
-  --blue-primary:      #2563EB;      /* Azul real para cursos obligatorios y acciones */
-  --blue-hover:        #1D4ED8;
+  --blue-primary:      #337EA9;      /* Azul tenue de Notion */
+  --blue-hover:        #235D7F;
   --blue-dark:         #1E40AF;
-  --blue-subtle:       #EFF6FF;
-  --blue-border:       #BFDBFE;
+  --blue-subtle:       #E7F3F8;      
+  --blue-border:       #C1DFEC;      
 
-  --purple-primary:    #7C3AED;      /* Violeta intenso para cursos electivos */
-  --purple-hover:      #6D28D9;
-  --purple-subtle:     #F5F3FF;
-  --purple-border:     #DDD6FE;
+  --purple-primary:    #9065B0;      
+  --purple-hover:      #764C96;
+  --purple-subtle:     #F4F0F7;
+  --purple-border:     #E2D5EB;
 
-  --emerald-primary:   #10B981;      /* Verde esmeralda para aprobados y éxito */
-  --emerald-dark:      #047857;
-  --emerald-darker:    #064E3B;
-  --emerald-subtle:    #ECFDF5;
-  --emerald-border:    #86EFAC;
-  --emerald-bright:    #6EE7B7;
+  --emerald-primary:   #448361;      /* Verde tenue */
+  --emerald-dark:      #264D3A;
+  --emerald-subtle:    #EDF3F0;
+  --emerald-border:    #C8DEC0;
+  
+  --amber-primary:     #D9730D;      
+  --amber-hover:       #B85C06;
+  --amber-subtle:      #FAF1E5;
+  --amber-border:      #FAD0A3;
 
-  --amber-primary:     #F59E0B;      /* Ámbar para veranos y avisos */
-  --amber-hover:       #D97706;
-  --amber-dark:        #B45309;
-  --amber-darker:      #92400E;
-  --amber-subtle:      #FFFBEB;
-  --amber-border:      #FCD34D;
-  --amber-bright:      #FDE047;
-  --amber-tint:        #FFFDF7;
-
-  --rose-primary:      #EF4444;      /* Rose/Rojo para alertas y peligro */
-  --rose-hover:        #DC2626;
-  --rose-dark:         #B91C1C;
-  --rose-darker:       #7F1D1D;
-  --rose-subtle:       #FEF2F2;
-  --rose-border:       #FCA5A5;
-
-  --indigo-primary:    #4F46E5;      /* Índigo para gradientes de exportación */
-  --indigo-hover:      #4338CA;
-  --indigo-light:      #6366F1;
-
-  --teal-primary:      #0D9488;      /* Teal para terminales */
+  --rose-primary:      #CB2431;      /* Rojo de error */
+  --rose-subtle:       #FBE4E4;
+  --rose-border:       #F2B8B8;
+  
+  --teal-primary:      #4D6461;
 
   /* ── 5. Tokens de Tarjetas de Curso (Cards) ─────────────────────── */
   --card-width:        148px;
@@ -110,9 +97,9 @@
   --chip-hrs-bg:       var(--emerald-subtle);
   --chip-hrs-t:        var(--emerald-dark);
   --chip-hrs-border:   #A7F3D0;
-  --chip-obl-bg:       var(--accent-subtle);
-  --chip-obl-t:        #DC2626;
-  --chip-obl-border:   var(--accent-border);
+  --chip-obl-bg:       var(--blue-subtle);
+  --chip-obl-t:        var(--blue-hover);
+  --chip-obl-border:   var(--blue-border);
   --chip-ele-bg:       var(--purple-subtle);
   --chip-ele-t:        var(--purple-primary);
   --chip-ele-border:   var(--purple-border);

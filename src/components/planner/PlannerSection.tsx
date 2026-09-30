@@ -57,8 +57,29 @@ export function PlannerSection() {
           // REGLA CLAVE: No mostrar veranos en ciclos concluidos del pasado; solo desde los ciclos que falten planificar
           const veranosVisibles = veranosTrasEsteCiclo.filter(() => n >= cicloActual);
 
+          // Agrupación visual por año académico (2 ciclos por año)
+          const isPrimerCicloDelAno = n % 2 !== 0;
+          const anoAcademico = Math.ceil(n / 2);
+
           return (
             <div key={`seccion-ciclo-${n}`} className="ciclo-bloque-grupo">
+              {isPrimerCicloDelAno && (
+                <div className="año-academico-header" style={{
+                  marginTop: n > 1 ? '32px' : '16px',
+                  marginBottom: '12px',
+                  paddingBottom: '8px',
+                  borderBottom: '2px solid rgba(0,0,0,0.05)',
+                  color: 'var(--blue-primary)',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span>Año Académico {anoAcademico}</span>
+                  <span style={{flex: 1, height: '1px', background: 'var(--border-subtle)'}}></span>
+                </div>
+              )}
               <CicloRow cicloNum={n} tipo="regular" />
 
               {veranosVisibles.map((v) => {

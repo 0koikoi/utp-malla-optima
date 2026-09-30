@@ -162,8 +162,12 @@ export const usePlannerStore = create<PlannerState>()(
       setCursos: (cursos, nombreArchivo) => {
         const asignaciones: Record<string, UbicacionCurso> = {};
         for (const curso of Object.values(cursos)) {
+          if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
+            curso.tipo = 'OBLIGATORIO';
+          }
           const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
-          asignaciones[curso.codigo] = esAprobado
+          const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
+          asignaciones[curso.codigo] = (esAprobado || esEnCurso)
             ? (`ciclo-${curso.cicloOrigen}` as UbicacionCurso)
             : 'pozo';
         }
@@ -191,14 +195,22 @@ export const usePlannerStore = create<PlannerState>()(
           const asignacionesFinales: Record<string, UbicacionCurso> = {};
 
           for (const curso of Object.values(cursos)) {
+            if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
+              curso.tipo = 'OBLIGATORIO';
+            }
             const ubicacionActual = asignacionesActuales[curso.codigo];
-            if (ubicacionActual) {
+            const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
+            const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
+
+            if (esAprobado || esEnCurso) {
+              asignacionesFinales[curso.codigo] =
+                ubicacionActual && ubicacionActual !== 'pozo'
+                  ? ubicacionActual
+                  : (`ciclo-${curso.cicloOrigen}` as UbicacionCurso);
+            } else if (ubicacionActual) {
               asignacionesFinales[curso.codigo] = ubicacionActual;
             } else {
-              const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
-              asignacionesFinales[curso.codigo] = esAprobado
-                ? (`ciclo-${curso.cicloOrigen}` as UbicacionCurso)
-                : 'pozo';
+              asignacionesFinales[curso.codigo] = 'pozo';
             }
           }
           return {
@@ -549,6 +561,38 @@ export const usePlannerStore = create<PlannerState>()(
         nombreArchivoCargado: state.nombreArchivoCargado,
         disciplinaActiva: state.disciplinaActiva,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (state.cursos && state.asignaciones) {
+          let huboCambio = false;
+          const asignacionesCorregidas = { ...state.asignaciones };
+          const cursosCorregidos = { ...state.cursos };
+
+          for (const curso of Object.values(cursosCorregidos)) {
+            // Corregir clasificación errónea de cursos obligatorios como electivos
+            if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
+              cursosCorregidos[curso.codigo] = { ...curso, tipo: 'OBLIGATORIO' };
+              huboCambio = true;
+            }
+
+            const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
+            const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
+            if (
+              (esAprobado || esEnCurso) &&
+              (!asignacionesCorregidas[curso.codigo] || asignacionesCorregidas[curso.codigo] === 'pozo')
+            ) {
+              asignacionesCorregidas[curso.codigo] = `ciclo-${curso.cicloOrigen}` as UbicacionCurso;
+              huboCambio = true;
+            }
+          }
+          if (huboCambio) {
+            usePlannerStore.setState({
+              cursos: cursosCorregidos,
+              asignaciones: asignacionesCorregidas,
+            });
+          }
+        }
+      },
     }
   )
 );

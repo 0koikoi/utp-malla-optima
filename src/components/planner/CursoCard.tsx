@@ -26,7 +26,9 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
   } = usePlannerStore();
 
   const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
-  const esArrastrable = !esAprobado && !isOverlay;
+  const esConvalidado = curso.estado === 'CONVALIDADO';
+  const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
+  const esArrastrable = !esAprobado && !esEnCurso && !isOverlay;
   const ubicacionActual = asignaciones[curso.codigo] ?? 'pozo';
   const estaEnCiclo = ubicacionActual !== 'pozo';
   const tienePrereqRoto = cursosConPrereqRoto.includes(curso.codigo);
@@ -38,10 +40,16 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
     disabled: !esArrastrable,
   });
 
-  const claseEst = esAprobado ? curso.estado.toLowerCase() : '';
-  const claseT = curso.tipo === 'OBLIGATORIO' ? 'obligatorio' : 'electivo';
-  const textoT = curso.tipo === 'OBLIGATORIO' ? 'Obligatorio' : 'Electivo';
-  const claseTag = curso.tipo === 'OBLIGATORIO' ? 'obl' : 'ele';
+  let claseEst = '';
+  if (esConvalidado) claseEst = 'convalidado';
+  else if (esAprobado) claseEst = 'aprobado';
+  else if (esEnCurso) claseEst = 'en-curso';
+  const esElectivo =
+    curso.nombre.toUpperCase().includes('ELECTIV') ||
+    (curso.tipo === 'ELECTIVO' && curso.nombre.toUpperCase().includes('ELECTIV'));
+  const claseT = esElectivo ? 'electivo' : 'obligatorio';
+  const textoT = esElectivo ? 'Electivo' : 'Obligatorio';
+  const claseTag = esElectivo ? 'ele' : 'obl';
   const sinSucesores = !esAprobado && curso.habilitaA.length === 0;
 
   function handleInfoEnter(e: React.MouseEvent) {
@@ -55,7 +63,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
   }
 
   function handleCardClick() {
-    if (isDragging || isOverlay || esAprobado) return;
+    if (isDragging || isOverlay || esAprobado || esEnCurso) return;
     const esTactilOMovil = window.matchMedia('(pointer: coarse), (max-width: 768px)').matches;
     if (esTactilOMovil) {
       setCursoAMover(esSeleccionadoMover ? null : curso.codigo);
@@ -109,7 +117,7 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
         )}
 
         {/* Botón rápido para desasignar con un solo tap/click */}
-        {!isOverlay && !esAprobado && estaEnCiclo && !isLocked && (
+        {!isOverlay && esArrastrable && estaEnCiclo && !isLocked && (
           <button
             type="button"
             className="curso-card-quitar-btn"
@@ -133,8 +141,12 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
           <span className="ctag">C{curso.cicloOrigen}</span>
           <span className="ctag ctag-horas">{typeof curso.horasSemanales === 'number' ? curso.horasSemanales : ((curso as any).horas || 0)}h</span>
           <span className="ctag ctag-creditos">{curso.creditos} crd</span>
-          {esAprobado ? (
+          {esConvalidado ? (
+            <span className="ctag ctag-convalidado">✓ Convalidado</span>
+          ) : esAprobado ? (
             <span className="ctag ctag-aprobado">✓ Aprobado</span>
+          ) : esEnCurso ? (
+            <span className="ctag ctag-en-curso">⏳ En Curso</span>
           ) : (
             <span className={`ctag ${claseTag}`}>{textoT}</span>
           )}

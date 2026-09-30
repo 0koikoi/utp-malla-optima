@@ -4,7 +4,9 @@
   top: 0;
   z-index: 1100;
   height: var(--topbar-h);
-  background: var(--bg-bar);
+  background: rgba(255, 255, 255, 0.9); 
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
@@ -22,7 +24,7 @@
 .topbar-title {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--t-white);
+  color: var(--t-primary);
   letter-spacing: 0.2px;
 }
 .topbar-badge {

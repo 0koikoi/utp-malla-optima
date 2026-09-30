@@ -63,9 +63,14 @@ export function validarPrerequisitos(
     // a) Ya aprobado o convalidado → cumplido
     if (ESTADOS_CUMPLIDOS.includes(pre.estado)) continue;
 
-    // b) Planificado en un período anterior al destino
+    // b) Planificado o En Curso en un período anterior al destino
     if (destOrden !== null) {
-      const preOrden = ordenCronologico(asignaciones[pre.codigo] ?? '', veranoUbicaciones);
+      const preUbi =
+        asignaciones[pre.codigo] ??
+        (pre.estado === 'EN_CURSO' || pre.estado === 'EN CURSO'
+          ? `ciclo-${pre.cicloOrigen}`
+          : '');
+      const preOrden = ordenCronologico(preUbi, veranoUbicaciones);
       if (preOrden !== null && preOrden < destOrden) continue;
     }
 
@@ -132,7 +137,13 @@ export function obtenerTodosCursosRotos(
   for (const [codigo, ubi] of Object.entries(asignaciones)) {
     if (ubi === 'pozo') continue;
     const curso = diccionario[codigo];
-    if (!curso || ESTADOS_CUMPLIDOS.includes(curso.estado)) continue;
+    if (
+      !curso ||
+      ESTADOS_CUMPLIDOS.includes(curso.estado) ||
+      curso.estado === 'EN_CURSO' ||
+      curso.estado === 'EN CURSO'
+    )
+      continue;
     
     const check = validarPrerequisitos(curso, diccionario, asignaciones, ubi, veranoUbicaciones);
     if (!check.valido) {

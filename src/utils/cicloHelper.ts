@@ -17,6 +17,21 @@ export function calcularCicloActual(cursos: Record<string, Curso>): number {
   const cursosArr = Object.values(cursos);
   if (cursosArr.length === 0) return 1;
 
+  // Si existen cursos en curso, el ciclo activo es aquel que concentra la mayoría de ellos
+  const cursosEnCurso = cursosArr.filter(
+    (c) => c.estado === 'EN_CURSO' || c.estado === 'EN CURSO'
+  );
+  if (cursosEnCurso.length > 0) {
+    const conteo: Record<number, number> = {};
+    for (const c of cursosEnCurso) {
+      conteo[c.cicloOrigen] = (conteo[c.cicloOrigen] || 0) + 1;
+    }
+    const sorted = Object.entries(conteo).sort(
+      (a, b) => b[1] - a[1] || Number(b[0]) - Number(a[0])
+    );
+    return Number(sorted[0][0]);
+  }
+
   const cursosPorCiclo: Record<number, { total: number; aprobados: number; pendientes: number }> = {};
   for (let c = 1; c <= 12; c++) {
     cursosPorCiclo[c] = { total: 0, aprobados: 0, pendientes: 0 };
