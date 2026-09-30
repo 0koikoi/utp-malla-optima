@@ -14,7 +14,7 @@ import { exportPlanPNG } from './services/exportPlanPNG';
 import { permiteVeranoDespuesDe } from './domain/rules/academicContextRules';
 import { MINIMO_CREDITOS_ELECTIVOS } from './domain/rules/planningRules';
 import { FinancialConfigurationProvider } from './infrastructure/configuration/FinancialConfigurationProvider';
-
+//esta es la principal donde se ve todo porsiaca//
 export default function App() {
   const {
     cursos, cargarDesdeDB, setTarifario, nombreArchivoCargado, perfilCargado,
