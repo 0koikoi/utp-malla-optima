@@ -162,9 +162,10 @@ export const usePlannerStore = create<PlannerState>()(
       setCursos: (cursos, nombreArchivo) => {
         const asignaciones: Record<string, UbicacionCurso> = {};
         for (const curso of Object.values(cursos)) {
-          if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
-            curso.tipo = 'OBLIGATORIO';
-          }
+          const t = String(curso.tipo ?? '').trim().toUpperCase();
+          curso.tipo = (t === 'E' || t === 'ELECTIVO' || t.includes('ELECTIV') || curso.nombre.toUpperCase().includes('ELECTIV'))
+            ? 'ELECTIVO'
+            : 'OBLIGATORIO';
           const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
           const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
           asignaciones[curso.codigo] = (esAprobado || esEnCurso)
@@ -195,9 +196,10 @@ export const usePlannerStore = create<PlannerState>()(
           const asignacionesFinales: Record<string, UbicacionCurso> = {};
 
           for (const curso of Object.values(cursos)) {
-            if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
-              curso.tipo = 'OBLIGATORIO';
-            }
+            const t = String(curso.tipo ?? '').trim().toUpperCase();
+            curso.tipo = (t === 'E' || t === 'ELECTIVO' || t.includes('ELECTIV') || curso.nombre.toUpperCase().includes('ELECTIV'))
+              ? 'ELECTIVO'
+              : 'OBLIGATORIO';
             const ubicacionActual = asignacionesActuales[curso.codigo];
             const esAprobado = ['APROBADO', 'CONVALIDADO'].includes(curso.estado);
             const esEnCurso = curso.estado === 'EN_CURSO' || curso.estado === 'EN CURSO';
@@ -569,9 +571,12 @@ export const usePlannerStore = create<PlannerState>()(
           const cursosCorregidos = { ...state.cursos };
 
           for (const curso of Object.values(cursosCorregidos)) {
-            // Corregir clasificación errónea de cursos obligatorios como electivos
-            if (curso.tipo === 'ELECTIVO' && !curso.nombre.toUpperCase().includes('ELECTIV')) {
-              cursosCorregidos[curso.codigo] = { ...curso, tipo: 'OBLIGATORIO' };
+            const t = String(curso.tipo ?? '').trim().toUpperCase();
+            const tipoEsperado = (t === 'E' || t === 'ELECTIVO' || t.includes('ELECTIV') || curso.nombre.toUpperCase().includes('ELECTIV'))
+              ? 'ELECTIVO'
+              : 'OBLIGATORIO';
+            if (curso.tipo !== tipoEsperado) {
+              cursosCorregidos[curso.codigo] = { ...curso, tipo: tipoEsperado };
               huboCambio = true;
             }
 

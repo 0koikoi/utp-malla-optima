@@ -188,9 +188,10 @@ const normalizarTipo = (valor: ExcelCell, nombreCurso = ''): TipoCurso => {
   const tipo = normalizarTexto(valor);
   const nombre = normalizarTexto(nombreCurso);
 
-  // Un curso es ELECTIVO si contiene 'ELECTIV' en su nombre o tipo (ej: 'ELECTIVO', 'ELEC')
-  // Nota: En UTP la letra 'E' en la columna Tipo refiere a 'Estudios Específicos', NO a Electivo.
-  if (nombre.includes('ELECTIV') || tipo.includes('ELECTIV') || tipo === 'ELEC') {
+  // En el Excel de UTP, el tipo de curso se define por:
+  // - 'O' u 'OBLIGATORIO' -> OBLIGATORIO
+  // - 'E' u 'ELECTIVO'    -> ELECTIVO
+  if (tipo === 'E' || tipo === 'ELECTIVO' || tipo.includes('ELECTIV') || nombre.includes('ELECTIV')) {
     return 'ELECTIVO';
   }
   return 'OBLIGATORIO';

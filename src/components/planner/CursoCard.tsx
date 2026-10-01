@@ -45,8 +45,10 @@ export function CursoCard({ curso, isOverlay = false, isLocked = false }: CursoC
   else if (esAprobado) claseEst = 'aprobado';
   else if (esEnCurso) claseEst = 'en-curso';
   const esElectivo =
-    curso.nombre.toUpperCase().includes('ELECTIV') ||
-    (curso.tipo === 'ELECTIVO' && curso.nombre.toUpperCase().includes('ELECTIV'));
+    curso.tipo === 'ELECTIVO' ||
+    curso.tipo === 'E' ||
+    (typeof curso.tipo === 'string' && curso.tipo.trim().toUpperCase() === 'E') ||
+    curso.nombre.toUpperCase().includes('ELECTIV');
   const claseT = esElectivo ? 'electivo' : 'obligatorio';
   const textoT = esElectivo ? 'Electivo' : 'Obligatorio';
   const claseTag = esElectivo ? 'ele' : 'obl';

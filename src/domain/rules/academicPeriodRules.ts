@@ -34,7 +34,7 @@ export const generarSecuenciaPeriodos = (
 
   for (let ciclo = 1; ciclo <= total; ciclo += 1) {
     periodos.push(crearPeriodoRegular(ciclo));
-    // En UTP el ciclo de Verano se cursa en Enero (tras el ciclo de Agosto-Diciembre).
+    // En la UTP el ciclo de Verano se cursa en Enero (tras el ciclo de Agosto-Diciembre).
     // Si el estudiante inicia en marzo: los veranos van tras ciclos pares (2, 4, 6...).
     // Si el estudiante inicia en agosto: los veranos van tras ciclos impares (1, 3, 5...).
     const tieneVerano = periodoIngreso === 'marzo' ? ciclo % 2 === 0 : ciclo % 2 !== 0;
