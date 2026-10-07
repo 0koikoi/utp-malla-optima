@@ -460,6 +460,8 @@
 .tier-row.period-current { border-color: rgba(245, 158, 11, 0.4); }
 .tier-row.period-current .tier-dropzone { background: rgba(245, 158, 11, 0.03); }
 .tier-row.period-current.is-over { border-color: var(--amber-primary); box-shadow: var(--shadow-card); }
+.tier-label .stat-chip.stat-hours-warning { background: var(--amber-subtle); color: var(--amber-darker); border-color: var(--amber-border); }
+.tier-hours-warning { display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; color: var(--amber-dark); font-size: 0.58rem; font-weight: 750; }
 
 .add-cycle-btn {
   display: inline-flex;
@@ -480,4 +482,26 @@
 }
 .add-cycle-btn:hover { background: var(--upload-hover-bg); border-style: solid; transform: translateY(-1px); }
 .add-cycle-btn:focus-visible { outline: 2px solid var(--blue-primary); outline-offset: 2px; }
+.removable-cycle .tier-label { padding-top: 27px; }
+.remove-cycle-btn {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--t-secondary);
+  cursor: pointer;
+}
+.remove-cycle-btn:hover:not(:disabled) { color: var(--rose-primary); background: var(--rose-subtle); border-color: var(--rose-border); }
+.remove-cycle-btn:focus-visible { outline: 2px solid var(--blue-primary); outline-offset: 2px; }
+.remove-cycle-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.cycle-remove-error { color: var(--rose-primary); font-size: 0.6rem; }
 @media (max-width: 640px) { .add-cycle-btn { margin-left: 0; } }
+@media (max-width: 640px) { .removable-cycle .tier-label { padding-top: 6px; padding-left: 38px; } }

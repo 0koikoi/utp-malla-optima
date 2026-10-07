@@ -450,7 +450,7 @@
 
 .curso-card-head { display: flex; align-items: center; gap: 6px; min-height: 18px; }
 .curso-codigo { flex: 1; overflow: hidden; text-overflow: ellipsis; color: var(--t-muted); font-size: 0.58rem; font-weight: 750; letter-spacing: 0.2px; }
-.curso-info-btn, .curso-budget-btn {
+.curso-info-btn {
   width: 20px;
   height: 20px;
   display: grid;
@@ -464,8 +464,7 @@
   transition: all var(--tr);
 }
 .curso-info-btn:hover { color: var(--accent); background: var(--accent-subtle); }
-.curso-budget-btn:hover, .curso-budget-btn.active { color: var(--purple-primary); background: var(--purple-subtle); }
-.curso-budget-btn:disabled { cursor: not-allowed; opacity: 0.45; }
+.curso-sin-dependientes { display: inline-flex; align-items: center; gap: 1px; height: 20px; color: var(--t-secondary); }
 .curso-lock { color: var(--emerald-primary); }
 .curso-estado-chip { margin-top: 4px; display: inline-flex; align-items: center; gap: 3px; color: var(--teal-primary); font-size: 0.56rem; font-weight: 800; }
 .curso-estado-chip.en-curso-chip { color: var(--purple-hover); }

@@ -1,3 +1,4 @@
+import { formatCredits } from '../../utils/formatCredits';
 import type { FinancialPeriod } from '../models/FinancialPeriod';
 
 const money = (value: number) => `S/ ${value.toFixed(2)}`;
@@ -38,7 +39,7 @@ export function PeriodFinancialCard({
 
       <div className="period-financial-lines">
         <p>
-          <span>Carga:</span> {resumen.totalCreditos} créditos · {horasMostradas} horas
+          <span>Carga:</span> {formatCredits(resumen.totalCreditos)} créditos · {horasMostradas} horas
         </p>
         <p>
           <span>Matrícula:</span> {money(resumen.costoMatricula)}
@@ -49,8 +50,8 @@ export function PeriodFinancialCard({
         <p>
           <span>Cuotas:</span> {resumen.numeroCuotas}
         </p>
-        <p>
-          <span>Enseñanza:</span> {money(resumen.costoEnsenanzaTotal)}
+        <p className="period-payment-total">
+          <span>Total de pago en cuotas:</span> {money(resumen.costoEnsenanzaTotal)}
         </p>
         {!esVerano && resumen.descuentoPorcentaje > 0 && (
           <p className="period-discount-line">

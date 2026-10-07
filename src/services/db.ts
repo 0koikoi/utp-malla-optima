@@ -13,6 +13,8 @@ export interface UserAcademicProfile {
   nombreArchivoCargado?: string;
   periodoIngreso?: PeriodoIngreso;
   cicloActual?: number;
+  totalCiclos?: number;
+  ciclosExcluidos?: number[];
 }
 
 export class AcademicDatabase extends Dexie {

@@ -1,9 +1,11 @@
+import { formatCredits } from '../utils/formatCredits';
 import { useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Curso, TipoPeriodoAcademico } from '../types/academic';
 import { CourseCard } from './CourseCard';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { LockKeyhole, MoveDown, Sun } from 'lucide-react';
+import { AlertTriangle, LockKeyhole, MoveDown, Sun, X } from 'lucide-react';
+import { CICLOS_INICIALES } from '../domain/rules/cycleRules';
 import {
   crearPeriodoAcademico,
   determinarPeriodoActual,
@@ -14,6 +16,7 @@ import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextR
 import {
   calcularHorasEfectivas,
   LIMITE_CREDITOS_VERANO,
+  LIMITE_HORAS_PERIODO,
 } from '../domain/rules/planningRules';
 import { FinancialPlanningService } from '../financial/services/FinancialPlanningService';
 
@@ -26,6 +29,8 @@ interface Props {
 
 export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = true }: Props) => {
   const [isOver, setIsOver] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState('');
   const {
     moverCursoAPeriodo,
     cursoAMover,
@@ -33,6 +38,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
     tarifario,
     disciplinaActiva,
     cicloActual,
+    eliminarCiclo,
   } = useAcademicStore();
   const periodo = crearPeriodoAcademico(tipoPeriodo, numCiclo);
   const periodoActual = determinarPeriodoActual(todosLosCursos);
@@ -47,6 +53,20 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
     ? periodoBloqueadoPorCicloActual(periodo, cicloActual)
     : esPeriodoPasado || esPeriodoActual);
   const esVerano = tipoPeriodo === 'VERANO';
+  const esCicloAdicional = !esVerano && numCiclo > CICLOS_INICIALES;
+  const puedeEliminarse = !esPeriodoBloqueado && cursos.every((curso) => curso.estado === 'PENDIENTE');
+
+  const retirarCiclo = async () => {
+    setEliminando(true);
+    setErrorEliminar('');
+    try {
+      if (!await eliminarCiclo(numCiclo)) setErrorEliminar('Este ciclo no se puede retirar.');
+    } catch {
+      setErrorEliminar('No se pudo retirar el ciclo. Inténtalo de nuevo.');
+    } finally {
+      setEliminando(false);
+    }
+  };
 
   const cursosOrdenados = [...cursos].sort((a, b) => {
     const aLlevado = a.estado === 'APROBADO' || a.estado === 'CONVALIDADO' ? 0 : 1;
@@ -60,6 +80,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
   );
   const totalCreditos = cursosParaCarga.reduce((acc, curso) => acc + curso.creditos, 0);
   const totalHoras = calcularHorasEfectivas(cursosParaCarga, tipoPeriodo);
+  const excesoHoras = totalHoras > LIMITE_HORAS_PERIODO;
   const cursosLlevados = cursos.filter(
     (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
   ).length;
@@ -73,7 +94,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
 
     const resumen = FinancialPlanningService.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva);
     return resumen.periodos[0]?.resumen.cuotaBase ?? null;
-  }, [cursos, tarifario, disciplinaActiva, tipoPeriodo]);
+  }, [cursos, tarifario, disciplinaActiva]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -85,22 +106,29 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
 
   return (
     <div
-      className={`tier-row ${esVerano ? 'summer-row' : ''} ${esPeriodoPasado ? 'period-past' : ''} ${esPeriodoActual ? 'period-current' : ''} ${!habilitado ? 'period-unavailable' : ''} ${isOver ? 'is-over' : ''}`}
+      className={`tier-row ${esCicloAdicional ? 'removable-cycle' : ''} ${esVerano ? 'summer-row' : ''} ${esPeriodoPasado ? 'period-past' : ''} ${esPeriodoActual ? 'period-current' : ''} ${!habilitado ? 'period-unavailable' : ''} ${isOver ? 'is-over' : ''}`}
       data-periodo={periodo.id}
     >
+      {esCicloAdicional && <button type="button" className="remove-cycle-btn"
+        disabled={!puedeEliminarse || eliminando} onClick={() => void retirarCiclo()}
+        aria-label={`Eliminar ciclo ${numCiclo}`}
+        title={puedeEliminarse ? `Eliminar ciclo ${numCiclo}; sus pendientes vuelven al banco` : 'No se puede eliminar un ciclo del historial, actual o con cursos fijos'}>
+        <X size={14} aria-hidden="true" />
+      </button>}
       <div
         className={`tier-label ${esVerano ? 'summer-label' : ''} ${esPeriodoActual ? 'ciclo-actual' : cicloCompletado ? 'ciclo-aprobado' : cicloAdelantado ? 'ciclo-adelantado' : ''}`}
       >
         {esVerano ? <Sun size={17} className="summer-icon" /> : <span className="tier-num">{numCiclo}</span>}
         <span className="tier-name">{esVerano ? `Verano ${numCiclo}` : `Ciclo ${numCiclo}`}</span>
         <div className="tier-stats">
-          <span className="stat-chip stat-horas">{totalHoras}h {esVerano ? 'ef.' : 'sem.'}</span>
-          <span className="stat-chip">{totalCreditos} cr</span>
+          <span className={`stat-chip stat-horas ${excesoHoras ? 'stat-hours-warning' : ''}`}>{totalHoras}h {esVerano ? 'ef.' : 'sem.'}</span>
+          <span className="stat-chip">{formatCredits(totalCreditos)} cr</span>
           {pensionBasePeriodo !== null && (
             <span className="stat-chip stat-price">S/ {pensionBasePeriodo.toFixed(2)}</span>
           )}
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
         </div>
+        {excesoHoras && <span className="tier-hours-warning" title={`La carga supera las ${LIMITE_HORAS_PERIODO} horas recomendadas; se permite planificar.`}><AlertTriangle size={11} /> Más de {LIMITE_HORAS_PERIODO} h</span>}
         {!habilitado ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> verano no habilitado</span>
         ) : esPeriodoPasado ? (
@@ -112,6 +140,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
             <LockKeyhole size={10} /> {cursosLlevados} fijo{cursosLlevados === 1 ? '' : 's'}
           </span>
         ) : null}
+        {errorEliminar && <span className="cycle-remove-error" role="alert">{errorEliminar}</span>}
       </div>
 
       <div

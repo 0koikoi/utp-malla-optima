@@ -298,8 +298,7 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       continue;
     }
 
-    // La UI actual de Academic Planner tiene filas regulares del ciclo 1 al 10,
-    // pero todavía no posee la caja independiente de Nivelación. Para evitar
+    // MallaU no posee una caja independiente de Nivelación. Para evitar
     // ubicar esas materias incorrectamente en el ciclo 1, no se mezclan aquí.
     if (dentroDeNivelacion) continue;
 

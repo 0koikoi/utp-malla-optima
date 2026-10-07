@@ -7,61 +7,60 @@ export interface CursoCritico {
   ciclo: number;
 }
 
-const construirDependencias = (cursos: Curso[]) => {
-  const mapa = new Map<string, string[]>();
+export interface PrioridadPendiente {
+  impacto: number;
+  longitudCadena: number;
+}
 
-  cursos.forEach((curso) => {
-    mapa.set(curso.codigo, []);
+/** Los hechos académicos completados no aportan impacto a la carga pendiente. */
+export const calcularPrioridadesPendientes = (cursos: Curso[]): Map<string, PrioridadPendiente> => {
+  const pendientes = cursos.filter((curso) => curso.estado === 'PENDIENTE');
+  const grafo = new Map(pendientes.map((curso) => [curso.codigo, [] as string[]]));
+  pendientes.forEach((curso) => {
+    curso.prerrequisitos.forEach((requisito) => grafo.get(requisito)?.push(curso.codigo));
   });
 
-  cursos.forEach((curso) => {
-    curso.prerrequisitos.forEach((req) => {
-      const dependientes = mapa.get(req);
-      if (dependientes) dependientes.push(curso.codigo);
-    });
-  });
-
-  return mapa;
-};
-
-/**
- * Cuenta todos los descendientes del grafo, no solo dependencias directas.
- * Representa el impacto futuro de retrasar un curso.
- */
-export const calcularImpactoFuturo = (
-  codigo: string,
-  cursos: Curso[]
-): number => {
-  const grafo = construirDependencias(cursos);
-  const visitados = new Set<string>();
-
-  const recorrer = (actual: string) => {
-    const siguientes = grafo.get(actual) ?? [];
-
-    siguientes.forEach((siguiente) => {
-      if (!visitados.has(siguiente)) {
-        visitados.add(siguiente);
-        recorrer(siguiente);
-      }
-    });
+  const longitudes = new Map<string, number>();
+  const longitudDe = (codigo: string, camino = new Set<string>()): number => {
+    if (camino.has(codigo)) return 0;
+    const conocida = longitudes.get(codigo);
+    if (conocida !== undefined) return conocida;
+    const siguienteCamino = new Set([...camino, codigo]);
+    const longitud = 1 + Math.max(0, ...(grafo.get(codigo) ?? []).map((dependiente) =>
+      longitudDe(dependiente, siguienteCamino)));
+    longitudes.set(codigo, longitud);
+    return longitud;
   };
 
-  recorrer(codigo);
-  return visitados.size;
+  return new Map(pendientes.map((curso) => {
+    const visitados = new Set([curso.codigo]);
+    const recorrer = (codigo: string) => {
+      for (const dependiente of grafo.get(codigo) ?? []) {
+        if (visitados.has(dependiente)) continue;
+        visitados.add(dependiente);
+        recorrer(dependiente);
+      }
+    };
+    recorrer(curso.codigo);
+    return [curso.codigo, { impacto: visitados.size - 1, longitudCadena: longitudDe(curso.codigo) }];
+  }));
 };
 
-export const calcularRutaCritica = (cursos: Curso[]): CursoCritico[] =>
-  cursos
-    .filter((curso) => curso.estado === 'PENDIENTE')
+export const calcularImpactoFuturo = (codigo: string, cursos: Curso[]): number =>
+  calcularPrioridadesPendientes(cursos).get(codigo)?.impacto ?? 0;
+
+export const calcularRutaCritica = (cursos: Curso[]): CursoCritico[] => {
+  const obligatorios = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.tipo !== 'ELECTIVO');
+  const prioridades = calcularPrioridadesPendientes(obligatorios);
+  return obligatorios
     .map((curso) => ({
       codigo: curso.codigo,
       nombre: curso.nombre,
       ciclo: curso.cicloOrigen,
-      desbloquea: calcularImpactoFuturo(curso.codigo, cursos),
+      desbloquea: prioridades.get(curso.codigo)?.impacto ?? 0,
     }))
-    .sort((a, b) => b.desbloquea - a.desbloquea);
+    .sort((a, b) => b.desbloquea - a.desbloquea || a.codigo.localeCompare(b.codigo));
+};
 
-export const obtenerCursosPrioritarios = (
-  cursos: Curso[],
-  limite = 10
-): CursoCritico[] => calcularRutaCritica(cursos).slice(0, limite);
+export const obtenerCursosPrioritarios = (cursos: Curso[], limite = 10): CursoCritico[] =>
+  calcularRutaCritica(cursos).slice(0, limite);

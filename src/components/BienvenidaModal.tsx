@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { CalendarDays, GraduationCap, X } from 'lucide-react';
 import type { PeriodoIngreso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
+import { MAXIMO_CICLOS } from '../domain/rules/cycleRules';
 
 interface Props {
   onClose: () => void;
@@ -13,11 +14,16 @@ export function BienvenidaModal({ onClose }: Props) {
   const [ciclo, setCiclo] = useState<number | ''>(cicloActual ?? '');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const ingresoRef = useRef<HTMLButtonElement>(null);
   const completo = Boolean(periodoIngreso && cicloActual);
 
+  useLayoutEffect(() => {
+    ingresoRef.current?.focus({ preventScroll: true });
+  }, []);
+
   const guardar = async () => {
-    if (!ingreso || typeof ciclo !== 'number' || !Number.isInteger(ciclo) || ciclo < 1 || ciclo > 12) {
-      setError('Selecciona el mes de inicio y un ciclo actual entre 1 y 12.');
+    if (!ingreso || typeof ciclo !== 'number' || !Number.isInteger(ciclo) || ciclo < 1 || ciclo > MAXIMO_CICLOS) {
+      setError(`Selecciona el mes de inicio y un ciclo actual entre 1 y ${MAXIMO_CICLOS}.`);
       return;
     }
     setGuardando(true);
@@ -45,14 +51,14 @@ export function BienvenidaModal({ onClose }: Props) {
           <fieldset>
             <legend><CalendarDays size={15} /> ¿En qué mes iniciaste tu carrera?</legend>
             <div className="context-choice-row">
-              <button type="button" className={ingreso === 'marzo' ? 'selected' : ''} onClick={() => setIngreso('marzo')}>Marzo <small>Veranos tras ciclos pares</small></button>
+              <button ref={ingresoRef} type="button" className={ingreso === 'marzo' ? 'selected' : ''} onClick={() => setIngreso('marzo')}>Marzo <small>Veranos tras ciclos pares</small></button>
               <button type="button" className={ingreso === 'agosto' ? 'selected' : ''} onClick={() => setIngreso('agosto')}>Agosto <small>Veranos tras ciclos impares</small></button>
             </div>
           </fieldset>
           <label className="context-cycle-label" htmlFor="context-cycle">¿En qué ciclo te encuentras actualmente?</label>
           <select id="context-cycle" value={ciclo} onChange={(event) => setCiclo(event.target.value ? Number(event.target.value) : '')}>
             <option value="">Selecciona tu ciclo</option>
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((numero) =>
+            {Array.from({ length: MAXIMO_CICLOS }, (_, index) => index + 1).map((numero) =>
               <option key={numero} value={numero}>Ciclo {numero}</option>)}
           </select>
           <p className="context-hint">El ciclo actual y los anteriores quedarán bloqueados. Podrás planificar desde el siguiente verano disponible o ciclo futuro.</p>

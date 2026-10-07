@@ -1,4 +1,5 @@
 import type { Curso, PeriodoAcademico, TipoPeriodoAcademico } from '../../types/academic';
+import { normalizarTotalCiclos } from './cycleRules';
 
 export const crearPeriodoAcademico = (
   tipo: TipoPeriodoAcademico,
@@ -27,7 +28,7 @@ export const obtenerPeriodoCurso = (curso: Pick<Curso, 'ciclo' | 'tipoPeriodo'>)
 
 export const generarSecuenciaPeriodos = (totalCiclos: number): PeriodoAcademico[] => {
   const periodos: PeriodoAcademico[] = [];
-  const total = Math.max(1, Math.trunc(totalCiclos));
+  const total = normalizarTotalCiclos(totalCiclos);
 
   for (let ciclo = 1; ciclo <= total; ciclo += 1) {
     periodos.push(crearPeriodoRegular(ciclo));

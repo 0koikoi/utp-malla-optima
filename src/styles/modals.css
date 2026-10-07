@@ -631,3 +631,5 @@
 .planner-toast li span { color: var(--rose-border); font-weight: 850; }
 .planner-toast li strong { color: rgba(255,255,255,0.88); font-weight: 650; }
 .planner-toast small { display: block; margin-top: 8px; color: #cbd5e1; font-size: 0.62rem; }
+.planner-toast-warning { border-left-color: var(--amber-primary); }
+.planner-toast-warning .planner-toast-head > svg { color: #FBBF24; }

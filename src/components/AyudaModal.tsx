@@ -1,88 +1,109 @@
-import { useEffect, useRef } from 'react';
-import { CalendarDays, CircleHelp, Download, Info, X } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, CircleHelp, X } from 'lucide-react';
+import { AyudaPaso } from './AyudaPaso';
 
 interface AyudaModalProps {
   onClose: () => void;
+  onFinish?: () => void;
+  obligatorio?: boolean;
 }
 
-export function AyudaModal({ onClose }: AyudaModalProps) {
-  const closeRef = useRef<HTMLButtonElement>(null);
+const pasos = [
+  { etiqueta: 'Tu Excel', titulo: 'Descarga y sube tu malla UTP', descripcion: 'Empieza con tu plan de estudios: sigue estos cinco pasos.' },
+  { etiqueta: 'Tu espacio', titulo: 'Dos espacios para organizarte', descripcion: 'El banco guarda lo que falta ubicar. La malla muestra tu recorrido por periodos.' },
+  { etiqueta: 'Mover cursos', titulo: 'Arrastra, suelta y reorganiza', descripcion: 'Drag and drop significa mantener pulsado un curso, llevarlo a otro lugar y soltarlo.' },
+  { etiqueta: 'Los cursos', titulo: 'Qué te dice cada tarjeta', descripcion: 'Estos datos te ayudan a decidir dónde ubicar un curso.' },
+  { etiqueta: 'Los ciclos', titulo: 'Horas, créditos y costo del ciclo', descripcion: 'Lee el resumen del periodo antes de sumar más cursos.' },
+  { etiqueta: 'Herramientas', titulo: 'La barra de herramientas, en sencillo', descripcion: 'Carga tu malla, ajusta tu contexto y guarda el plan cuando esté listo.' },
+];
 
-  useEffect(() => {
-    closeRef.current?.focus();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+export function AyudaModal({ onClose, onFinish = onClose, obligatorio = false }: AyudaModalProps) {
+  const [paso, setPaso] = useState(0);
+  const modalRef = useRef<HTMLElement>(null);
+  const cuerpoRef = useRef<HTMLDivElement>(null);
+  const tituloRef = useRef<HTMLHeadingElement>(null);
+  const actual = pasos[paso];
+  const esUltimo = paso === pasos.length - 1;
+
+  useLayoutEffect(() => {
+    const focoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      if (focoAnterior?.isConnected) focoAnterior.focus({ preventScroll: true });
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, []);
+
+  useLayoutEffect(() => {
+    cuerpoRef.current?.scrollTo({ top: 0 });
+    tituloRef.current?.focus({ preventScroll: true });
+  }, [paso]);
 
   return (
-    <div className="help-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="help-backdrop" role="presentation" onMouseDown={() => { if (!obligatorio) onClose(); }}>
       <section
+        ref={modalRef}
         className="help-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="help-title"
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
-          if (event.key === 'Tab') {
+          if (event.key === 'Escape') {
             event.preventDefault();
-            closeRef.current?.focus();
+            event.stopPropagation();
+            if (!obligatorio) onClose();
+          }
+          if (event.key !== 'Tab') return;
+          const controles = Array.from(modalRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ) ?? []).filter((elemento) => elemento.getClientRects().length > 0);
+          const primero = controles[0];
+          const ultimo = controles.at(-1);
+          if (!primero || !ultimo) return;
+          const foco = document.activeElement;
+          if (!controles.includes(foco as HTMLElement) ||
+              (event.shiftKey && foco === primero) || (!event.shiftKey && foco === ultimo)) {
+            event.preventDefault();
+            (event.shiftKey ? ultimo : primero).focus();
           }
         }}
       >
         <header className="help-modal-head">
-          <div className="help-modal-heading"><CircleHelp size={22} /><div><span>GUÍA DE USO</span><h2 id="help-title">Cómo usar MallaU</h2></div></div>
-          <button ref={closeRef} type="button" className="help-close" onClick={onClose} aria-label="Cerrar ayuda"><X size={19} /></button>
+          <div className="help-modal-heading"><CircleHelp size={26} aria-hidden="true" /><div><span>GUÍA DE USO</span><h2 id="help-title">Cómo usar MallaU</h2></div></div>
+          {!obligatorio && <button type="button" className="help-close" onClick={onClose} aria-label="Cerrar ayuda"><X size={22} /></button>}
         </header>
-        <div className="help-modal-body">
-          <section className="help-section">
-            <h3><CalendarDays size={17} /> ¿Cómo funcionan los veranos?</h3>
-            <p>Indica tu mes de ingreso y ciclo actual en <b>Configuración</b>. El planificador intercala los veranos según el mes elegido:</p>
-            <div className="help-summer-grid">
-              <div className="help-summer-card">
-                <span className="help-period">PERÍODO 1</span>
-                <h4>Inicio en marzo</h4>
-                <p>El verano aparece después de los ciclos pares: C2, C4, C6, C8 y C10.</p>
-                <div className="help-route">C1 → C2 → Verano 2 → C3</div>
-              </div>
-              <div className="help-summer-card">
-                <span className="help-period">PERÍODO 2</span>
-                <h4>Inicio en agosto</h4>
-                <p>El verano aparece después de los ciclos impares: C1, C3, C5, C7 y C9.</p>
-                <div className="help-route">C1 → Verano 1 → C2 → C3</div>
-              </div>
-            </div>
-            <p className="help-hint">Los ciclos hasta el actual se muestran bloqueados. Puedes distribuir los cursos pendientes en los periodos futuros.</p>
-          </section>
 
-          <p className="help-notice"><Info size={16} /> <span><b>Aviso:</b> la planificación y los costos son referenciales. MallaU no está enlazado con la matrícula de UTP y no predice cupos ni cruces de horario.</span></p>
+        <div className="help-progress">
+          <span className="help-step-count" aria-live="polite" aria-atomic="true">Paso {paso + 1} de {pasos.length}</span>
+          <nav className="help-step-nav" aria-label="Pasos del tutorial">
+            {pasos.map((item, indice) => <button key={item.etiqueta} type="button"
+              className={`help-step-dot ${indice < paso ? 'visited' : ''}`}
+              aria-label={`Paso ${indice + 1}: ${item.etiqueta}`}
+              aria-current={indice === paso ? 'step' : undefined} onClick={() => setPaso(indice)}>
+              <span>{indice < paso ? <Check size={13} aria-hidden="true" /> : indice + 1}</span>
+              <small>{item.etiqueta}</small>
+            </button>)}
+          </nav>
+        </div>
 
-          <section className="help-section">
-            <h3><Download size={17} /> ¿Cómo descargar y cargar tu malla?</h3>
-            <ol className="help-steps">
-              <li><span>Ingresa a tu portal <b>UTP+</b>.</span></li>
-              <li><span>Ve a <b>Cursos → Avance de plan de estudio</b>.</span></li>
-              <li><span>Selecciona <b>Avance por cursos</b> para ver tu malla.</span></li>
-              <li><span>Descarga el archivo <b>Plan_de_Estudio.xlsx</b>.</span></li>
-              <li><span>Vuelve a MallaU y pulsa <b>Subir Excel</b> para cargarlo.</span></li>
-            </ol>
-          </section>
-
-          <section className="help-section help-view-section">
-            <h3>Controles de visualización</h3>
-            <div className="help-view-controls">
-              <div><strong>Mostrar desde ciclo</strong><p>Elige el primer ciclo que quieres ver en pantalla. Los ciclos anteriores y sus cursos se conservan; solo se ocultan de la vista.</p></div>
-              <div><strong>Mostrar veranos</strong><p>Activa la casilla para ver los veranos disponibles. Si la desactivas, se ocultan los veranos vacíos; los que ya tienen cursos planificados siguen visibles.</p></div>
-            </div>
-          </section>
-
-          <section className="help-section help-last-section">
-            <h3>Después de cargar el Excel</h3>
-            <p>Organiza los cursos del <b>Banco de pendientes</b> arrastrándolos o seleccionándolos por toque. Usa <b>Mostrar veranos</b> para ver esos periodos y descarga tu planificación con <b>PNG</b> o <b>PDF</b>.</p>
+        <div ref={cuerpoRef} className="help-modal-body">
+          <section key={paso} className="help-slide" role="group" aria-roledescription="diapositiva"
+            aria-label={`${paso + 1} de ${pasos.length}`}>
+            <h3 ref={tituloRef} tabIndex={-1} className="help-slide-title">{actual.titulo}</h3>
+            <p className="help-slide-intro">{actual.descripcion}</p>
+            <AyudaPaso paso={paso} />
           </section>
         </div>
+
+        <footer className="help-modal-footer">
+          <button type="button" className="help-back-btn" disabled={paso === 0} onClick={() => setPaso(paso - 1)}><ArrowLeft size={18} /> Atrás</button>
+          <span className="help-next-hint">{esUltimo ? (obligatorio ? 'Siguiente: Configuración' : '¡Ya puedes preparar tu plan!') : `Siguiente: ${pasos[paso + 1].etiqueta}`}</span>
+          <button type="button" className="help-continue-btn" onClick={() => esUltimo ? onFinish() : setPaso(paso + 1)}>
+            {esUltimo ? 'Finalizar' : 'Continuar'}{esUltimo ? <Check size={18} /> : <ArrowRight size={18} />}
+          </button>
+        </footer>
       </section>
     </div>
   );

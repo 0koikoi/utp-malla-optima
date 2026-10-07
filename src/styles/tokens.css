@@ -181,9 +181,9 @@
   --r-lg:    12px;                  /* elementos grandes */
 
   /* ── 10. Dimensiones Layout ─────────────────────────────────────── */
-  --topbar-h: 34px;
-  --nav-h:    54px;
-  --chrome-h: 88px;                 /* topbar + nav */
+  --topbar-h: 44px;
+  --nav-h:    64px;
+  --chrome-h: 156px;                /* barras y controles; se ajusta a su altura real */
   --aside-w:  272px;
 
   /* ── 11. Transiciones y Sombras ─────────────────────────────────── */

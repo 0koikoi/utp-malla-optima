@@ -1,3 +1,4 @@
+import { formatCredits } from '../utils/formatCredits';
 import type { DragEvent } from 'react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -6,7 +7,7 @@ import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado } from '../utils/academicGraph';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
-import { Calculator, CircleCheck, Clock3, Info, LockKeyhole } from 'lucide-react';
+import { ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, X } from 'lucide-react';
 
 interface Props {
   curso: Curso;
@@ -88,18 +89,10 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
           <span className="curso-codigo">{curso.codigo}</span>
           <div className="curso-card-actions">
             {esFijoMovimiento && <LockKeyhole size={13} className="curso-lock" />}
-            <button
-              type="button"
-              className={`curso-budget-btn ${estaSeleccionado ? 'active' : ''}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (!esAprobado) toggleSeleccionMatricula(curso.codigo);
-              }}
-              disabled={esAprobado}
-              title="Añadir o quitar del presupuesto"
-            >
-              <Calculator size={13} />
-            </button>
+            {habilitaA.length === 0 && <span className="curso-sin-dependientes" role="img"
+              aria-label="No habilita otros cursos" title="No habilita otros cursos de la malla">
+              <ArrowRight size={14} aria-hidden="true" /><X size={10} aria-hidden="true" />
+            </span>}
             <button
               type="button"
               className="curso-info-btn"
@@ -123,7 +116,7 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
             <span className="ctag ctag-verano">Verano {curso.ciclo}</span>
           )}
           <span className="ctag ctag-horas">{curso.horasSemanales}h</span>
-          <span className="ctag">{curso.creditos} cr</span>
+          <span className="ctag">{formatCredits(curso.creditos)} cr</span>
           <span className={`ctag ${curso.tipo === 'OBLIGATORIO' ? 'obl' : 'ele'}`}>
             {curso.tipo === 'OBLIGATORIO' ? 'Obligatorio' : 'Electivo'}
           </span>

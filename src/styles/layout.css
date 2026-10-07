@@ -1,8 +1,13 @@
 /* Top Bar (Marca / identidad) */
-#app-topbar {
+.app-chrome {
   position: sticky;
   top: 0;
-  z-index: 1100;
+  z-index: 1200;
+  background: var(--bg-nav);
+}
+#app-topbar {
+  position: relative;
+  z-index: 1;
   height: var(--topbar-h);
   background: var(--bg-bar);
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -20,13 +25,13 @@
   color: #FF8A9B;
 }
 .topbar-title {
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--t-white);
   letter-spacing: 0.2px;
 }
 .topbar-badge {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   padding: 2px 7px;
   background: var(--topbar-badge-bg);
@@ -37,14 +42,15 @@
 }
 .topbar-sep { flex: 1; }
 .topbar-note {
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   color: #CBD5E1;
 }
 .topbar-mob-menu-btn {
   display: none;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  min-height: 34px;
+  padding: 5px 10px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--r);
@@ -63,13 +69,13 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 25px;
-  padding: 3px 9px;
+  min-height: 34px;
+  padding: 5px 12px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: var(--r-btn);
   background: rgba(255, 255, 255, 0.09);
   color: #F8FAFC;
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -80,9 +86,9 @@
 .topbar-help-btn {
   display: grid;
   place-items: center;
-  flex: 0 0 25px;
-  width: 25px;
-  height: 25px;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: var(--r-btn);
   background: rgba(255, 255, 255, 0.09);
@@ -94,7 +100,7 @@
 .topbar-help-btn:focus-visible { outline: 2px solid #FBBF24; outline-offset: 2px; }
 @media (max-width: 640px) {
   .topbar-title-extended, .theme-toggle-label { display: none; }
-  .theme-toggle { width: 30px; min-width: 30px; padding: 4px; }
+  .theme-toggle { width: 36px; min-width: 36px; padding: 5px; }
 }
 
 

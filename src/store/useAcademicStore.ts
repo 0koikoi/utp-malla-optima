@@ -1,15 +1,17 @@
+import { formatCredits } from '../utils/formatCredits';
 import { create } from 'zustand';
 import type { Curso, EstadoCurso, NotificacionMovimiento, PeriodoAcademico, PeriodoIngreso } from '../types/academic';
 import type { Tarifario } from '../types/financial';
 import { db } from '../services/db';
 import { generateOptimalPlanUseCase } from '../application/usecases/generateOptimalPlanUseCase';
 import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
-import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
+import { validarCargaPlanificacionAutomatica, type ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 import { cursoBloqueado, normalizarCurso, ordenarCursos } from '../domain/rules/courseRules';
-import { crearPeriodoRegular, crearPeriodoVerano, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
+import { crearPeriodoRegular, crearPeriodoVerano, determinarPeriodoEnCurso, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
 import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 import { detectarNuevosConflictosDescendientes } from '../utils/academicGraph';
+import { CICLOS_INICIALES, MAXIMO_CICLOS, determinarTotalCiclos, normalizarTotalCiclos, normalizarCiclosExcluidos, obtenerSiguienteCiclo } from '../domain/rules/cycleRules';
 
 interface AcademicStore {
   cursos: Curso[];
@@ -22,7 +24,12 @@ interface AcademicStore {
   nombreArchivoCargado: string | null;
   periodoIngreso: PeriodoIngreso | null;
   cicloActual: number | null;
+  totalCiclos: number;
+  ciclosExcluidos: number[];
   perfilCargado: boolean;
+  setTotalCiclos: (total: number) => Promise<void>;
+  agregarCiclo: () => Promise<void>;
+  eliminarCiclo: (ciclo: number) => Promise<boolean>;
   setContextoAcademico: (ingreso: PeriodoIngreso, ciclo: number) => Promise<void>;
   setCursos: (cursos: Curso[], nombreArchivo?: string) => Promise<void>;
   updateEstadoCurso: (codigo: string, estado: EstadoCurso) => Promise<void>;
@@ -49,7 +56,17 @@ const notificacionDesdeResultado = (
   periodo: PeriodoAcademico,
   resultado: ReturnType<typeof moveCourseUseCase>
 ): NotificacionMovimiento | null => {
-  if (resultado.ok) return null;
+  if (resultado.ok) {
+    if (!resultado.warning) return null;
+    return {
+      tipo: 'LIMITE_HORAS',
+      cursoNombre: curso.nombre,
+      periodoDestino: periodo.etiqueta,
+      limite: resultado.warning.limite,
+      valorActual: resultado.warning.total,
+      mensaje: `El curso se asignó a ${periodo.etiqueta}. La carga es de ${resultado.warning.total} horas efectivas y supera las ${resultado.warning.limite} horas recomendadas.`,
+    };
+  }
 
   switch (resultado.reason) {
     case 'LOCKED':
@@ -58,6 +75,8 @@ const notificacionDesdeResultado = (
       return { tipo: 'INMOVIBLE', cursoNombre: curso.nombre, mensaje: 'El ciclo actual y los anteriores no permiten quitar ni mover cursos.' };
     case 'SUMMER_NOT_AVAILABLE':
       return { tipo: 'PERIODO_ANTERIOR', cursoNombre: curso.nombre, mensaje: 'Ese verano no corresponde al mes de inicio de carrera seleccionado.' };
+    case 'REMOVED_CYCLE':
+      return { tipo: 'PERIODO_ANTERIOR', cursoNombre: curso.nombre, mensaje: 'Ese ciclo fue retirado. Vuelve a añadirlo para asignarle cursos.' };
     case 'PAST_PERIOD':
       return {
         tipo: 'PERIODO_ANTERIOR',
@@ -86,20 +105,21 @@ const notificacionDesdeResultado = (
         periodoDestino: periodo.etiqueta,
         limite: resultado.limite,
         valorActual: resultado.total,
-        mensaje: `El verano admite como máximo ${resultado.limite} créditos. Con este curso se alcanzarían ${resultado.total}.`,
-      };
-    case 'HOUR_LIMIT':
-      return {
-        tipo: 'LIMITE_HORAS',
-        cursoNombre: curso.nombre,
-        periodoDestino: periodo.etiqueta,
-        limite: resultado.limite,
-        valorActual: resultado.total,
-        mensaje: `La carga del periodo no puede superar ${resultado.limite} horas efectivas. Con este curso se alcanzarían ${resultado.total}.`,
+        mensaje: resultado.limite !== undefined && resultado.total !== undefined
+          ? `El verano admite como máximo ${formatCredits(resultado.limite)} créditos. Con este curso se alcanzarían ${formatCredits(resultado.total)}.`
+          : 'El curso supera el límite de créditos de verano.',
       };
     default:
       return null;
   }
+};
+
+// Guardar retiros y recuperaciones en orden evita perder cambios por clics rápidos.
+let cambiosCiclos = Promise.resolve();
+const guardarCambioCiclos = <T>(cambio: () => Promise<T>): Promise<T> => {
+  const resultado = cambiosCiclos.then(cambio);
+  cambiosCiclos = resultado.then(() => undefined, () => undefined);
+  return resultado;
 };
 
 export const useAcademicStore = create<AcademicStore>((set, get) => ({
@@ -113,14 +133,85 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
   nombreArchivoCargado: null,
   periodoIngreso: null,
   cicloActual: null,
+  totalCiclos: CICLOS_INICIALES,
+  ciclosExcluidos: [],
   perfilCargado: false,
 
+  setTotalCiclos: async (total) => {
+    if (!Number.isFinite(total)) return;
+    const state = get();
+    set({ totalCiclos: determinarTotalCiclos(state.cursos, Math.max(total, state.cicloActual ?? 1)) });
+    const perfilActual = await db.profile.get('current_profile');
+    await db.profile.put({
+      ...perfilActual,
+      id: 'current_profile',
+      universidadId: perfilActual?.universidadId ?? get().tarifario?.universidadId ?? 'pe-utp',
+      carrera: perfilActual?.carrera ?? 'Ingeniería de Sistemas e Informática',
+      disciplinaActiva: get().disciplinaActiva,
+      nombreArchivoCargado: get().nombreArchivoCargado ?? undefined,
+      periodoIngreso: get().periodoIngreso ?? undefined,
+      cicloActual: get().cicloActual ?? undefined,
+      totalCiclos: get().totalCiclos,
+      ciclosExcluidos: get().ciclosExcluidos,
+      fechaActualizacion: new Date().toISOString(),
+    });
+  },
+
+  agregarCiclo: () => guardarCambioCiclos(async () => {
+    const state = get();
+    const siguiente = obtenerSiguienteCiclo(state.totalCiclos, state.ciclosExcluidos);
+    if (siguiente === null) return;
+    set({ ciclosExcluidos: state.ciclosExcluidos.filter((ciclo) => ciclo !== siguiente) });
+    await get().setTotalCiclos(Math.max(state.totalCiclos, siguiente));
+  }),
+
+  eliminarCiclo: (ciclo) => guardarCambioCiclos(async () => {
+    const state = get();
+    const actual = state.cicloActual ?? determinarPeriodoEnCurso(state.cursos)?.cicloReferencia ?? 0;
+    if (!Number.isInteger(ciclo) || ciclo <= CICLOS_INICIALES || ciclo > state.totalCiclos ||
+        ciclo <= actual || state.ciclosExcluidos.includes(ciclo)) return false;
+    const cursosCiclo = state.cursos.filter((curso) => curso.ubicacion === 'periodo' &&
+      curso.tipoPeriodo === 'REGULAR' && curso.ciclo === ciclo);
+    if (cursosCiclo.some(cursoBloqueado)) return false;
+    const retirados = new Set(cursosCiclo.map((curso) => curso.codigo));
+    const cursos = ordenarCursos(state.cursos.map((curso) => retirados.has(curso.codigo)
+      ? { ...curso, ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR' as const, ubicacion: 'banco' as const }
+      : curso));
+    const ciclosExcluidos = normalizarCiclosExcluidos([...state.ciclosExcluidos, ciclo]);
+    const afectados = cursosCiclo.length
+      ? detectarNuevosConflictosDescendientes(state.cursos, cursos, cursosCiclo[0].codigo) : [];
+    const perfil = await db.profile.get('current_profile');
+    await db.transaction('rw', db.profile, db.courses, async () => {
+      if (cursosCiclo.length) await db.courses.bulkPut(cursos);
+      await db.profile.put({ ...perfil, id: 'current_profile',
+        universidadId: perfil?.universidadId ?? state.tarifario?.universidadId ?? 'pe-utp',
+        carrera: perfil?.carrera ?? 'Ingeniería de Sistemas e Informática',
+        disciplinaActiva: state.disciplinaActiva,
+        fechaActualizacion: new Date().toISOString(),
+        nombreArchivoCargado: state.nombreArchivoCargado ?? undefined,
+        periodoIngreso: state.periodoIngreso ?? undefined,
+        cicloActual: state.cicloActual ?? undefined,
+        totalCiclos: state.totalCiclos, ciclosExcluidos });
+    });
+    set({ cursos, ciclosExcluidos, cursoAMover: null,
+      cursosSeleccionadosParaMatricula: state.cursosSeleccionadosParaMatricula.filter((codigo) => !retirados.has(codigo)),
+      notificacionMovimiento: afectados.length ? {
+        tipo: 'IMPACTO_DESCENDIENTE', cursoNombre: `Ciclo ${ciclo}`, faltantes: afectados,
+        mensaje: 'Los cursos del ciclo retirado volvieron al banco. Algunos cursos posteriores necesitan que programes de nuevo sus prerrequisitos.',
+      } : null });
+    return true;
+  }),
+
   setContextoAcademico: async (periodoIngreso, ciclo) => {
-    const cicloActual = Math.max(1, Math.min(12, Math.trunc(ciclo)));
+    const cicloActual = Math.max(1, Math.min(MAXIMO_CICLOS, Math.trunc(ciclo)));
     const cursos = ordenarCursos(ubicarAvanceEnCicloActual(get().cursos, cicloActual, periodoIngreso));
+    const totalCiclos = determinarTotalCiclos(cursos, Math.max(get().totalCiclos, cicloActual));
+    const ciclosExcluidos = get().ciclosExcluidos.filter((numero) => numero > cicloActual &&
+      !cursos.some((curso) => curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' && curso.ciclo === numero));
     const perfilActual = await db.profile.get('current_profile');
     await db.transaction('rw', db.profile, db.courses, async () => {
       await db.profile.put({
+        ...perfilActual,
         id: 'current_profile',
         universidadId: perfilActual?.universidadId ?? get().tarifario?.universidadId ?? 'pe-utp',
         carrera: perfilActual?.carrera ?? 'Ingeniería de Sistemas e Informática',
@@ -129,10 +220,12 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
         fechaActualizacion: new Date().toISOString(),
         periodoIngreso,
         cicloActual,
+        totalCiclos,
+        ciclosExcluidos,
       });
       if (cursos.length) await db.courses.bulkPut(cursos);
     });
-    set({ periodoIngreso, cicloActual, cursos, cursoAMover: null });
+    set({ periodoIngreso, cicloActual, totalCiclos, ciclosExcluidos, cursos, cursoAMover: null });
   },
 
   setCursos: async (cursos, nombreArchivo) => {
@@ -154,6 +247,8 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
 
     set({
       cursos: cursosNormalizados,
+      totalCiclos: determinarTotalCiclos(cursosNormalizados, get().totalCiclos),
+      ciclosExcluidos: [],
       cursosSeleccionadosParaMatricula: [],
       cursoAMover: null,
       notificacionMovimiento: null,
@@ -165,7 +260,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
       await db.courses.bulkPut(cursosNormalizados);
 
       const perfilActual = await db.profile.get('current_profile');
-      if (nombreArchivo) {
+      if (nombreArchivo || perfilActual?.ciclosExcluidos?.length) {
         await db.profile.put({
           ...perfilActual,
           id: 'current_profile',
@@ -173,7 +268,9 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
           carrera: perfilActual?.carrera || 'Ingeniería de Sistemas e Informática',
           disciplinaActiva: perfilActual?.disciplinaActiva || get().disciplinaActiva,
           fechaActualizacion: new Date().toISOString(),
-          nombreArchivoCargado: nombreArchivo,
+          nombreArchivoCargado: get().nombreArchivoCargado ?? undefined,
+          totalCiclos: get().totalCiclos,
+          ciclosExcluidos: [],
         });
       }
     });
@@ -212,6 +309,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
     const resultado = moveCourseUseCase(get().cursos, codigo, periodo, {
       cicloActual: get().cicloActual,
       periodoIngreso: get().periodoIngreso,
+      ciclosExcluidos: get().ciclosExcluidos,
     });
     if (!resultado.ok) {
       set({ notificacionMovimiento: notificacionDesdeResultado(curso, periodo, resultado) });
@@ -221,14 +319,15 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
     const cursosActualizados = ordenarCursos(resultado.cursos);
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
     const afectados = detectarNuevosConflictosDescendientes(get().cursos, cursosActualizados, codigo);
+    const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
 
     set({
       cursos: cursosActualizados,
       cursoAMover: null,
       notificacionMovimiento: afectados.length ? {
         tipo: 'IMPACTO_DESCENDIENTE', cursoNombre: curso.nombre, faltantes: afectados,
-        mensaje: 'Este cambio deja cursos posteriores con prerrequisitos fuera de secuencia.',
-      } : null,
+        mensaje: ['Este cambio deja cursos posteriores con prerrequisitos fuera de secuencia.', avisoHoras?.mensaje].filter(Boolean).join(' '),
+      } : avisoHoras,
     });
     await db.courses.update(codigo, {
       ciclo: actualizado.ciclo,
@@ -322,17 +421,14 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
   },
 
   previsualizarPlanificacionOptima: () => {
-    const { cursos, tarifario } = get();
-    const totalCiclos = cursos.reduce(
-      (mayor, curso) => Math.max(mayor, curso.cicloOrigen || curso.ciclo || 1),
-      1
-    );
+    const { cursos, totalCiclos, ciclosExcluidos, cicloActual, periodoIngreso } = get();
 
     const resultado = generateOptimalPlanUseCase({
       cursos,
-      limiteCreditos: tarifario?.limitesAcademicos?.creditosMaximos,
       totalCiclos,
-      cicloActual: get().cicloActual,
+      ciclosExcluidos,
+      cicloActual,
+      periodoIngreso,
     });
 
     return resultado;
@@ -345,15 +441,25 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
       throw new Error('La malla cambió desde que se generó la propuesta. Genera una propuesta nueva.');
     }
 
+    validarCargaPlanificacionAutomatica(resultado);
+    if (resultado.cursos.some((curso) => curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' &&
+        get().ciclosExcluidos.includes(curso.ciclo))) {
+      throw new Error('La propuesta utiliza un ciclo retirado. Genera una propuesta nueva.');
+    }
     const cursosOrdenados = ordenarCursos(resultado.cursos);
     set({
       cursos: cursosOrdenados,
       cursosSeleccionadosParaMatricula: [],
       cursoAMover: null,
-      notificacionMovimiento: null,
+      notificacionMovimiento: resultado.advertenciasHoras.length ? {
+        tipo: 'LIMITE_HORAS',
+        cursoNombre: 'Planificación automática',
+        mensaje: `Se aplicó la propuesta. Carga recomendada superada: ${resultado.advertenciasHoras.map((aviso) => `${aviso.periodo.etiqueta}: ${aviso.total} h (recomendadas: ${aviso.limite} h)`).join('; ')}.`,
+      } : null,
     });
 
     await db.courses.bulkPut(cursosOrdenados);
+    await get().setTotalCiclos(Math.max(get().totalCiclos, resultado.cicloFinal));
   },
 
   generarPlanificacionOptima: async () => {
@@ -417,7 +523,7 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
       ? ubicarAvanceEnCicloActual(cursosImportados.map(normalizarCurso), get().cicloActual!, get().periodoIngreso)
       : cursosImportados.map(normalizarCurso));
     const nombreArchivoCargado = get().nombreArchivoCargado ?? 'Respaldo académico';
-    set({ cursos: cursosNormalizados, cursoAMover: null, nombreArchivoCargado });
+    set({ cursos: cursosNormalizados, totalCiclos: determinarTotalCiclos(cursosNormalizados, get().totalCiclos), ciclosExcluidos: [], cursoAMover: null, nombreArchivoCargado });
     await db.transaction('rw', db.courses, db.profile, async () => {
       await db.courses.clear();
       await db.courses.bulkPut(cursosNormalizados);
@@ -430,6 +536,8 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
         disciplinaActiva: perfil?.disciplinaActiva ?? get().disciplinaActiva,
         fechaActualizacion: new Date().toISOString(),
         nombreArchivoCargado,
+        totalCiclos: get().totalCiclos,
+        ciclosExcluidos: [],
       });
     });
   },
@@ -474,6 +582,15 @@ export const useAcademicStore = create<AcademicStore>((set, get) => ({
         cicloActual: profileDB.cicloActual ?? null,
       });
     }
-    set({ perfilCargado: true });
+    set({
+      totalCiclos: determinarTotalCiclos(get().cursos, Math.max(
+        normalizarTotalCiclos(profileDB?.totalCiclos ?? CICLOS_INICIALES),
+        profileDB?.cicloActual ?? 1
+      )),
+      ciclosExcluidos: normalizarCiclosExcluidos(profileDB?.ciclosExcluidos).filter((ciclo) =>
+        ciclo > (profileDB?.cicloActual ?? 0) && !get().cursos.some((curso) =>
+          curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' && curso.ciclo === ciclo)),
+      perfilCargado: true,
+    });
   },
 }));

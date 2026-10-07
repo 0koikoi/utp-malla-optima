@@ -16,18 +16,21 @@ export type MoveCourseFailureReason =
   | 'CURRENT_PERIOD'
   | 'PREREQUISITES'
   | 'SUMMER_CREDIT_LIMIT'
-  | 'HOUR_LIMIT'
   | 'SUMMER_NOT_AVAILABLE'
+  | 'REMOVED_CYCLE'
   | 'SOURCE_PERIOD_LOCKED';
 
 export function moveCourseUseCase(
   cursos: Curso[],
   codigo: string,
   periodo: PeriodoAcademico,
-  contexto: { cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null } = {}
+  contexto: { cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null; ciclosExcluidos?: number[] } = {}
 ) {
   const curso = cursos.find((item) => item.codigo === codigo);
   if (!curso) return { ok: false as const, reason: 'NOT_FOUND' as MoveCourseFailureReason };
+  if (periodo.tipo === 'REGULAR' && contexto.ciclosExcluidos?.includes(periodo.cicloReferencia)) {
+    return { ok: false as const, reason: 'REMOVED_CYCLE' as MoveCourseFailureReason };
+  }
   if (cursoBloqueado(curso)) {
     return { ok: false as const, reason: 'LOCKED' as MoveCourseFailureReason };
   }
@@ -84,17 +87,13 @@ export function moveCourseUseCase(
   }
 
   const horas = validarLimiteHorasPeriodo(cursosDestino, periodo.tipo);
-  if (!horas.valido) {
-    return {
-      ok: false as const,
-      reason: 'HOUR_LIMIT' as MoveCourseFailureReason,
-      total: horas.total,
-      limite: horas.limite,
-    };
-  }
-
   return {
     ok: true as const,
+    warning: !horas.valido ? {
+      reason: 'HOUR_LIMIT' as const,
+      total: horas.total,
+      limite: horas.limite,
+    } : null,
     cursos: cursos.map((item) =>
       item.codigo === codigo
         ? {

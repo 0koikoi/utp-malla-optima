@@ -3,6 +3,7 @@ import type { Tarifario } from '../../types/financial';
 import { migrateLegacyFinancialRulesReference } from '../../financial/rules/financialRulesCompatibility';
 import { CURRENT_ACADEMIC_BACKUP_VERSION } from './academicBackupVersion';
 import { validateCourses } from '../../domain/schemas/courseSchema';
+import { MAXIMO_CICLOS } from '../../domain/rules/cycleRules';
 
 export interface ImportedBackup {
   cursos: Curso[];
@@ -39,7 +40,7 @@ const convertirRespaldoVisual = (data: RawAcademicBackup): Curso[] => {
       ? Number(veranos[String(numeroVerano)] ?? (ingreso === 'agosto' ? numeroVerano * 2 - 1 : numeroVerano * 2))
       : 0;
     const ciclo = verano ? cicloVerano : regular ? Number(regular[1]) : Number(curso.cicloOrigen ?? 1);
-    if (!Number.isInteger(ciclo) || ciclo < 1 || ciclo > 12) throw new Error(`Ciclo inválido: ${codigo}`);
+    if (!Number.isInteger(ciclo) || ciclo < 1 || ciclo > MAXIMO_CICLOS) throw new Error(`Ciclo inválido: ${codigo}`);
     const estado = String(curso.estado ?? 'PENDIENTE');
     if (!['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'PENDIENTE'].includes(estado)) throw new Error(`Estado inválido: ${codigo}`);
     return {

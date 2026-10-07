@@ -2,7 +2,8 @@ import type { Curso, PeriodoAcademico, TipoPeriodoAcademico } from '../../types/
 import { crearPeriodoRegular, determinarPeriodoActual, determinarPeriodoEnCurso, esPeriodoAnterior } from './academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from './academicContextRules';
 
-export const LIMITE_HORAS_PERIODO = 26;
+export const LIMITE_HORAS_PERIODO = 24;
+export const LIMITE_HORAS_PLANIFICACION = 22;
 export const FACTOR_HORAS_VERANO = 2;
 export const LIMITE_CREDITOS_VERANO = 11;
 export const MINIMO_CREDITOS_ELECTIVOS = 3;
@@ -21,7 +22,7 @@ export const calcularHorasEfectivas = (
   return tipoPeriodo === 'VERANO' ? horas * FACTOR_HORAS_VERANO : horas;
 };
 
-/** R2 — máximo recomendado de 22 horas efectivas por periodo. */
+/** Recomendación manual de 24 horas efectivas; el exceso genera una advertencia. */
 export const validarLimiteHorasPeriodo = (
   cursos: Curso[],
   tipoPeriodo: TipoPeriodoAcademico
