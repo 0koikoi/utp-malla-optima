@@ -5,7 +5,7 @@ import {
   validarLimiteCreditosVerano,
   validarLimiteHorasPeriodo,
 } from '../../domain/rules/planningRules';
-import { validarPrerequisitosParaPeriodo } from '../../utils/academicGraph';
+import { validarPrerequisitosParaPeriodo } from '../../domain/services/prerequisiteService';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
 

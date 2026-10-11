@@ -17,7 +17,9 @@ export function PrerequisitoToast() {
   const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE';
   const faltantes = notificacionMovimiento.faltantes ?? [];
   const titulo =
-    tipo === 'INMOVIBLE'
+    tipo === 'ERROR_PERSISTENCIA'
+      ? 'No se pudo guardar'
+      : tipo === 'INMOVIBLE'
       ? 'Curso bloqueado'
       : tipo === 'IMPACTO_DESCENDIENTE'
         ? 'Impacto en cursos posteriores'

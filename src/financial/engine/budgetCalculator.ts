@@ -1,5 +1,5 @@
-import type { Curso, TipoPeriodoAcademico } from '../types/academic';
-import type { RangoTarifario, ResumenFinanciero, Tarifario } from '../types/financial';
+import type { Curso, TipoPeriodoAcademico } from '../../types/academic';
+import type { RangoTarifario, ResumenFinanciero, Tarifario } from '../../types/financial';
 
 export interface OpcionesPresupuesto {
   metodoPago?: string;

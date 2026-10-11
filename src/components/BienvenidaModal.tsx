@@ -61,7 +61,7 @@ export function BienvenidaModal({ onClose }: Props) {
             {Array.from({ length: MAXIMO_CICLOS }, (_, index) => index + 1).map((numero) =>
               <option key={numero} value={numero}>Ciclo {numero}</option>)}
           </select>
-          <p className="context-hint">El ciclo actual y los anteriores quedarán bloqueados. Podrás planificar desde el siguiente verano disponible o ciclo futuro.</p>
+          <p className="context-hint">Los ciclos regulares hasta el actual quedarán bloqueados. Podrás planificar en el verano del ciclo actual si te corresponde, o en ciclos futuros.</p>
           {error && <p className="context-error" role="alert">{error}</p>}
           <button type="button" className="context-save" onClick={() => void guardar()} disabled={guardando}>
             {guardando ? 'Guardando…' : 'Guardar y comenzar'}

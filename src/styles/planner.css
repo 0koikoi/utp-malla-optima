@@ -3,14 +3,11 @@
   flex: 1;
   padding: 18px 18px 48px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
   min-width: 0;
 }
-#panel-planificador::-webkit-scrollbar { width: 4px; }
-#panel-planificador::-webkit-scrollbar-track { background: transparent; }
-#panel-planificador::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
-  border-radius: 3px;
-}
+#panel-planificador::-webkit-scrollbar { display: none; }
 
 .planner-section-title {
   font-size: 0.64rem;
@@ -320,6 +317,7 @@
 /* Zona drop — en ciclos: horizontal wrap */
 .tier-dropzone {
   flex: 1;
+  min-width: 0;
   padding: 8px 10px;
   display: flex;
   flex-wrap: wrap;

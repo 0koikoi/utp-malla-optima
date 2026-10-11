@@ -1,5 +1,5 @@
 import { formatCredits } from '../utils/formatCredits';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
 import type { Curso, TipoPeriodoAcademico } from '../types/academic';
 import { CourseCard } from './CourseCard';
@@ -8,9 +8,6 @@ import { AlertTriangle, LockKeyhole, MoveDown, Sun, X } from 'lucide-react';
 import { CICLOS_INICIALES } from '../domain/rules/cycleRules';
 import {
   crearPeriodoAcademico,
-  determinarPeriodoActual,
-  determinarPeriodoEnCurso,
-  esPeriodoAnterior,
 } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
 import {
@@ -18,37 +15,35 @@ import {
   LIMITE_CREDITOS_VERANO,
   LIMITE_HORAS_PERIODO,
 } from '../domain/rules/planningRules';
-import { FinancialPlanningService } from '../financial/services/FinancialPlanningService';
+import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
 
 interface Props {
   numCiclo: number;
   cursos: Curso[];
   tipoPeriodo?: TipoPeriodoAcademico;
   habilitado?: boolean;
+  periodoActualOrden: number;
+  periodoEnCursoId?: string;
 }
 
-export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = true }: Props) => {
+const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = true, periodoActualOrden, periodoEnCursoId }: Props) => {
   const [isOver, setIsOver] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState('');
-  const {
-    moverCursoAPeriodo,
-    cursoAMover,
-    cursos: todosLosCursos,
-    tarifario,
-    disciplinaActiva,
-    cicloActual,
-    eliminarCiclo,
-  } = useAcademicStore();
-  const periodo = crearPeriodoAcademico(tipoPeriodo, numCiclo);
-  const periodoActual = determinarPeriodoActual(todosLosCursos);
-  const periodoEnCurso = determinarPeriodoEnCurso(todosLosCursos);
+  const moverCursoAPeriodo = useAcademicStore((state) => state.moverCursoAPeriodo);
+  const cursoAMover = useAcademicStore((state) => state.cursoAMover);
+  const tarifario = useAcademicStore((state) => state.tarifario);
+  const disciplinaActiva = useAcademicStore((state) => state.disciplinaActiva);
+  const cicloActual = useAcademicStore((state) => state.cicloActual);
+  const eliminarCiclo = useAcademicStore((state) => state.eliminarCiclo);
+  const financialPlanning = useFinancialPlanning();
+  const periodo = useMemo(() => crearPeriodoAcademico(tipoPeriodo, numCiclo), [tipoPeriodo, numCiclo]);
   const esPeriodoActual = cicloActual
     ? tipoPeriodo === 'REGULAR' && numCiclo === cicloActual
-    : periodoEnCurso?.id === periodo.id;
+    : periodoEnCursoId === periodo.id;
   const esPeriodoPasado = cicloActual
     ? (tipoPeriodo === 'REGULAR' ? numCiclo < cicloActual : numCiclo < cicloActual)
-    : esPeriodoAnterior(periodo, periodoActual);
+    : periodo.orden < periodoActualOrden;
   const esPeriodoBloqueado = !habilitado || (cicloActual
     ? periodoBloqueadoPorCicloActual(periodo, cicloActual)
     : esPeriodoPasado || esPeriodoActual);
@@ -92,9 +87,9 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
     const cursosPendientesPeriodo = cursos.filter((curso) => curso.estado === 'PENDIENTE');
     if (cursosPendientesPeriodo.length === 0) return null;
 
-    const resumen = FinancialPlanningService.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva);
+    const resumen = financialPlanning.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva);
     return resumen.periodos[0]?.resumen.cuotaBase ?? null;
-  }, [cursos, tarifario, disciplinaActiva]);
+  }, [cursos, tarifario, disciplinaActiva, financialPlanning]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -112,7 +107,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
       {esCicloAdicional && <button type="button" className="remove-cycle-btn"
         disabled={!puedeEliminarse || eliminando} onClick={() => void retirarCiclo()}
         aria-label={`Eliminar ciclo ${numCiclo}`}
-        title={puedeEliminarse ? `Eliminar ciclo ${numCiclo}; sus pendientes vuelven al banco` : 'No se puede eliminar un ciclo del historial, actual o con cursos fijos'}>
+        title={puedeEliminarse ? `Eliminar ciclo ${numCiclo}; sus pendientes vuelven al banco` : 'No se puede eliminar un ciclo aprobado, actual o con cursos fijos'}>
         <X size={14} aria-hidden="true" />
       </button>}
       <div
@@ -152,7 +147,7 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
         }}
         onDragLeave={() => setIsOver(false)}
         onDrop={handleDrop}
-        aria-disabled={esPeriodoBloqueado}
+        data-periodo-bloqueado={esPeriodoBloqueado}
       >
         {cursoAMover && !esPeriodoBloqueado && (
           <button
@@ -181,3 +176,13 @@ export const CicloRow = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado
     </div>
   );
 };
+
+export const CicloRow = memo(CicloRowBase, (actual, siguiente) =>
+  actual.numCiclo === siguiente.numCiclo &&
+  (actual.tipoPeriodo ?? 'REGULAR') === (siguiente.tipoPeriodo ?? 'REGULAR') &&
+  (actual.habilitado ?? true) === (siguiente.habilitado ?? true) &&
+  actual.periodoActualOrden === siguiente.periodoActualOrden &&
+  actual.periodoEnCursoId === siguiente.periodoEnCursoId &&
+  actual.cursos.length === siguiente.cursos.length &&
+  actual.cursos.every((curso, index) => curso === siguiente.cursos[index])
+);

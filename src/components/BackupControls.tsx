@@ -4,7 +4,7 @@ import { importAcademicBackup } from '../application/usecases/importAcademicBack
 import { useState } from 'react';
 
 export const BackupControls = () => {
-  const { importarCursos, setTarifario } = useAcademicStore();
+  const importarRespaldo = useAcademicStore((state) => state.importarRespaldo);
   const [error, setError] = useState('');
 
   const importar = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -13,8 +13,7 @@ export const BackupControls = () => {
     setError('');
     try {
       const data = await importAcademicBackup(file);
-      await importarCursos(data.cursos);
-      if (data.tarifario) await setTarifario(data.tarifario);
+      await importarRespaldo(data.cursos, data.tarifario);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo importar el respaldo.');
     }

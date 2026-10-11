@@ -14,6 +14,14 @@
   flex-wrap: wrap;
   overflow: visible;
 }
+.nav-spacer { flex: 1 1 auto; }
+.nav-final-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.faculty-toggle { flex-shrink: 0; }
+.faculty-toggle svg:last-child { width: 14px; height: 14px; }
+.faculty-popover { width: min(310px, calc(100vw - 16px)); }
+.faculty-option { justify-content: space-between; white-space: normal; }
+.faculty-option[aria-pressed="true"] { background: var(--blue-subtle); color: var(--blue-dark); }
+.faculty-error { padding: 6px 10px; color: var(--rose-dark); font-size: .72rem; }
 
 .inline-icon {
   vertical-align: -1px;

@@ -1,12 +1,11 @@
 import { formatCredits } from '../utils/formatCredits';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, CreditCard, FileText, Settings2, Sparkles, TrendingUp, X } from 'lucide-react';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 import { calcularRutaCritica } from '../domain/services/recommendationService';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { DisciplineSelector } from './DisciplineSelector';
 import { PropuestaModal } from './PropuestaModal';
-import { FinancialPlanningService } from '../financial/services/FinancialPlanningService';
+import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
 import { PeriodFinancialCard } from '../financial/components/PeriodFinancialCard';
 import { FinancialTotalCard } from '../financial/components/FinancialTotalCard';
 import { LIMITE_HORAS_PLANIFICACION } from '../domain/rules/planningRules';
@@ -17,10 +16,12 @@ export function PlanificadorPanel() {
     setPanelPlanificadorAbierto, previsualizarPlanificacionOptima,
     aplicarPlanificacionOptima,
   } = useAcademicStore();
+  const financialPlanning = useFinancialPlanning();
   const [pestana, setPestana] = useState<'academico' | 'financiero'>('academico');
   const [ajustesCuotasAbiertos, setAjustesCuotasAbiertos] = useState(false);
   const [metodoPago, setMetodoPago] = useState('sin_descuento');
   const [pagoUnico, setPagoUnico] = useState<Record<string, boolean>>({});
+  const [avisoPago, setAvisoPago] = useState('');
   const [propuesta, setPropuesta] = useState<ResultadoPlanificacionAutomatica | null>(null);
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [firmaOrigen, setFirmaOrigen] = useState('');
@@ -32,20 +33,34 @@ export function PlanificadorPanel() {
   const creditosPendientes = cursos.filter((curso) => curso.estado === 'PENDIENTE')
     .reduce((suma, curso) => suma + curso.creditos, 0);
   const resumen = useMemo(() => tarifario
-    ? FinancialPlanningService.calcular(cursos, tarifario, disciplinaActiva, {
+    ? financialPlanning.calcular(cursos, tarifario, disciplinaActiva, {
         metodoPago, pagoUnicoPorPeriodo: pagoUnico,
       })
-    : null, [cursos, tarifario, disciplinaActiva, metodoPago, pagoUnico]);
+    : null, [cursos, tarifario, disciplinaActiva, metodoPago, pagoUnico, financialPlanning]);
 
   useLayoutEffect(() => {
     if (confirmar) confirmarRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
   }, [confirmar]);
+
+  useLayoutEffect(() => {
+    if (!avisoPago) return;
+    const timer = window.setTimeout(() => setAvisoPago(''), 3500);
+    return () => window.clearTimeout(timer);
+  }, [avisoPago]);
+
+  useEffect(() => {
+    if (!panelPlanificadorAbierto) return;
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflowAnterior; };
+  }, [panelPlanificadorAbierto]);
 
   if (!panelPlanificadorAbierto) return null;
 
   const cerrarEstrategia = () => {
     setDetalleAbierto(false);
     setConfirmar(false);
+    setAvisoPago('');
     setPanelPlanificadorAbierto(false);
   };
   const generar = () => {
@@ -106,23 +121,23 @@ export function PlanificadorPanel() {
           <div className="critical-courses-grid">{criticos.map((curso) => <div className="critical-course-pill" key={curso.codigo}><b>{curso.codigo}</b><span>{curso.nombre}</span><small>Desbloquea {curso.desbloquea}</small></div>)}</div></section>
       </div> : <div className="strategy-tab-content" role="tabpanel">
         <div id="quota-settings" className="quota-settings" hidden={!ajustesCuotasAbiertos}>
-          <div className="budget-control-block"><label htmlFor="disciplina-select">Facultad / tarifario</label><DisciplineSelector />
-            {tarifario && <small className="budget-config-note">{[tarifario.sede, tarifario.modalidadEstudio, tarifario.vigencia].filter(Boolean).join(' · ')}</small>}</div>
+          {tarifario && <small className="budget-config-note">Facultad: {disciplinaActiva} · {[tarifario.sede, tarifario.modalidadEstudio, tarifario.vigencia].filter(Boolean).join(' · ')}</small>}
           {tarifario?.metodosPago && <div className="budget-control-block"><label htmlFor="metodo-pago-select"><CreditCard size={14} /> Método de pago</label>
-            <select id="metodo-pago-select" value={metodoPago} onChange={(event) => setMetodoPago(event.target.value)}>
+            <select id="metodo-pago-select" value={metodoPago} onChange={(event) => { setMetodoPago(event.target.value); setAvisoPago('Método de pago aplicado a la simulación.'); }}>
               {Object.entries(tarifario.metodosPago).map(([clave, metodo]) => <option key={clave} value={clave}>{metodo.nombre}{metodo.descuentoPorcentaje ? ` (${metodo.descuentoPorcentaje}%)` : ''}</option>)}
             </select></div>}
         </div>
         <div className="financial-scroll-panel">{resumen?.periodos.length
           ? resumen.periodos.map((periodo) => <PeriodFinancialCard key={periodo.id} periodo={periodo}
               pagoUnicoActivo={Boolean(pagoUnico[periodo.id])}
-              onTogglePagoUnico={() => setPagoUnico((actual) => ({ ...actual, [periodo.id]: !actual[periodo.id] }))} />)
+              onTogglePagoUnico={() => { setPagoUnico((actual) => ({ ...actual, [periodo.id]: !actual[periodo.id] })); setAvisoPago('Cambios aplicados a la simulación.'); }} />)
           : <div className="budget-empty">No hay cursos pendientes planificados.</div>}</div>
         {resumen && <FinancialTotalCard total={resumen.totalGeneral} />}
       </div>}
       <div className="strategy-shared-footer"><span>Créditos pendientes: <b>{formatCredits(creditosPendientes)}</b></span><span>Inversión estimada: <b>S/ {(resumen?.totalGeneral ?? 0).toFixed(2)}</b></span></div>
       {error && !detalleAbierto && <p className="context-error" role="alert">{error}</p>}
     </aside>
+    {avisoPago && <div className="nav-feedback-toast toast-exito" role="status">{avisoPago}</div>}
     {detalleAbierto && propuesta && <PropuestaModal propuesta={propuesta} error={error}
       onClose={() => setDetalleAbierto(false)}
       onApply={() => { setDetalleAbierto(false); setConfirmar(true); }} />}
@@ -139,7 +154,7 @@ export function PlanificadorPanel() {
           }
         }
       }}>
-      <div className="context-modal-body"><AlertTriangle size={25} /><h2>Aplicar esta propuesta</h2><p>Se reorganizarán los obligatorios pendientes futuros y, si hace falta, un solo electivo al final, en ciclos regulares de hasta {LIMITE_HORAS_PLANIFICACION} horas. Los electivos alternativos quedarán en el banco. Se conservarán el historial, los cursos en curso, los bloques cerrados y los veranos manuales válidos de obligatorios con sus prerrequisitos programados.</p><div className="confirm-actions"><button type="button" onClick={cancelarConfirmacion}>Cancelar</button><button type="button" className="context-save" onClick={() => void aplicar()}><Check size={15} /> Aplicar propuesta</button></div></div>
+      <div className="context-modal-body"><AlertTriangle size={25} /><h2>Aplicar esta propuesta</h2><p>Se reorganizarán los obligatorios pendientes futuros y, si hace falta, un solo electivo al final, en ciclos regulares de hasta {LIMITE_HORAS_PLANIFICACION} horas. Los electivos alternativos quedarán en el banco. Se conservarán los cursos aprobados, los cursos en curso, los bloques cerrados y los veranos manuales válidos de obligatorios con sus prerrequisitos programados.</p><div className="confirm-actions"><button type="button" onClick={cancelarConfirmacion}>Cancelar</button><button type="button" className="context-save" onClick={() => void aplicar()}><Check size={15} /> Aplicar propuesta</button></div></div>
     </section></div>}
   </div>;
 }

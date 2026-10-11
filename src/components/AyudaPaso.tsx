@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import {
   AlertTriangle, ArrowDown, ArrowLeftRight, ArrowRight, CalendarDays, ChevronDown,
-  CircleCheck, CircleHelp, Clock3, Download, FileDown, FileSpreadsheet,
+  CircleCheck, CircleHelp, Clock3, Download, FileDown, FileSpreadsheet, GraduationCap,
   GripVertical, Info, Layers, ListFilter, LockKeyhole, Moon, MousePointer2,
-  Plus, RotateCcw, Settings2, Sparkles, Sun, Upload, X,
+  Plus, RotateCcw, Settings2, Sparkles, Sun, Upload,
 } from 'lucide-react';
 import { MAXIMO_CICLOS } from '../domain/rules/cycleRules';
 import {
@@ -11,7 +11,7 @@ import {
   LIMITE_HORAS_PLANIFICACION, MINIMO_CREDITOS_ELECTIVOS,
 } from '../domain/rules/planningRules';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { calcularPresupuesto } from '../utils/budgetEngine';
+import { calcularPresupuesto } from '../financial/engine/budgetCalculator';
 import type { Curso } from '../types/academic';
 
 function Aviso({ children }: { children: ReactNode }) {
@@ -81,9 +81,9 @@ function MovimientoPaso() {
       <span>Ciclo <ArrowLeftRight size={17} aria-hidden="true" /> Otro ciclo</span>
       <span>Ciclo <ArrowLeftRight size={17} aria-hidden="true" /> Verano</span>
     </div>
-    <p className="help-body-text">Puedes probar distintas ubicaciones y devolver el curso al <b>Banco de pendientes</b> arrastrándolo hasta ese panel. Solo se mueven cursos pendientes hacia periodos futuros habilitados.</p>
-    <div className="help-touch-tip"><MousePointer2 size={24} aria-hidden="true" /><div><strong>En una pantalla táctil</strong><p>Toca un curso y pulsa <b>Mover aquí</b> en el periodo de destino. Para devolverlo, usa <b>Mover seleccionado al banco</b>. Puedes cancelar la selección.</p></div></div>
-    <Aviso><b>Respeta el orden de los cursos.</b> Los prerrequisitos existentes deben quedar en un periodo anterior. El historial y los cursos en curso están bloqueados. En verano puedes planificar hasta <b>{LIMITE_CREDITOS_VERANO} créditos</b>; superar {LIMITE_HORAS_PERIODO} h muestra una advertencia, pero permite el movimiento.</Aviso>
+    <p className="help-body-text">Puedes probar distintas ubicaciones y devolver el curso al <b>Banco de pendientes</b> arrastrándolo hasta ese panel o pulsando la <b>X</b> de su tarjeta. Solo se mueven cursos pendientes hacia periodos futuros habilitados.</p>
+    <div className="help-touch-tip"><MousePointer2 size={24} aria-hidden="true" /><div><strong>En una pantalla táctil</strong><p>Toca un curso y pulsa <b>Mover aquí</b> en el periodo de destino. Para devolverlo, usa la <b>X</b> de la tarjeta o <b>Mover seleccionado al banco</b>. Puedes cancelar la selección.</p></div></div>
+    <Aviso><b>Respeta el orden de los cursos.</b> Los cursos aprobados y los cursos en curso están bloqueados. Los prerrequisitos existentes deben quedar en un periodo anterior. En verano puedes planificar hasta <b>{LIMITE_CREDITOS_VERANO} créditos</b>; superar {LIMITE_HORAS_PERIODO} h muestra una advertencia, pero permite el movimiento.</Aviso>
   </>;
 }
 
@@ -107,7 +107,7 @@ function CursosPaso() {
           <div className="help-course-state"><Marca numero={5} /><Clock3 size={16} aria-hidden="true" /> En curso</div>
           <div className="help-example-icons">
             <span><Marca numero={6} /><LockKeyhole size={20} aria-hidden="true" /></span>
-            <span><Marca numero={7} /><ArrowRight size={20} aria-hidden="true" /><X size={13} aria-hidden="true" /></span>
+            <span><Marca numero={7} /><ArrowRight size={20} aria-hidden="true" /></span>
             <span><Marca numero={8} /><Info size={20} aria-hidden="true" /></span>
           </div>
         </div>
@@ -118,10 +118,10 @@ function CursosPaso() {
         <div><dt><Marca numero={2} /> Horas</dt><dd>Horas semanales del curso; se suman a la carga del periodo.</dd></div>
         <div><dt><Marca numero={3} /> Créditos</dt><dd>Valor académico del curso. No son las horas ni el precio.</dd></div>
         <div><dt><Marca numero={4} /> Tipo</dt><dd><b>Obligatorio:</b> parte requerida del plan. <b>Electivo:</b> una alternativa para completar tus electivos.</dd></div>
-        <div><dt><Marca numero={5} /> Estado</dt><dd><b>Aprobado</b> o <b>Convalidado</b>: ya cuenta en tu avance. <b>En curso</b>: lo estás llevando. <b>Pendiente</b>: falta llevarlo; no tiene etiqueta de estado.</dd></div>
+        <div><dt><Marca numero={5} /> Estado</dt><dd><b>Aprobado</b>: se identifica por el color de la tarjeta. <b>Convalidado</b>: se distingue con su etiqueta. <b>En curso</b>: lo estás llevando. <b>Pendiente</b>: falta llevarlo; no tiene etiqueta de estado.</dd></div>
         <div><dt><Marca numero={6} /> Candado</dt><dd>El curso es fijo: ya fue llevado, está en curso o pertenece a un periodo cerrado. No se puede mover.</dd></div>
-        <div><dt><Marca numero={7} /> Flecha con X</dt><dd>No habilita otros cursos de la malla cargada. Es un indicador, no un botón para eliminar.</dd></div>
-        <div><dt><Marca numero={8} /> Información ⓘ</dt><dd>Pasa el puntero o enfoca el botón para consultar sus prerrequisitos y qué cursos habilita.</dd></div>
+        <div><dt><Marca numero={7} /> Flecha</dt><dd>Verde si habilita otros cursos; roja si no habilita ninguno. La X de la esquina superior derecha retira un pendiente futuro al banco.</dd></div>
+        <div><dt><Marca numero={8} /> Información ⓘ</dt><dd>Pasa el puntero o enfoca el botón para consultar el nombre completo, sus prerrequisitos y qué cursos habilita.</dd></div>
       </dl>
     </div>
     <div className="help-state-key"><span><CircleCheck size={16} aria-hidden="true" /> Aprobado / Convalidado</span><span><Clock3 size={16} aria-hidden="true" /> En curso</span><span className="help-badge elective">Electivo</span><span className="help-badge mandatory">Obligatorio</span></div>
@@ -181,7 +181,7 @@ function CiclosPaso() {
       <div><h4><Sun size={18} aria-hidden="true" /> Veranos</h4><p>Son intensivos: las horas efectivas se multiplican por {FACTOR_HORAS_VERANO}. Un curso de 4 h cuenta como {4 * FACTOR_HORAS_VERANO} h efectivas. También se usan las horas multiplicadas para la cuota. El tope es {LIMITE_CREDITOS_VERANO} créditos y el tarifario UTP incluye {tarifario?.cuotasPorVerano ?? 2} cuotas de verano.</p></div>
       <div><h4><Plus size={18} aria-hidden="true" /> Añadir o retirar ciclos</h4><p><b>Añadir ciclo</b> amplía tu plan hasta el {MAXIMO_CICLOS}. Desde el 11, la <b>X</b> retira un ciclo futuro: sus pendientes vuelven al banco y el planificador deja de usarlo. Añadir recupera primero los ciclos retirados.</p></div>
     </div>
-    <Aviso>Los ciclos pasados y el actual tienen candado y no reciben cursos nuevos. Tampoco puedes retirar un ciclo con cursos fijos.</Aviso>
+    <Aviso>Los ciclos regulares pasados y el actual tienen candado y no reciben cursos nuevos. El verano del ciclo actual puede usarse si te corresponde. Tampoco puedes retirar un ciclo con cursos fijos.</Aviso>
   </>;
 }
 
@@ -191,20 +191,21 @@ function Herramienta({ icono, nombre, children }: { icono: ReactNode; nombre: st
 
 function HerramientasPaso() {
   return <>
-    <div className="help-toolbar-preview" aria-label="Ejemplo de la barra: Subir Excel, Configuración, Guardar como y Estrategia">
-      <span><Upload size={17} aria-hidden="true" /> Subir Excel</span><span><Settings2 size={17} aria-hidden="true" /> Configuración</span><span><FileDown size={17} aria-hidden="true" /> Guardar como <ChevronDown size={14} aria-hidden="true" /></span><span className="primary"><Sparkles size={17} aria-hidden="true" /> Estrategia</span>
+    <div className="help-toolbar-preview" aria-label="Ejemplo de la barra: Subir Excel, Configuración, Guardar como, Facultad y Estrategia">
+      <span><Upload size={17} aria-hidden="true" /> Subir Excel</span><span><Settings2 size={17} aria-hidden="true" /> Configuración</span><span><FileDown size={17} aria-hidden="true" /> Guardar como <ChevronDown size={14} aria-hidden="true" /></span><span><GraduationCap size={17} aria-hidden="true" /> Facultad</span><span className="primary"><Sparkles size={17} aria-hidden="true" /> Estrategia</span>
     </div>
     <div className="help-tools-grid">
       <Herramienta icono={<Upload size={22} />} nombre="Subir / Actualizar Excel">Carga el archivo de UTP+. Actualizarlo reinicia la planificación manual: guarda un respaldo antes si quieres conservarla.</Herramienta>
       <Herramienta icono={<CircleCheck size={22} />} nombre="Avance">“Llevados” son aprobados o convalidados; “planificados”, pendientes ya ubicados; “pendientes”, los que siguen en el banco.</Herramienta>
       <Herramienta icono={<Layers size={22} />} nombre="Electivos">Compara tus créditos electivos llevados o ubicados con el mínimo de {MINIMO_CREDITOS_ELECTIVOS} cr. Las otras alternativas pueden quedarse en el banco.</Herramienta>
       <Herramienta icono={<Settings2 size={22} />} nombre="Configuración">Indica marzo o agosto como mes de ingreso y el ciclo que estás cursando. Así se ubican tu avance y los veranos disponibles.</Herramienta>
-      <Herramienta icono={<RotateCcw size={22} />} nombre="Limpiar plan">Devuelve los pendientes de periodos futuros al banco. Conserva el historial, los cursos en curso y los periodos cerrados.</Herramienta>
+      <Herramienta icono={<RotateCcw size={22} />} nombre="Limpiar plan">Devuelve los pendientes de periodos futuros al banco. Conserva los cursos aprobados, los cursos en curso y los periodos cerrados.</Herramienta>
       <Herramienta icono={<Upload size={22} />} nombre="Importar">Recupera una planificación guardada con la opción Respaldo. Carga el archivo JSON, no el Excel de UTP+.</Herramienta>
       <Herramienta icono={<FileDown size={22} />} nombre="Guardar como">Abre tres opciones: <b>PDF</b> para imprimir o compartir, <b>PNG</b> como imagen y <b>Respaldo</b> para volver a importar tu avance.</Herramienta>
-      <Herramienta icono={<Sparkles size={22} />} nombre="Estrategia">Propone pendientes desde el ciclo siguiente, solo en ciclos regulares de hasta {LIMITE_HORAS_PLANIFICACION} h: primero obligatorios y un electivo al final. Revisa el resultado en el modal antes de aplicar. En “Simulación de cuotas”, abre el botón de configuración para elegir facultad y método de pago.</Herramienta>
+      <Herramienta icono={<GraduationCap size={22} />} nombre="Facultad">Elige la facultad para calcular las cuotas de los cursos planificados.</Herramienta>
+      <Herramienta icono={<Sparkles size={22} />} nombre="Estrategia">Propone pendientes desde el ciclo siguiente, solo en ciclos regulares de hasta {LIMITE_HORAS_PLANIFICACION} h: primero obligatorios y un electivo al final. Revisa el resultado antes de aplicar. En “Simulación de cuotas”, abre la configuración para elegir el método de pago.</Herramienta>
       <Herramienta icono={<ListFilter size={22} />} nombre="Mostrar desde ciclo">Elige el primer ciclo visible. Los anteriores se ocultan de la pantalla; sus cursos y asignaciones se conservan.</Herramienta>
-      <Herramienta icono={<Sun size={22} />} nombre="Mostrar veranos">Muestra los veranos disponibles. Al desmarcarlo se ocultan los vacíos; los que ya tienen cursos siguen visibles.</Herramienta>
+      <Herramienta icono={<Sun size={22} />} nombre="Mostrar veranos">Muestra los veranos desde el ciclo actual cuando corresponden a tu mes de ingreso. Al desmarcarlo se ocultan todos; los cursos asignados se conservan.</Herramienta>
       <Herramienta icono={<CalendarDays size={22} />} nombre="Inicio · Ciclo actual">Recuerda el mes de ingreso y el ciclo que estás llevando. Cámbialos desde Configuración.</Herramienta>
       <Herramienta icono={<Moon size={22} />} nombre="Modo claro / oscuro">Alterna los colores de la página. El botón indica el modo que se activará.</Herramienta>
       <Herramienta icono={<CircleHelp size={22} />} nombre="Ayuda (?)">Abre de nuevo este tutorial cuando lo necesites. Puedes avanzar, retroceder o elegir un paso arriba.</Herramienta>

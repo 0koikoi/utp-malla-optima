@@ -18,4 +18,3 @@ export class AdapterRegistry {
   }
 }
 
-export const adapterRegistry = new AdapterRegistry();

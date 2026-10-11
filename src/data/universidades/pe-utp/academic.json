@@ -1,7 +1,11 @@
 {
   "limitesAcademicos": {
     "creditosMinimos": 12,
-    "creditosMaximos": 40
+    "creditosMaximos": 40,
+    "horasRecomendadasPeriodo": 24,
+    "horasMaximasPlanificacion": 22,
+    "creditosMaximosVerano": 11,
+    "creditosMinimosElectivos": 3
   },
   "verano": {
     "multiplicadorHorasTarifarias": 2

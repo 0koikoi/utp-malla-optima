@@ -1,12 +1,14 @@
 import { formatCredits } from '../utils/formatCredits';
 import type { DragEvent } from 'react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { isCursoDesbloqueado } from '../utils/academicGraph';
+import { isCursoDesbloqueado } from '../domain/services/prerequisiteService';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
+import { puedeRetirarCursoRapido } from '../presentation/selectors/plannerCardRules';
 import { ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, X } from 'lucide-react';
 
 interface Props {
@@ -14,25 +16,40 @@ interface Props {
   compacto?: boolean;
 }
 
-export const CourseCard = ({ curso, compacto = false }: Props) => {
-  const {
-    cursos,
-    cursosSeleccionadosParaMatricula,
-    toggleSeleccionMatricula,
-    cursoAMover,
-    setCursoAMover,
-    cicloActual,
-  } = useAcademicStore();
+const CourseCardBase = ({ curso, compacto = false }: Props) => {
+  const estaSeleccionado = useAcademicStore((state) =>
+    state.cursosSeleccionadosParaMatricula.includes(curso.codigo));
+  const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos));
+  const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) => {
+    const req = state.cursos.find((item) => item.codigo === codigo);
+    return req ? `${codigo} · ${req.nombre}` : codigo;
+  })));
+  const habilitaA = useAcademicStore(useShallow((state) => state.cursos
+    .filter((item) => item.prerrequisitos.includes(curso.codigo))
+    .map((item) => item.nombre)));
+  const toggleSeleccionMatricula = useAcademicStore((state) => state.toggleSeleccionMatricula);
+  const esSeleccionMovil = useAcademicStore((state) => state.cursoAMover === curso.codigo);
+  const setCursoAMover = useAcademicStore((state) => state.setCursoAMover);
+  const moverCursoABanco = useAcademicStore((state) => state.moverCursoABanco);
+  const cicloActual = useAcademicStore((state) => state.cicloActual);
 
   const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
-  const estaSeleccionado = cursosSeleccionadosParaMatricula.includes(curso.codigo);
-  const desbloqueado = isCursoDesbloqueado(curso, cursos);
+  const [retirando, setRetirando] = useState(false);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
   const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO' ||
     Boolean(cicloActual && curso.ubicacion === 'periodo' &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual));
-  const esSeleccionMovil = cursoAMover === curso.codigo;
-  const habilitaA = cursos.filter((item) => item.prerrequisitos.includes(curso.codigo));
+  const permiteRetiroRapido = puedeRetirarCursoRapido(curso, cicloActual);
+
+  const retirarAlBanco = async () => {
+    if (retirando) return;
+    setRetirando(true);
+    try {
+      await moverCursoABanco(curso.codigo);
+    } finally {
+      setRetirando(false);
+    }
+  };
 
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (esFijoMovimiento) {
@@ -70,6 +87,7 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
     estaSeleccionado ? 'seleccionado-presupuesto' : '',
     esSeleccionMovil ? 'seleccionado-mover' : '',
     curso.tipoPeriodo === 'VERANO' && curso.ubicacion === 'periodo' ? 'curso-verano' : '',
+    permiteRetiroRapido ? 'con-retiro-rapido' : '',
     compacto ? 'compacto' : '',
   ]
     .filter(Boolean)
@@ -82,17 +100,28 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
         onDragStart={handleDragStart}
         onClick={handleCardClick}
         className={clases}
-        aria-disabled={esFijoMovimiento}
         title={esFijoMovimiento ? 'Curso fijo: no se puede mover' : undefined}
       >
+        {permiteRetiroRapido && <button
+          type="button"
+          className="curso-card-quitar-btn"
+          disabled={retirando}
+          draggable={false}
+          onPointerDown={(event) => event.stopPropagation()}
+          onDragStart={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={(event) => { event.stopPropagation(); void retirarAlBanco(); }}
+          aria-label={`Retirar ${curso.nombre} al banco de pendientes`}
+          title="Retirar al banco de pendientes"
+        ><X size={14} aria-hidden="true" /></button>}
         <div className="curso-card-head">
           <span className="curso-codigo">{curso.codigo}</span>
           <div className="curso-card-actions">
             {esFijoMovimiento && <LockKeyhole size={13} className="curso-lock" />}
-            {habilitaA.length === 0 && <span className="curso-sin-dependientes" role="img"
-              aria-label="No habilita otros cursos" title="No habilita otros cursos de la malla">
-              <ArrowRight size={14} aria-hidden="true" /><X size={10} aria-hidden="true" />
-            </span>}
+            <span className={`curso-dependientes ${habilitaA.length > 0 ? 'habilita' : 'sin-dependientes'}`}
+              role="img" aria-label={habilitaA.length > 0 ? 'Habilita otros cursos' : 'No habilita otros cursos'}
+              title={habilitaA.length > 0 ? `Habilita ${habilitaA.length} curso(s)` : 'No habilita otros cursos de la malla'}>
+              <ArrowRight size={15} aria-hidden="true" />
+            </span>
             <button
               type="button"
               className="curso-info-btn"
@@ -102,13 +131,14 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
               onBlur={() => setTooltip(null)}
               onClick={(event) => event.stopPropagation()}
               aria-label={`Ver requisitos de ${curso.nombre}`}
+              title={`Información de ${curso.nombre}`}
             >
               <Info size={14} />
             </button>
           </div>
         </div>
 
-        <div className="curso-titulo">{curso.nombre}</div>
+        <div className="curso-titulo" title={curso.nombre}>{curso.nombre}</div>
 
         <div className="curso-tags">
           <span className="ctag">Origen C{curso.cicloOrigen}</span>
@@ -122,9 +152,9 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
           </span>
         </div>
 
-        {esAprobado && (
+        {curso.estado === 'CONVALIDADO' && (
           <div className="curso-estado-chip">
-            <CircleCheck size={11} /> {curso.estado === 'APROBADO' ? 'Aprobado' : 'Convalidado'}
+            <CircleCheck size={11} /> Convalidado
           </div>
         )}
         {curso.estado === 'EN_CURSO' && (
@@ -138,13 +168,11 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
             className="curso-tooltip"
             style={{ position: 'fixed', top: tooltip.top, left: tooltip.left }}
           >
+            <div className="tooltip-course-name">{curso.nombre}</div>
             <section>
               <b><LockKeyhole size={12} /> Prerrequisitos</b>
               {curso.prerrequisitos.length > 0 ? (
-                curso.prerrequisitos.map((codigo) => {
-                  const req = cursos.find((item) => item.codigo === codigo);
-                  return <div key={codigo}>{req ? `${codigo} · ${req.nombre}` : codigo}</div>;
-                })
+                requisitos.map((texto, index) => <div key={curso.prerrequisitos[index]}>{texto}</div>)
               ) : (
                 <div>Sin prerrequisitos</div>
               )}
@@ -153,7 +181,7 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
             <section className="tooltip-habilita">
               <b>Habilita</b>
               {habilitaA.length > 0 ? (
-                habilitaA.map((item) => <div key={item.codigo}>{item.nombre}</div>)
+                habilitaA.map((item, index) => <div key={`${item}-${index}`}>{item}</div>)
               ) : (
                 <div>No habilita otro curso de la malla.</div>
               )}
@@ -164,3 +192,5 @@ export const CourseCard = ({ curso, compacto = false }: Props) => {
     </>
   );
 };
+
+export const CourseCard = memo(CourseCardBase);

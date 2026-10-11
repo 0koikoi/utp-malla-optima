@@ -1,8 +1,9 @@
-import * as XLSX from 'xlsx';
+import { readSheet } from 'read-excel-file/browser';
 import type { Curso, EstadoCurso, TipoCurso } from '../types/academic';
 import type { CurriculumAdapter } from './CurriculumAdapter';
+import { MAXIMO_CICLOS } from '../domain/rules/cycleRules';
 
-type ExcelCell = string | number | boolean | null | undefined;
+type ExcelCell = string | number | boolean | Date | null | undefined;
 type ExcelRow = ExcelCell[];
 
 type ColumnasUTP = {
@@ -17,7 +18,7 @@ type ColumnasUTP = {
 };
 
 const CICLO_MINIMO = 1;
-const CICLO_MAXIMO = 10;
+const CICLO_MAXIMO = MAXIMO_CICLOS;
 
 /**
  * Este adaptador está pensado para el "Plan de Estudio" exportado por UTP.
@@ -234,20 +235,14 @@ const contarCeldasConDatos = (fila: ExcelRow): number =>
   fila.filter((celda) => Boolean(texto(celda))).length;
 
 export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data, { type: 'array' });
-  const nombreHoja = workbook.SheetNames[0];
-
-  if (!nombreHoja) {
-    throw new Error('El archivo Excel no contiene hojas.');
+  if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    throw new Error('Solo se admiten archivos Excel .xlsx.');
   }
-
-  const hoja = workbook.Sheets[nombreHoja];
-  const filas = XLSX.utils.sheet_to_json<ExcelRow>(hoja, {
-    header: 1,
-    defval: '',
-    raw: true,
-  });
+  const filas: ExcelRow[] = (await readSheet(file)).map((fila) => fila.map((celda): ExcelCell => {
+    const valor: unknown = celda;
+    return typeof valor === 'string' || typeof valor === 'number' ||
+      typeof valor === 'boolean' || valor instanceof Date ? valor : null;
+  }));
 
   if (filas.length === 0) return [];
 
@@ -347,7 +342,8 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
 
 
 export class UTPExcelAdapter implements CurriculumAdapter {
-  readonly universidadId = 'pe-utp';
+  readonly universidadId: string;
+  constructor(universidadId: string) { this.universidadId = universidadId; }
 
   async parse(file: File): Promise<Curso[]> {
     return parseUTPExcel(file);

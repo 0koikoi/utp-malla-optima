@@ -136,11 +136,13 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px 2px;
 }
+.financial-scroll-panel::-webkit-scrollbar { display: none; }
 
 .budget-empty {
   text-align: center;

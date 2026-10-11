@@ -5,7 +5,7 @@ import {
   type FinancialEngineOptions,
 } from '../engine/FinancialEngine';
 import type { FinancialSummary } from '../models/FinancialPeriod';
-import { UniversityFinancialRulesProvider } from '../rules/UniversityFinancialRulesProvider';
+import type { FinancialRulesResolver } from '../rules/UniversityFinancialRulesProvider';
 
 /**
  * Fachada de aplicación del módulo financiero.
@@ -13,13 +13,19 @@ import { UniversityFinancialRulesProvider } from '../rules/UniversityFinancialRu
  * React construyan motores o conozcan implementaciones universitarias concretas.
  */
 export class FinancialPlanningService {
-  static calcular(
+  private readonly rulesProvider: FinancialRulesResolver;
+
+  constructor(rulesProvider: FinancialRulesResolver) {
+    this.rulesProvider = rulesProvider;
+  }
+
+  calcular(
     cursos: Curso[],
     tarifario: Tarifario,
     disciplina: string,
     opciones: FinancialEngineOptions = {}
   ): FinancialSummary {
-    const rules = UniversityFinancialRulesProvider.resolve({
+    const rules = this.rulesProvider.resolve({
       universidadId: tarifario.universidadId,
       reglasFinancierasId: tarifario.reglasFinancierasId,
     });

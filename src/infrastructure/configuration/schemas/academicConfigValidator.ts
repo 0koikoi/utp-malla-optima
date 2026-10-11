@@ -8,6 +8,10 @@ const AcademicLimitsSchema = z
   .object({
     creditosMinimos: positiveNumber,
     creditosMaximos: positiveNumber,
+    horasRecomendadasPeriodo: positiveNumber,
+    horasMaximasPlanificacion: positiveNumber,
+    creditosMaximosVerano: positiveNumber,
+    creditosMinimosElectivos: positiveNumber,
   })
   .strict()
   .refine(

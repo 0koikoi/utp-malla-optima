@@ -1,21 +1,8 @@
 import Dexie, { type Table } from 'dexie';
-import type { Curso } from '../types/academic';
-import type { PeriodoIngreso } from '../types/academic';
-import type { Tarifario } from '../types/financial';
-import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
-
-export interface UserAcademicProfile {
-  id: string;
-  universidadId: string;
-  carrera: string;
-  disciplinaActiva: string;
-  fechaActualizacion: string;
-  nombreArchivoCargado?: string;
-  periodoIngreso?: PeriodoIngreso;
-  cicloActual?: number;
-  totalCiclos?: number;
-  ciclosExcluidos?: number[];
-}
+import type { Curso } from '../../types/academic';
+import type { Tarifario } from '../../types/financial';
+import type { UserAcademicProfile } from '../../types/profile';
+import { migrateLegacyFinancialRulesReference } from '../../financial/rules/financialRulesCompatibility';
 
 export class AcademicDatabase extends Dexie {
   profile!: Table<UserAcademicProfile, string>;
@@ -65,6 +52,25 @@ export class AcademicDatabase extends Dexie {
           const tarifario = registro as Tarifario;
           const migrado = migrateLegacyFinancialRulesReference(tarifario);
           if (migrado !== tarifario) Object.assign(registro, migrado);
+        });
+      });
+
+    // Los registros antiguos se normalizan una vez al actualizar IndexedDB.
+    this.version(7)
+      .stores({
+        profile: 'id, disciplinaActiva',
+        courses: 'codigo, ciclo, cicloOrigen, tipoPeriodo, estado, ubicacion',
+        customCosts: 'universidadId',
+      })
+      .upgrade(async (transaction) => {
+        await transaction.table('courses').toCollection().modify((registro) => {
+          const curso = registro as Curso;
+          if (!curso.cicloOrigen) curso.cicloOrigen = curso.ciclo || 1;
+          if (!curso.ciclo) curso.ciclo = curso.cicloOrigen;
+          if (!curso.tipoPeriodo) curso.tipoPeriodo = 'REGULAR';
+          if ((curso.ubicacion as string) === 'ciclo') curso.ubicacion = 'periodo';
+          if (!curso.ubicacion) curso.ubicacion = curso.estado === 'PENDIENTE' ? 'banco' : 'periodo';
+          if (!Array.isArray(curso.prerrequisitos)) curso.prerrequisitos = [];
         });
       });
 

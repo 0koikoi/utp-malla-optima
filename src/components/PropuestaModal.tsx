@@ -1,4 +1,5 @@
 import { formatCredits } from '../utils/formatCredits';
+import { explicarMotivo, explicarPlan } from '../presentation/messages/planningMessages';
 import { useLayoutEffect, useRef } from 'react';
 import { AlertTriangle, Check, FileText, X } from 'lucide-react';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
@@ -46,14 +47,14 @@ export function PropuestaModal({ propuesta, error, onClose, onApply }: Props) {
       <div className="strategy-proposal-body">
         <p className="strategy-proposal-summary"><b>{propuesta.totalPlanificados}</b> cursos organizados en <b>{propuesta.ciclos.length}</b> ciclos.</p>
         <section className="strategy-proposal-explanation" aria-label="Explicación de la propuesta">
-          {propuesta.explicacion.map((linea, index) => <p key={index}>{linea}</p>)}
+          {propuesta.explicacion.map((linea, index) => <p key={index}>{explicarPlan(linea)}</p>)}
         </section>
         {propuesta.advertenciasHoras.length > 0 && <div className="strategy-proposal-warning"><AlertTriangle size={19} aria-hidden="true" /><div><b>Carga horaria recomendada superada</b>{propuesta.advertenciasHoras.map((aviso) => <p key={aviso.periodo.id}>{aviso.periodo.etiqueta}: {aviso.total} horas; recomendadas: {aviso.limite}. Puedes aplicar la propuesta.</p>)}</div></div>}
         {propuesta.ciclos.length > 0 && <section className="strategy-proposal-cycles" aria-labelledby="proposal-cycles-title">
           <h3 id="proposal-cycles-title">Distribución por ciclo</h3>
           {propuesta.ciclos.map((ciclo) => <div key={ciclo.periodo.id}><h4>{ciclo.periodo.etiqueta}<span>{ciclo.horasEfectivas} h · {formatCredits(ciclo.creditos)} cr</span></h4><ul>{ciclo.cursos.map((curso) => <li key={curso.codigo}>{curso.nombre}</li>)}</ul></div>)}
         </section>}
-        {propuesta.noPlanificados.length > 0 && <div className="strategy-proposal-warning"><AlertTriangle size={19} aria-hidden="true" /><div><b>{propuesta.noPlanificados.length} cursos permanecen pendientes</b>{propuesta.noPlanificados.map((curso) => <p key={curso.codigo}><strong>{curso.nombre} ({curso.codigo})</strong>: {curso.motivos.join(' ')}</p>)}</div></div>}
+        {propuesta.noPlanificados.length > 0 && <div className="strategy-proposal-warning"><AlertTriangle size={19} aria-hidden="true" /><div><b>{propuesta.noPlanificados.length} cursos permanecen pendientes</b>{propuesta.noPlanificados.map((curso) => <p key={curso.codigo}><strong>{curso.nombre} ({curso.codigo})</strong>: {curso.motivos.map(explicarMotivo).join(' ')}</p>)}</div></div>}
       </div>
       <footer className="strategy-proposal-footer">
         {error && <p className="strategy-proposal-error" role="alert">{error}</p>}

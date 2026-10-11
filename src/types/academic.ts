@@ -42,7 +42,8 @@ export type TipoNotificacionMovimiento =
   | 'PERIODO_ACTUAL'
   | 'LIMITE_CREDITOS_VERANO'
   | 'LIMITE_HORAS'
-  | 'IMPACTO_DESCENDIENTE';
+  | 'IMPACTO_DESCENDIENTE'
+  | 'ERROR_PERSISTENCIA';
 
 export interface NotificacionMovimiento {
   tipo: TipoNotificacionMovimiento;
