@@ -6,7 +6,8 @@ import { cursoBloqueado, esJaladoSinReplanificar, ordenarCursos } from '../domai
 import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import {
-  destinoJaladoPermitido, esRegresoAlOrigen, jaladosFaltantes, mensajeJaladoObligatorio,
+  destinoJaladoPermitido, devolverJaladoAOrigen, esCursoJalado, esRegresoAlOrigen, jaladosFaltantes,
+  mensajeJaladoObligatorio,
   periodoRecuperacion, planificadosSinJalado,
 } from '../domain/rules/jaladoRules';
 import {
@@ -157,6 +158,8 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       if (curso.estado !== 'PENDIENTE' ||
           (state.cicloActual && curso.ubicacion === 'periodo' &&
            periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), state.cicloActual))) return curso;
+      // Un jalado replanificado vuelve a su ciclo original, no al banco.
+      if (esCursoJalado(curso) && state.cicloActual) return devolverJaladoAOrigen(curso, state.cicloActual);
       return { ...curso, ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR' as const, ubicacion: 'banco' as const };
     }));
     try {

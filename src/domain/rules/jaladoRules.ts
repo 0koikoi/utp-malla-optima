@@ -71,9 +71,9 @@ export const destinoJaladoPermitido = (
   const cicloActual = resolverCicloActual(cursos, contexto);
   if (!esCursoJalado(curso) || !cicloActual) return true;
   const original = ubicacionOriginalJalado(curso, cicloActual);
-  if (destino === 'banco' || original === 'banco') return destino === original;
-  return destino.id === original.id ||
-    periodosRecuperacion(cursos, contexto).some((periodo) => periodo.id === destino.id);
+  if (destino === 'banco') return original === 'banco';
+  if (original !== 'banco' && destino.id === original.id) return true;
+  return periodosRecuperacion(cursos, contexto).some((periodo) => periodo.id === destino.id);
 };
 
 export const esRegresoAlOrigen = (
@@ -110,3 +110,24 @@ export const faltaJaladoParaPlanificado = (curso: Curso, cursos: Curso[], contex
 export const planificadosSinJalado = (cursos: Curso[], contexto: ContextoJalados = {}): CursoReferencia[] =>
   cursos.filter((curso) => faltaJaladoParaPlanificado(curso, cursos, contexto))
     .map(({ codigo, nombre }) => ({ codigo, nombre }));
+
+/** Lleva un jalado a su lugar original: su ciclo bloqueado o, si era adelantado, el banco. */
+export const devolverJaladoAOrigen = (curso: Curso, cicloActual: number): Curso => {
+  const original = ubicacionOriginalJalado(curso, cicloActual);
+  return original === 'banco'
+    ? { ...curso, ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR', ubicacion: 'banco' }
+    : { ...curso, ciclo: original.cicloReferencia, tipoPeriodo: 'REGULAR', ubicacion: 'periodo' };
+};
+
+/**
+ * Al importar (o fijar el ciclo actual), un jalado adelantado (se jaló en un
+ * ciclo posterior al actual) que sigue en ese ciclo pasa al banco: también es
+ * obligatorio en el periodo de recuperación y no se cotiza hasta planificarlo.
+ */
+export const ubicarJaladosAdelantados = (cursos: Curso[], cicloActual: number): Curso[] =>
+  cursos.map((curso) => {
+    const cicloJalado = curso.cicloJalado ?? curso.cicloOrigen;
+    return esCursoJalado(curso) && curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' &&
+      cicloJalado > cicloActual && curso.ciclo === cicloJalado
+      ? devolverJaladoAOrigen(curso, cicloActual) : curso;
+  });

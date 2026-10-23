@@ -1,6 +1,7 @@
 import type { AcademicRepositories } from '../application/ports/AcademicRepositories';
 import { cursoBloqueado, normalizarCurso, ordenarCursos } from '../domain/rules/courseRules';
 import { ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
+import { ubicarJaladosAdelantados } from '../domain/rules/jaladoRules';
 import { CICLOS_INICIALES, determinarTotalCiclos, normalizarCiclosExcluidos, normalizarTotalCiclos } from '../domain/rules/cycleRules';
 import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 import type { AcademicSlice, AcademicStore } from './types';
@@ -24,7 +25,8 @@ export const createCourseImportSlice = (repos: AcademicRepositories): AcademicSl
       };
     }));
     const cursosNormalizados = state.cicloActual
-      ? ordenarCursos(ubicarAvanceEnCicloActual(base, state.cicloActual, state.periodoIngreso))
+      ? ordenarCursos(ubicarJaladosAdelantados(
+        ubicarAvanceEnCicloActual(base, state.cicloActual, state.periodoIngreso), state.cicloActual))
       : base;
     const totalCiclos = normalizarTotalCiclos(Math.max(CICLOS_INICIALES, state.cicloActual ?? 1));
 
