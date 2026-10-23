@@ -50,6 +50,7 @@ describe('HttpAIClient', () => {
     [{ error: 'SIN_SALDO' }, 402, 'SIN_SALDO'],
     [{ error: 'LIMITE' }, 429, 'LIMITE'],
     [{ error: 'RESPUESTA_INVALIDA' }, 502, 'RESPUESTA_INVALIDA'],
+    [{ error: 'RESPUESTA_LARGA' }, 502, 'RESPUESTA_LARGA'],
     [{ error: 'ENTRADA_INVALIDA' }, 400, 'ENTRADA_INVALIDA'],
     ['<html>', 504, 'PROVEEDOR_CAIDO'],
     ['<html>', 429, 'LIMITE'],
@@ -57,6 +58,10 @@ describe('HttpAIClient', () => {
     const fetch = vi.fn(async () => typeof cuerpo === 'string' ? new Response(cuerpo, { status }) : json(cuerpo, status));
     const resultado = await new HttpAIClient({ endpoint: ENDPOINT, fetch, enLinea: () => true }).enviar(peticion);
     expect(resultado).toEqual({ ok: false, error: codigo, mensaje: MENSAJES_ERROR[codigo] });
+  });
+
+  it('RESPUESTA_LARGA pide preguntar más corto', () => {
+    expect(MENSAJES_ERROR.RESPUESTA_LARGA).toBe('No pude terminar la respuesta, intenta preguntarlo más corto.');
   });
 
   it('una respuesta 200 fuera del contrato → RESPUESTA_INVALIDA', async () => {

@@ -44,6 +44,8 @@ export interface RegistroAsistente {
 export interface RegistroConsumo extends RegistroAsistente, UsoTokens {
   modelo: string;
   intentos: number;
+  /** finish_reason de cada intento, en orden (sin contenido). */
+  finish_reasons: (string | null)[];
   tarifa: 'normal' | 'pico';
   costo_usd: number;
 }
@@ -106,7 +108,7 @@ export const crearHandlers = (config: ConfigProxy) => {
     const inicio = Date.now();
     const origen = origenPermitido(request);
     let modo = 'desconocido';
-    let consumo: { uso: UsoTokens; intentos: number } | null = null;
+    let consumo: { uso: UsoTokens; intentos: number; finishReasons: (string | null)[] } | null = null;
     const terminar = (codigo: 'ok' | AIErrorCodigo, cuerpo: unknown, status: number) => {
       const base: RegistroAsistente = { evento: 'asistente', modo, codigo, duracion_ms: Date.now() - inicio, mock: config.mock };
       if (!consumo) {
@@ -114,7 +116,7 @@ export const crearHandlers = (config: ConfigProxy) => {
       } else {
         const pico = esHorarioPico(new Date(config.ahora()), config.horarioPicoUtc);
         const registro: RegistroConsumo = {
-          ...base, modelo: config.modelo, intentos: consumo.intentos, ...consumo.uso,
+          ...base, modelo: config.modelo, intentos: consumo.intentos, finish_reasons: consumo.finishReasons, ...consumo.uso,
           tarifa: pico ? 'pico' : 'normal', costo_usd: costoEstimadoUsd(consumo.uso, pico),
         };
         config.registrar(registro);
@@ -154,12 +156,15 @@ export const crearHandlers = (config: ConfigProxy) => {
 
     const controlador = new AbortController();
     const temporizador = setTimeout(() => controlador.abort(), config.timeoutMs);
-    const acumulado = { uso: USO_VACIO, intentos: 0 };
+    const acumulado = { uso: USO_VACIO, intentos: 0, finishReasons: [] as (string | null)[] };
     consumo = acumulado;
     try {
       const respuesta = await llamarDeepSeek(peticion.data, {
         apiKey: config.apiKey, modelo: config.modelo, fetch: config.fetch, signal: controlador.signal,
-        alUsar: (uso) => { acumulado.uso = sumarUso(acumulado.uso, uso); },
+        alUsar: (uso, finishReason) => {
+          acumulado.uso = sumarUso(acumulado.uso, uso);
+          acumulado.finishReasons.push(finishReason);
+        },
         alIntentar: () => { acumulado.intentos += 1; },
       });
       return terminar('ok', respuesta, 200);

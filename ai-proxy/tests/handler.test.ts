@@ -96,7 +96,7 @@ describe('proxy - llamada a DeepSeek', () => {
     expect(url).toBe(DEEPSEEK_URL);
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-prueba');
     const cuerpo = JSON.parse(String(init.body));
-    expect(cuerpo).toMatchObject({ model: 'deepseek-flash', response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1200 });
+    expect(cuerpo).toMatchObject({ model: 'deepseek-flash', response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1800, thinking: { type: 'disabled' } });
     expect(cuerpo.tools).toBeUndefined();
     expect(cuerpo.tool_choice).toBeUndefined();
     expect(cuerpo.messages[0].role).toBe('system');

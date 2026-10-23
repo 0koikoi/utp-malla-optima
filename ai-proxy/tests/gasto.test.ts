@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { MENSAJE_LIMITE, type AIContext, type AIRequest } from '../src/contracts.js';
-import { construirCuerpo, MAX_TOKENS } from '../src/deepseek.js';
+import { AVISO_CORTADA, construirCuerpo, MAX_TOKENS } from '../src/deepseek.js';
 import { crearHandlers, leerConfig, type ConfigProxy } from '../src/handler.js';
 import {
   comprobarLimites, crearLimitador, crearLimitadorMemoria, crearLimitadorUpstash, hashIp, ipDe, leerLimites,
@@ -167,9 +167,40 @@ describe('gasto - Upstash Redis (REST)', () => {
 });
 
 describe('gasto - tokens', () => {
-  it('max_tokens: 1200 en análisis y 600 en chat', () => {
-    expect(MAX_TOKENS).toEqual({ analisis: 1200, chat: 600 });
-    expect(construirCuerpo(peticion({ modo: 'analisis', mensajes: [] }), 'deepseek-flash').max_tokens).toBe(1200);
-    expect(construirCuerpo(peticion(), 'deepseek-flash').max_tokens).toBe(600);
+  it('max_tokens: 1800 en análisis y 900 en chat; razonamiento desactivado', () => {
+    expect(MAX_TOKENS).toEqual({ analisis: 1800, chat: 900 });
+    expect(construirCuerpo(peticion({ modo: 'analisis', mensajes: [] }), 'deepseek-flash').max_tokens).toBe(1800);
+    expect(construirCuerpo(peticion(), 'deepseek-flash').max_tokens).toBe(900);
+    expect(construirCuerpo(peticion(), 'deepseek-flash').thinking).toEqual({ type: 'disabled' });
+  });
+
+  const cortada = () => new Response(JSON.stringify({
+    choices: [{ finish_reason: 'length', message: { content: '{"texto":"Con S/ 800 no te' } }],
+    usage: { prompt_tokens: 100, completion_tokens: 900, completion_tokens_details: { reasoning_tokens: 0 } },
+  }));
+
+  it('finish_reason "length": UN reintento con el aviso al final, como mensaje del sistema', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(cortada()).mockResolvedValueOnce(respuestaDeepSeek());
+    const { POST, registros } = crear({}, { fetch });
+    const respuesta = await POST(post());
+    expect(respuesta.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    const primero = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    const segundo = JSON.parse(String((fetch.mock.calls[1] as unknown as [string, RequestInit])[1].body));
+    expect(segundo.messages.slice(0, -1)).toEqual(primero.messages);
+    expect(segundo.messages.at(-1)).toEqual({ role: 'system', content: AVISO_CORTADA });
+    expect(AVISO_CORTADA).toBe('Tu respuesta anterior fue demasiado larga y se cortó. Responde de nuevo con máximo 60 palabras en chat o 2 frases por sección en análisis.');
+    expect(registros[0]).toMatchObject({ codigo: 'ok', intentos: 2, finish_reasons: ['length', null] });
+  });
+
+  it('si vuelve a cortarse: RESPUESTA_LARGA; el log lleva finish_reason y reasoning_tokens, sin contenido', async () => {
+    const fetch = vi.fn(async () => cortada());
+    const { POST, registros } = crear({}, { fetch });
+    const respuesta = await POST(post());
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(respuesta.status).toBe(502);
+    expect(await respuesta.json()).toEqual({ error: 'RESPUESTA_LARGA' });
+    expect(registros[0]).toMatchObject({ codigo: 'RESPUESTA_LARGA', finish_reasons: ['length', 'length'], reasoning_tokens: 0, completion_tokens: 1800 });
+    expect(JSON.stringify(registros)).not.toContain('S/ 800');
   });
 });

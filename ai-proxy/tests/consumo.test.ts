@@ -46,9 +46,10 @@ describe('consumo - precios', () => {
 
   it('sin desglose de caché, todo el prompt cuenta como sin caché; valores inválidos valen 0', () => {
     expect(leerUso({ prompt_tokens: 100, completion_tokens: 5 })).toEqual({
-      prompt_tokens: 100, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 100, completion_tokens: 5,
+      prompt_tokens: 100, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 100, completion_tokens: 5, reasoning_tokens: 0,
     });
-    expect(leerUso(undefined)).toEqual({ prompt_tokens: 0, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 0, completion_tokens: 0 });
+    expect(leerUso(undefined)).toEqual({ prompt_tokens: 0, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 0, completion_tokens: 0, reasoning_tokens: 0 });
+    expect(leerUso({ completion_tokens: 600, completion_tokens_details: { reasoning_tokens: 600 } }).reasoning_tokens).toBe(600);
     expect(leerUso({ prompt_tokens: -3, completion_tokens: 'x' }).completion_tokens).toBe(0);
   });
 
@@ -76,13 +77,13 @@ describe('consumo - registro de cada llamada real', () => {
     expect(linea.includes('\n')).toBe(false);
     const registro = JSON.parse(linea);
     expect(Object.keys(registro).sort()).toEqual([
-      'codigo', 'completion_tokens', 'costo_usd', 'duracion_ms', 'evento', 'intentos', 'mock', 'modelo', 'modo',
-      'prompt_cache_hit_tokens', 'prompt_cache_miss_tokens', 'prompt_tokens', 'tarifa',
+      'codigo', 'completion_tokens', 'costo_usd', 'duracion_ms', 'evento', 'finish_reasons', 'intentos', 'mock', 'modelo', 'modo',
+      'prompt_cache_hit_tokens', 'prompt_cache_miss_tokens', 'prompt_tokens', 'reasoning_tokens', 'tarifa',
     ]);
     expect(registro).toMatchObject({
       evento: 'asistente', modo: 'chat', codigo: 'ok', modelo: 'deepseek-flash', mock: false, intentos: 1,
       prompt_tokens: 10_000, prompt_cache_hit_tokens: 8_000, prompt_cache_miss_tokens: 2_000, completion_tokens: 300,
-      tarifa: 'normal', costo_usd: 0.000504,
+      tarifa: 'normal', costo_usd: 0.000504, finish_reasons: [null], reasoning_tokens: 0,
     });
     for (const prohibido of ['mi dato privado', '100000', '203.0.113.7', CLAVE, 'CONTEXTO', 'catalogo']) {
       expect(linea).not.toContain(prohibido);

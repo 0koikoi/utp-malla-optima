@@ -25,6 +25,7 @@ export const MENSAJES_ERROR: Record<AIErrorCodigo, string> = {
   PROVEEDOR_CAIDO: 'El asistente no está disponible en este momento. Inténtalo en unos minutos.',
   ENTRADA_INVALIDA: 'No pude enviar tu consulta. Revisa el mensaje e inténtalo otra vez.',
   RESPUESTA_INVALIDA: 'La respuesta de la IA llegó incompleta. Toca Reintentar.',
+  RESPUESTA_LARGA: 'No pude terminar la respuesta, intenta preguntarlo más corto.',
 };
 
 const fallo = (error: AIErrorCodigo, mensaje = MENSAJES_ERROR[error]): ResultadoIA => ({ ok: false, error, mensaje });

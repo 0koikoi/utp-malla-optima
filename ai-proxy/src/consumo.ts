@@ -15,10 +15,12 @@ export interface UsoTokens {
   prompt_cache_hit_tokens: number;
   prompt_cache_miss_tokens: number;
   completion_tokens: number;
+  /** completion_tokens_details.reasoning_tokens: ya incluidos en completion_tokens (cuentan para max_tokens). */
+  reasoning_tokens: number;
 }
 
 export const USO_VACIO: UsoTokens = {
-  prompt_tokens: 0, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 0, completion_tokens: 0,
+  prompt_tokens: 0, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 0, completion_tokens: 0, reasoning_tokens: 0,
 };
 
 const numero = (valor: unknown) => (typeof valor === 'number' && Number.isFinite(valor) && valor >= 0 ? valor : 0);
@@ -29,7 +31,11 @@ export const leerUso = (usage: unknown): UsoTokens => {
   const prompt = numero(datos.prompt_tokens);
   const hit = numero(datos.prompt_cache_hit_tokens);
   const miss = datos.prompt_cache_miss_tokens === undefined ? Math.max(0, prompt - hit) : numero(datos.prompt_cache_miss_tokens);
-  return { prompt_tokens: prompt, prompt_cache_hit_tokens: hit, prompt_cache_miss_tokens: miss, completion_tokens: numero(datos.completion_tokens) };
+  const detalles = (datos.completion_tokens_details ?? {}) as Record<string, unknown>;
+  return {
+    prompt_tokens: prompt, prompt_cache_hit_tokens: hit, prompt_cache_miss_tokens: miss,
+    completion_tokens: numero(datos.completion_tokens), reasoning_tokens: numero(detalles.reasoning_tokens),
+  };
 };
 
 export const sumarUso = (a: UsoTokens, b: UsoTokens): UsoTokens => ({
@@ -37,6 +43,7 @@ export const sumarUso = (a: UsoTokens, b: UsoTokens): UsoTokens => ({
   prompt_cache_hit_tokens: a.prompt_cache_hit_tokens + b.prompt_cache_hit_tokens,
   prompt_cache_miss_tokens: a.prompt_cache_miss_tokens + b.prompt_cache_miss_tokens,
   completion_tokens: a.completion_tokens + b.completion_tokens,
+  reasoning_tokens: a.reasoning_tokens + b.reasoning_tokens,
 });
 
 export const costoEstimadoUsd = (uso: UsoTokens, horarioPico = false): number => {

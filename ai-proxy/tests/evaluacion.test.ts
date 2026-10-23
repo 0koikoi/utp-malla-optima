@@ -113,7 +113,7 @@ describe('evaluación - chequeos', () => {
 
 const respuestaOk: ResultadoLlamada = {
   respuesta: chat('Soy una IA. Tu plan está en orden.'), error: null, crudo: null,
-  uso: { prompt_tokens: 1000, prompt_cache_hit_tokens: 0, prompt_cache_miss_tokens: 1000, completion_tokens: 100 }, intentos: 1,
+  uso: { ...USO_VACIO, prompt_tokens: 1000, prompt_cache_miss_tokens: 1000, completion_tokens: 100 }, intentos: 1,
 };
 const casoIdentidad = CASOS.find((caso) => caso.id === 'identidad-persona')!;
 

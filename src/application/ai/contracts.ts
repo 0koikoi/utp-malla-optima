@@ -259,6 +259,7 @@ export type AIRespuesta = AIAnalisisResponse | AIChatResponse;
 
 export const CODIGOS_ERROR = [
   'SIN_SALDO', 'LIMITE', 'PROVEEDOR_CAIDO', 'ENTRADA_INVALIDA', 'RESPUESTA_INVALIDA', 'SIN_CONEXION', 'PAUSADO',
+  'RESPUESTA_LARGA',
 ] as const;
 export const AIErrorCodigoSchema = z.enum(CODIGOS_ERROR);
 export type AIErrorCodigo = z.infer<typeof AIErrorCodigoSchema>;
