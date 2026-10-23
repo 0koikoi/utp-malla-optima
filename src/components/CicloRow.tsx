@@ -14,6 +14,8 @@ import {
   calcularHorasEfectivas,
   LIMITE_CREDITOS_VERANO,
   LIMITE_HORAS_PERIODO,
+  mensajeRecargoHoras,
+  obtenerHorasSinRecargo,
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
 
@@ -76,6 +78,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const totalCreditos = cursosParaCarga.reduce((acc, curso) => acc + curso.creditos, 0);
   const totalHoras = calcularHorasEfectivas(cursosParaCarga, tipoPeriodo);
   const excesoHoras = totalHoras > LIMITE_HORAS_PERIODO;
+  const horasSinRecargo = obtenerHorasSinRecargo(tarifario, disciplinaActiva);
+  const conRecargo = horasSinRecargo !== null && totalHoras > horasSinRecargo;
   const cursosLlevados = cursos.filter(
     (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
   ).length;
@@ -124,6 +128,7 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
         </div>
         {excesoHoras && <span className="tier-hours-warning" title={`La carga supera las ${LIMITE_HORAS_PERIODO} horas recomendadas; se permite planificar.`}><AlertTriangle size={11} /> Más de {LIMITE_HORAS_PERIODO} h</span>}
+        {conRecargo && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
         {!habilitado ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> verano no habilitado</span>
         ) : esPeriodoPasado ? (

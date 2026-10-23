@@ -3,6 +3,7 @@ import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import { crearPeriodoRegular, crearPeriodoVerano, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
 import { cursoBloqueado, ordenarCursos } from '../domain/rules/courseRules';
+import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import {
   notificacionDesdeResultado, notificacionErrorPersistencia,
@@ -47,6 +48,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const resultado = moveCourseUseCase(state.cursos, codigo, periodo, {
       cicloActual: state.cicloActual, periodoIngreso: state.periodoIngreso,
       ciclosExcluidos: state.ciclosExcluidos,
+      horasSinRecargo: obtenerHorasSinRecargo(state.tarifario, state.disciplinaActiva),
     });
     if (!resultado.ok) {
       set({ notificacionMovimiento: notificacionDesdeResultado(curso, periodo, resultado) });
