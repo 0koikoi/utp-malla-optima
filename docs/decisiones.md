@@ -59,8 +59,9 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 - **Contexto:** la API key de DeepSeek no puede ir en el navegador, y el equipo no mantiene un servidor.
 - **Decisión:** una función serverless en `ai-proxy/api/asistente.ts` (handlers web `POST` y `OPTIONS`),
   desplegada como **proyecto de Vercel aparte** con Root Directory `ai-proxy`. Guarda la API key y el prompt;
-  aplica CORS por `ALLOWED_ORIGINS`, límite de 64 KB, Zod y timeout de 30 s. Plan Hobby de Vercel, de uso no
-  comercial **(por verificar: condiciones vigentes del plan)**.
+  aplica CORS por `ALLOWED_ORIGINS`, límite de 64 KB, Zod y timeout de 30 s. Usa el plan Hobby de Vercel:
+  gratis, solo para uso personal no comercial y con funciones de hasta 300 s, así que el timeout de 30 s
+  cabe de sobra (fuente: <https://vercel.com/docs/plans/hobby>, actualizada el 2026-09-14).
 - **Alternativas descartadas:** backend propio; llamar a DeepSeek desde el navegador; usar el SDK de OpenAI
   (se usa `fetch` directo).
 - **Consecuencias:** `ai-proxy/` tiene su propio `package.json` y tests; `contracts.ts` y `mockRespuestas.ts`
@@ -105,8 +106,9 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
     `temperature: 0.3` y `max_tokens: 1200`.
   - La respuesta se valida con Zod; si no es válida, se reintenta una vez y luego se devuelve
     `RESPUESTA_INVALIDA`.
-  - **No** se activan herramientas, búsqueda web ni fetch (tienen cobro aparte). Recarga mínima de US$ 2 más
-    6 % de impuesto **(por verificar en la consola de DeepSeek)**.
+  - **No** se activan herramientas, búsqueda web ni fetch (tienen cobro aparte).
+  - Recarga mínima: US$ 2.00 + 6 % de impuesto (US$ 0.12) = US$ 2.12. El saldo puede tardar de 24 a 72 h en
+    acreditarse (fuente: platform.deepseek.com/top_up, revisado el 2026-10-22).
 - **Alternativas descartadas:** activar herramientas o búsqueda web; respuestas en texto libre.
 - **Consecuencias:** códigos de error propios: `SIN_SALDO` (402), `LIMITE` (429), `PROVEEDOR_CAIDO` (5xx o
   timeout), `ENTRADA_INVALIDA` (400) y `RESPUESTA_INVALIDA`.
@@ -123,7 +125,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
     servicio de IA externo (DeepSeek)…". Sin aceptar, no se envía nada.
   - El proxy solo registra `resultado`, `modo`, `ms` y `mock` (hay test).
   - El historial vive en memoria.
-  - DeepSeek procesa los datos en China **(por verificar en su política vigente)**.
+  - Según la política de privacidad de DeepSeek, los datos se guardan en servidores de la R. P. China; también
+    lo han reportado medios como VentureBeat y TechTarget. Por eso se mantiene el aviso de consentimiento.
 - **Alternativas descartadas:** enviar el plan completo con el nombre del archivo; guardar conversaciones.
 - **Consecuencias:** el asistente no puede usar datos personales; el aviso debe actualizarse si cambia el
   proveedor.
@@ -153,8 +156,9 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
   su commit (p. ej. BUG #5 en `7250035`). El Excel real queda versionado en `tests/fixtures/` por decisión
   del autor.
 - **Alternativas descartadas:** escribir solo tests unitarios nuevos; usar un Excel inventado.
-- **Consecuencias:** el fixture con datos de un alumno queda en el repo **(por verificar: que no contenga
-  datos personales identificables)**.
+- **Consecuencias:** el fixture queda en el repo. Tiene una sola hoja ("Plan de Estudio") con 7 columnas
+  (código, nombre, horas, créditos, tipo, prerrequisito y estado) y no contiene nombre, código de alumno ni
+  DNI; se revisó en el archivo el 2026-10-23.
 
 <a id="d-009"></a>
 ## D-009 · Regla única `prerrequisitoCumplido` (casos a–d)
@@ -237,7 +241,7 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 <a id="d-015"></a>
 ## D-015 · Regla UTP del jalado: ventana según el calendario
 
-- **Fecha:** 2026-10-22 (`dfa139c`; planificador en `8174813`).
+- **Fecha:** 2026-10-22 (`dfa139c`; planificador en `8174813`). Regla confirmada por el autor el 2026-10-23.
 - **Estado:** vigente.
 - **Contexto:** la UTP permite recuperar en el verano inmediato, si existe.
 - **Decisión:**
@@ -250,7 +254,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
     créditos).
   - El what-if del asistente usa la misma función (`ventanaSiJala`, `4201939`).
 - **Alternativas descartadas:** [D-014](#d-014).
-- **Consecuencias:** con ingreso marzo, un curso en el Ciclo 8 tiene ventana [Verano 8, Ciclo 9]. Si el
+- **Consecuencias:** con ingreso marzo, el verano viene después de los ciclos pares, así que I62N en el
+  Ciclo 8 tiene ventana [Verano 8, Ciclo 9]. Si el
   verano de recuperación es opcional u obligatorio está por confirmar (hoy se asume opcional).
 
 <a id="d-016"></a>

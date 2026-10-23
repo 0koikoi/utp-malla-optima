@@ -212,7 +212,7 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 <a id="f-015"></a>
 ### F-015 · El tarifario guardado en IndexedDB tapa los cambios del JSON
 
-- **Fecha:** detectado antes del 2026-10-22 **(por verificar)**; confirmado en el código el 2026-10-23.
+- **Fecha:** 2026-10-22, en el primer diagnóstico; confirmado de nuevo en el código el 2026-10-23.
 - **Síntoma:** si se actualiza `src/data/.../ate.json`, quien ya usó la app sigue viendo el tarifario viejo.
 - **Causa raíz:** `useAppController` solo carga `FinancialConfigurationProvider.load()` si no hay un
   tarifario guardado; `cargarDesdeDB` usa el persistido.

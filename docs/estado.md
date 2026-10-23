@@ -80,8 +80,9 @@ Las URLs reales de Vercel no se registran aquí.
 
 ## Pasos para pasar de mock a real
 
-1. En la consola de DeepSeek: crear la cuenta, recargar saldo (mínimo US$ 2 + 6 % de impuesto,
-   **(por verificar)**) y generar una API key. Opcional: alerta de gasto.
+1. En la consola de DeepSeek: crear la cuenta, recargar saldo en platform.deepseek.com/top_up (mínimo
+   US$ 2.00 + 6 % de impuesto = US$ 2.12; puede tardar de 24 a 72 h en acreditarse) y generar una API key.
+   Opcional: alerta de gasto. Ver [D-005](decisiones.md#d-005).
 2. En el proyecto del proxy: `npx vercel env add DEEPSEEK_API_KEY production`.
 3. Quitar el mock: `npx vercel env rm AI_MOCK production` (o ponerlo en `false`).
 4. Opcional: `DEEPSEEK_MODEL` (por defecto `deepseek-flash`; revisar el nombre vigente).

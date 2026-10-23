@@ -8,6 +8,25 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Resolución de puntos por verificar
+
+- **Qué se hizo:** se completaron en `docs/` los datos que faltaban:
+  - fechas y rama del diagnóstico inicial y de la verificación con el Excel real;
+  - condiciones del plan Hobby de Vercel;
+  - recarga mínima de DeepSeek;
+  - dónde guarda los datos DeepSeek;
+  - contenido del Excel de `tests/fixtures`;
+  - fecha de F-015;
+  - confirmación de la regla de [D-015](decisiones.md#d-015).
+- **Por qué:** quitar las marcas "(por verificar)" que ya tienen fuente. Siguen marcados el detalle de la
+  historia previa, la relación de `main` con `feature/implementacion-ia` y el PR #6, el despliegue del proxy y
+  de la demo, y el origen del `'11'` en `SIN_PRERREQUISITO`.
+- **Rama / PR:** `feat/ia-asistente`.
+- **Commits:** `docs: resolver puntos por verificar` (ver `git log`).
+- **Verificación:** datos aportados por el autor con sus fuentes (citadas en [decisiones.md](decisiones.md)).
+  Contenido del Excel revisado en el archivo: una hoja, columnas A–G, sin datos personales. `pnpm test`,
+  `pnpm lint` y `pnpm build` en verde.
+
 ## 2026-10-23 · Creación de esta documentación
 
 - **Qué se hizo:** carpeta `docs/` (índice con diagrama, bitácora, decisiones, estado, fallos y plantillas),
@@ -39,9 +58,9 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
   `tests/ai/deployConfig.test.ts`; huella sha256 del prompt y snapshots actualizados; capturas locales a 360 px
   y 1440 px (no versionadas); `pnpm verify:base` con los dos builds; el build con `VITE_BASE=/` se sirvió en
   la raíz con `vite preview` (service worker con scope `/`).
-- **Nota:** con la regla del dominio, ingreso **marzo** tiene verano después de los ciclos **pares**, así que
-  un curso en el Ciclo 8 tiene ventana [Verano 8, Ciclo 9], no [Ciclo 9]. Ver
-  [D-015](decisiones.md#d-015).
+- **Nota:** con ingreso **marzo**, el verano viene después de los ciclos **pares**, así que I62N en el Ciclo 8
+  tiene ventana [Verano 8, Ciclo 9]. El autor confirmó que la regla del dominio es correcta
+  ([D-015](decisiones.md#d-015)).
 
 ## 2026-10-23 · Asistente IA en modo mock
 
@@ -135,17 +154,17 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 - **Commits:** `aebf8de`.
 - **Verificación:** el propio test con el fixture real.
 
-## Fecha por verificar (antes del 2026-10-22) · Verificación con el Excel real
+## 2026-10-22 · Verificación con el Excel real
 
 - **Qué se hizo:** se cargó el Excel real de un alumno (72 cursos) y se encontraron fallas en los avisos de
   horas, un bloqueo visual falso con prerrequisitos EN_CURSO y el what-if.
 - **Por qué:** comprobar el comportamiento real antes de construir el asistente.
-- **Rama / PR:** sobre `b/final1` **(por verificar)**.
+- **Rama / PR:** sobre `b/final1`.
 - **Commits:** ninguno (fue una revisión). Sus hallazgos se corrigieron en las entradas del 2026-10-22.
-- **Verificación:** confirmado indirectamente por el test de caracterización (72 cursos, BUG #5) y por los
-  commits de corrección. La fecha exacta y la lista completa de hallazgos están **(por verificar)**.
+- **Verificación:** fecha y rama confirmadas por el autor. Los hallazgos están respaldados por el test de
+  caracterización (72 cursos, BUG #5) y por los commits de corrección.
 
-## Fecha por verificar (antes del 2026-10-22) · Diagnóstico inicial del repo
+## 2026-10-22 · Diagnóstico inicial del repo
 
 - **Qué se hizo:** revisión del estado del repo. La rama de trabajo era `b/final1` (último commit `f982f4c`,
   2026-10-11, "Feat: Los puntos del doc menos PDF, PNG y todo colores"). `feature/implementacion-ia` tenía un
@@ -155,7 +174,8 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 - **Rama / PR:** `b/final1`; `feature/implementacion-ia` (PR #2 hacia `feat/react-migration-zully`, fusionado
   el 2026-09-30; PR #1 hacia `main`, que `gh` muestra fusionado el 2026-10-23).
 - **Commits:** ninguno.
-- **Verificación:** contenido de las ramas confirmado en git. La fecha del diagnóstico está **(por verificar)**.
+- **Verificación:** contenido de las ramas confirmado en git; fecha confirmada por el autor. En este
+  diagnóstico se detectó también [F-015](fallos.md#f-015) (el tarifario guardado tapa el JSON).
 
 ## 2026-09-01 a 2026-10-11 · Historia previa (resumen)
 
