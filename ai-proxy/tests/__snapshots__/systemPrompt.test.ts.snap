@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`prompt del sistema > es exactamente el texto acordado (12 reglas y cierre JSON) 1`] = `"51212c38e2fbd77afa8e9c06f895b9febf07294cf335842ac4b185129e24bb22"`;
