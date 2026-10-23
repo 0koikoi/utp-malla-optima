@@ -1,6 +1,6 @@
 import { formatCredits } from '../utils/formatCredits';
 import type { DragEvent } from 'react';
-import { memo, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
@@ -13,6 +13,7 @@ import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextR
 import { etiquetaPrerrequisito, puedeRetirarCursoRapido } from '../presentation/selectors/plannerCardRules';
 import { AlertTriangle, ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, RotateCcw, X } from 'lucide-react';
 import { JaladoModal } from './JaladoModal';
+import { CourseInfoPopover } from './CourseInfoPopover';
 
 interface Props {
   curso: Curso;
@@ -42,6 +43,25 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
   const [retirando, setRetirando] = useState(false);
   const [confirmarJalado, setConfirmarJalado] = useState(false);
+  // En tarjetas EN_CURSO el (i) abre un menú fijo con la acción "Marcar como jalado".
+  const [menuInfo, setMenuInfo] = useState<{ top: number; left: number } | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const infoBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuInfo) return;
+    const cerrarFuera = (event: MouseEvent) => {
+      const destino = event.target as Node;
+      if (!popoverRef.current?.contains(destino) && !infoBtnRef.current?.contains(destino)) setMenuInfo(null);
+    };
+    const cerrarConEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuInfo(null); };
+    document.addEventListener('mousedown', cerrarFuera);
+    document.addEventListener('keydown', cerrarConEscape);
+    return () => {
+      document.removeEventListener('mousedown', cerrarFuera);
+      document.removeEventListener('keydown', cerrarConEscape);
+    };
+  }, [menuInfo]);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
   // Un jalado en su ciclo original es la excepción: se puede arrastrar a un periodo futuro.
   const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO' ||
@@ -80,13 +100,12 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
     toggleSeleccionMatricula(curso.codigo);
   };
 
-  const mostrarTooltip = (element: HTMLButtonElement) => {
+  const posicionPopover = (element: HTMLButtonElement) => {
     const rect = element.getBoundingClientRect();
-    setTooltip({
-      top: rect.bottom + 7,
-      left: Math.max(8, Math.min(rect.left - 130, window.innerWidth - 292)),
-    });
+    return { top: rect.bottom + 7, left: Math.max(8, Math.min(rect.left - 130, window.innerWidth - 292)) };
   };
+  const mostrarTooltip = (element: HTMLButtonElement) => setTooltip(posicionPopover(element));
+  const esEnCurso = curso.estado === 'EN_CURSO';
 
   const clases = [
     'curso-card',
@@ -135,13 +154,22 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
               <ArrowRight size={15} aria-hidden="true" />
             </span>
             <button
+              ref={infoBtnRef}
               type="button"
               className="curso-info-btn"
+              aria-haspopup={esEnCurso ? 'menu' : undefined}
+              aria-expanded={esEnCurso ? Boolean(menuInfo) : undefined}
               onMouseEnter={(event) => mostrarTooltip(event.currentTarget)}
               onMouseLeave={() => setTooltip(null)}
               onFocus={(event) => mostrarTooltip(event.currentTarget)}
               onBlur={() => setTooltip(null)}
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!esEnCurso) return;
+                const posicion = posicionPopover(event.currentTarget);
+                setTooltip(null);
+                setMenuInfo((actual) => actual ? null : posicion);
+              }}
               aria-label={`Ver requisitos de ${curso.nombre}`}
               title={`Información de ${curso.nombre}`}
             >
@@ -170,14 +198,7 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
           </div>
         )}
         {curso.estado === 'EN_CURSO' && (
-          <div className="curso-estado-row">
-            <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
-            <button type="button" className="curso-jalar-btn" draggable={false}
-              onClick={(event) => { event.stopPropagation(); setConfirmarJalado(true); }}
-              title={`Marcar ${curso.nombre} como jalado`}>
-              <RotateCcw size={10} aria-hidden="true" /> Marcar como jalado
-            </button>
-          </div>
+          <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
         )}
         {curso.jalado && (
           <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /> Jalado
@@ -195,33 +216,13 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
       </div>
       {confirmarJalado && <JaladoModal curso={curso} onClose={() => setConfirmarJalado(false)} />}
 
-      {tooltip &&
-        createPortal(
-          <div
-            className="curso-tooltip"
-            style={{ position: 'fixed', top: tooltip.top, left: tooltip.left }}
-          >
-            <div className="tooltip-course-name">{curso.nombre}</div>
-            <section>
-              <b><LockKeyhole size={12} /> Prerrequisitos</b>
-              {curso.prerrequisitos.length > 0 ? (
-                requisitos.map((texto, index) => <div key={curso.prerrequisitos[index]}>{texto}</div>)
-              ) : (
-                <div>Sin prerrequisitos</div>
-              )}
-            </section>
-            <hr />
-            <section className="tooltip-habilita">
-              <b>Habilita</b>
-              {habilitaA.length > 0 ? (
-                habilitaA.map((item, index) => <div key={`${item}-${index}`}>{item}</div>)
-              ) : (
-                <div>No habilita otro curso de la malla.</div>
-              )}
-            </section>
-          </div>,
-          document.body
-        )}
+      {(menuInfo ?? tooltip) && createPortal(
+        <CourseInfoPopover ref={popoverRef} curso={curso} requisitos={requisitos} habilitaA={habilitaA}
+          posicion={(menuInfo ?? tooltip)!}
+          onMarcarJalado={menuInfo && esEnCurso
+            ? () => { setMenuInfo(null); setConfirmarJalado(true); } : undefined} />,
+        document.body
+      )}
     </>
   );
 };

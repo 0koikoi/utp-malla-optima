@@ -493,9 +493,9 @@
 .ctag.ctag-verano { color: var(--amber-dark); background: var(--amber-tint); border: 1px solid var(--amber-border); }
 
 /* ── Cursos jalados e inválidos ── */
-/* El botón va arriba del chip: la última línea la comparten el chip y los iconos absolutos. */
-.curso-estado-row { display: flex; flex-direction: column-reverse; align-items: flex-start; }
-.curso-jalar-btn { margin-top: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--rose-border); border-radius: 4px; background: transparent; color: var(--rose-primary); font-size: 0.55rem; font-weight: 750; cursor: pointer; }
+/* Menú fijo del (i) en tarjetas EN_CURSO: recibe clics a diferencia del tooltip. */
+.curso-tooltip.curso-tooltip-menu { pointer-events: auto; }
+.curso-jalar-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border: 1px solid var(--rose-border); border-radius: 5px; background: transparent; color: var(--rose-border); font-size: 0.72rem; font-weight: 750; cursor: pointer; }
 .curso-jalar-btn:hover { background: var(--rose-subtle, rgba(239, 35, 60, 0.08)); }
 .curso-card.curso-jalado { border-left-color: var(--rose-primary); }
 .curso-estado-chip.jalado-chip { color: var(--rose-primary); }

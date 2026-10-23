@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { Curso } from '../../src/types/academic';
 import { CourseCard } from '../../src/components/CourseCard';
+import { CourseInfoPopover } from '../../src/components/CourseInfoPopover';
 import { useAcademicStore } from '../../src/store/useAcademicStore';
 
 const curso = (codigo: string, cambios: Partial<Curso> = {}): Curso => ({
@@ -18,11 +19,26 @@ const renderizar = (objetivo: Curso, cursos: Curso[]) => {
 };
 
 describe('CourseCard - jalados', () => {
-  it('un curso EN_CURSO ofrece la acción "Marcar como jalado" y sigue fijo', () => {
+  it('un curso EN_CURSO sigue fijo y su (i) abre un menú; la acción no está en la tarjeta visible', () => {
     const enCurso = curso('E', { estado: 'EN_CURSO' });
     const html = renderizar(enCurso, [enCurso]);
-    expect(html).toContain('Marcar como jalado');
-    expect(html).toContain('draggable="false"');
+    expect(html).not.toContain('Marcar como jalado');
+    expect(html).toContain('aria-haspopup="menu"');
+    expect(html).toMatch(/^<div draggable="false"/);
+  });
+
+  it('el menú del (i) muestra "Marcar como jalado" solo cuando recibe la acción', () => {
+    const enCurso = curso('E', { estado: 'EN_CURSO' });
+    const props = { curso: enCurso, requisitos: [], habilitaA: [], posicion: { top: 0, left: 0 } };
+    const menu = renderToStaticMarkup(<CourseInfoPopover {...props} onMarcarJalado={() => undefined} />);
+    expect(menu).toContain('role="menu"');
+    expect(menu).toContain('Marcar como jalado');
+    expect(renderToStaticMarkup(<CourseInfoPopover {...props} />)).not.toContain('Marcar como jalado');
+  });
+
+  it('una tarjeta que no está EN_CURSO no abre menú', () => {
+    const pendiente = curso('P', { ciclo: 8 });
+    expect(renderizar(pendiente, [pendiente])).not.toContain('aria-haspopup');
   });
 
   it('un jalado en su ciclo muestra la etiqueta "Jalado" y se puede arrastrar', () => {
