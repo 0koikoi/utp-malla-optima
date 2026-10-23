@@ -366,6 +366,7 @@ body.ia-con-asistente #panel-planificador {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 .ia-seccion .ia-codigo { background: var(--ia-nivel-bg); color: var(--ia-nivel-t); }
 

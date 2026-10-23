@@ -33,7 +33,7 @@ const seccionFinanciera = (contexto: AIContext): AISeccion | null => {
   const nivel: Nivel = diferencia !== null && diferencia < 0 ? 'riesgo'
     : contexto.proximoPeriodo.horasExceso > 0 ? 'atencion' : 'ok';
   const partes = [
-    `En el ${contexto.proximoPeriodo.etiqueta}, con ${elegido.nombre}, pagarías ${soles(elegido.total)}: matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
+    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
   ];
   if (mejor.id !== elegido.id) partes.push(`La opción más barata es ${mejor.nombre}: ${soles(mejor.total)}.`);
   if (contexto.proximoPeriodo.horasExceso > 0 && financiero.costoHoraAdicional !== null) {
