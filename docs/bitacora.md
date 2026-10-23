@@ -8,6 +8,34 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Asistente IA real: prompt nuevo, control de gasto, evaluación y migración a Vercel
+
+- **Qué se hizo:**
+  - Snapshots estables en Windows: `.gitattributes` con LF y renormalización ([F-026](fallos.md#f-026)).
+  - Prompt nuevo del asesor: persona, glosario estudiantil, jerga como espejo, bika y trika con la Ley 30220,
+    15 reglas y ejemplos de tono ficticios ([D-022](decisiones.md#d-022) a [D-024](decisiones.md#d-024)).
+  - Control de gasto en el proxy: origen, `AI_PAUSADO`, límites por IP y por día (memoria o Upstash),
+    `max_tokens` por modo y previews siempre en mock ([D-025](decisiones.md#d-025)).
+  - Registro de consumo por llamada real (tokens y costo estimado), sin contenido ([D-026](decisiones.md#d-026)).
+  - Mocks con el tono nuevo y las mismas reglas.
+  - Evaluación `pnpm evaluar` con 38 casos, chequeos por severidad y reporte en `docs/evaluaciones/`
+    ([D-027](decisiones.md#d-027)).
+  - Migración a Vercel: base `/`, sin GitHub Pages, `vercel.json` con `ignoreCommand` y `VITE_AI_MOCK` para las
+    previews ([D-028](decisiones.md#d-028)).
+  - Registro de que `main` se forzó a `b/final1` ([D-029](decisiones.md#d-029)).
+- **Por qué:** ya hay claves reales de DeepSeek: el asistente pasa de mock a real con el gasto acotado.
+- **Rama / PR:** `feat/ia-real`, desde `origin/main` (sin PR, sin push).
+- **Commits:** `2c21610` (0), `d8dbf3b` (1), `806d84f` (2), `1dca5b5` (3), `ba827fa` (4), `0601e9a` (5),
+  `1a47203` (6) y este de docs (7).
+- **Verificación:**
+  - `pnpm test`, `pnpm lint` y `pnpm build` en verde después de cada commit; en `ai-proxy/`, `pnpm test` y
+    `pnpm typecheck`.
+  - `pnpm test` dos veces seguidas deja `git status` limpio.
+  - `pnpm verify:base`: base `/` y subruta; el service worker solo tiene la ruta de navegación.
+  - `pnpm evaluar --simulado --repeticiones 1`: 38/38 con el fetch simulado.
+  - La evaluación contra la API real **no se corrió**: `ai-proxy/.env.local` todavía no existe.
+  - `git check-ignore` confirma que `ai-proxy/.env.local` está ignorado (`ai-proxy/.gitignore`, `.env*`).
+
 ## 2026-10-23 · Resolución de puntos por verificar
 
 - **Qué se hizo:** se completaron en `docs/` los datos que faltaban:

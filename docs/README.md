@@ -4,7 +4,7 @@
 
 MallaU es un planificador curricular y presupuestario para estudiantes de pregrado de la UTP (sede Ate).
 Funciona en el navegador y guarda los datos en el propio dispositivo. Tiene un asistente académico IA
-que, por ahora, responde en modo simulado (mock).
+que responde con DeepSeek a través de un proxy con control de gasto (en las previews, con mocks).
 
 ## Índice
 
@@ -15,9 +15,11 @@ que, por ahora, responde en modo simulado (mock).
 | [bitacora.md](bitacora.md) | Registro cronológico del trabajo (del más reciente al más antiguo), con commits y verificación. |
 | [fallos.md](fallos.md) | Fallos con ID (F-001…): síntoma, causa raíz, estado, commit y test. |
 | [plantillas.md](plantillas.md) | Plantillas para copiar una entrada de bitácora, una decisión o un fallo. |
+| [evaluaciones/](evaluaciones/README.md) | Reportes de `pnpm evaluar` contra la API real (uno por corrida). |
 
-Otros documentos del repo: [`README.md`](../README.md) (asistente IA y demo en Vercel) y
-[`ai-proxy/README.md`](../ai-proxy/README.md) (proxy, variables y paso de mock a real).
+Otros documentos del repo: [`README.md`](../README.md) (asistente IA, despliegue en Vercel y variables por
+entorno) y [`ai-proxy/README.md`](../ai-proxy/README.md) (proxy, control de gasto, evaluación y paso de mock a
+real).
 
 ## Arquitectura
 
@@ -31,21 +33,22 @@ flowchart LR
     UI <--> LS
   end
 
-  GHP["GitHub Pages<br/>/utp-malla-optima/ (rama dev)"]
-  DEMO["Demo en Vercel<br/>VITE_BASE=/"]
+  WEB["Web en Vercel<br/>base / (rama main)"]
   PROXY["Proxy en Vercel<br/>ai-proxy/api/asistente.ts<br/>(API key y prompt solo aquí)"]
+  LIM[("Upstash Redis (opcional)<br/>límites por IP y por día")]
   DS["API de DeepSeek<br/>/chat/completions"]
 
-  GHP -- "sirve la web" --> UI
-  DEMO -- "sirve la web" --> UI
+  WEB -- "sirve la web" --> UI
   UI -- "POST contexto anónimo + mensajes" --> PROXY
-  PROXY -- "modo real" --> DS
-  PROXY -. "modo mock (sin clave o AI_MOCK=true)" .-> PROXY
+  PROXY -- "cuenta la llamada" --> LIM
+  PROXY -- "producción" --> DS
+  PROXY -. "previews o AI_MOCK=true: mock" .-> PROXY
 ```
 
 - Todo lo numérico y lógico (prerrequisitos, costos, carga, what-if, ruta) se calcula en el navegador.
   El asistente solo recibe ese contexto ya calculado y lo explica ([D-001](decisiones.md#d-001)).
 - No hay backend propio: el único servidor es la función serverless del proxy ([D-002](decisiones.md#d-002)).
+  Se despliega solo en Vercel ([D-028](decisiones.md#d-028)) y controla el gasto ([D-025](decisiones.md#d-025)).
 - Los datos del estudiante viven en IndexedDB del dispositivo; al proxy solo va un contexto anónimo
   ([D-006](decisiones.md#d-006)).
 

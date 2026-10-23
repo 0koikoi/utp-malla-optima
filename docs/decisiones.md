@@ -13,11 +13,11 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | --- | --- | --- |
 | [D-001](#d-001) | Cálculos deterministas en código; la IA solo explica y aconseja | vigente |
 | [D-002](#d-002) | Sin backend propio: proxy serverless en Vercel, proyecto aparte | vigente |
-| [D-003](#d-003) | El frontend sigue en GitHub Pages y se despliega solo desde `dev` | vigente |
-| [D-004](#d-004) | La demo es un segundo proyecto de Vercel con base configurable | vigente |
+| [D-003](#d-003) | El frontend sigue en GitHub Pages y se despliega solo desde `dev` | reemplazada |
+| [D-004](#d-004) | La demo es un segundo proyecto de Vercel con base configurable | reemplazada |
 | [D-005](#d-005) | DeepSeek: `deepseek-flash`, formato OpenAI, JSON validado con Zod, sin herramientas | vigente |
 | [D-006](#d-006) | Privacidad: contexto anónimo, consentimiento y logs sin contenido | vigente |
-| [D-007](#d-007) | Modo mock hasta que el equipo recargue saldo | vigente |
+| [D-007](#d-007) | Modo mock hasta que el equipo recargue saldo | reemplazada |
 | [D-008](#d-008) | Tests de caracterización antes de tocar lógica; Excel real en `tests/fixtures` | vigente |
 | [D-009](#d-009) | Regla única `prerrequisitoCumplido` (casos a–d) | vigente |
 | [D-010](#d-010) | No se cotizan periodos bloqueados | vigente |
@@ -32,6 +32,15 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | [D-019](#d-019) | Paleta del asistente para modo claro y oscuro | vigente |
 | [D-020](#d-020) | PWA responsive con safe areas y botón atrás de Android | vigente |
 | [D-021](#d-021) | Flujo de Git: PRs apilados, merge commit y sin coautoría de Claude | vigente |
+| [D-022](#d-022) | Persona del asesor IA y glosario estudiantil en el prompt | vigente |
+| [D-023](#d-023) | La jerga es un espejo | vigente |
+| [D-024](#d-024) | Bika y trika: regla con la Ley Universitaria 30220, art. 102 | vigente |
+| [D-025](#d-025) | Control de gasto en el proxy: origen, interruptor, límites, tokens y previews en mock | vigente |
+| [D-026](#d-026) | Registro de consumo por llamada real, sin contenido | vigente |
+| [D-027](#d-027) | Evaluación manual contra la API real (`pnpm evaluar`) | vigente |
+| [D-028](#d-028) | Despliegue solo en Vercel: dos proyectos, rama de producción `main` | vigente |
+| [D-029](#d-029) | `main` forzado a `b/final1`, con respaldo en `respaldo/main-antes-de-force` | vigente |
+| [D-030](#d-030) | Finales de línea LF en el repo (`.gitattributes`) | vigente |
 
 ---
 
@@ -72,7 +81,7 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 
 - **Fecha:** confirmado en `.github/workflows/deploy.yml` (`on: push: branches: [dev]`); `VITE_AI_ENDPOINT`
   se agregó el 2026-10-23 (`66c050f`).
-- **Estado:** vigente.
+- **Estado:** reemplazada por [D-028](#d-028) (el workflow se eliminó en `feat/ia-real`).
 - **Contexto:** la web ya se publicaba en GitHub Pages bajo `/utp-malla-optima/`.
 - **Decisión:** se mantiene. El build recibe `VITE_AI_ENDPOINT` desde `vars.VITE_AI_ENDPOINT` (variable de
   Actions, no secreto: es una URL pública).
@@ -83,7 +92,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 ## D-004 · La demo es un segundo proyecto de Vercel con base configurable
 
 - **Fecha:** 2026-10-23 (`59fb7a7`, `644559c`).
-- **Estado:** vigente.
+- **Estado:** reemplazada por [D-028](#d-028): la web de Vercel ya no es una demo sino el único despliegue, y la
+  base por defecto pasó a `/`.
 - **Contexto:** la demo se sirve en la raíz de un dominio de Vercel, y GitHub Pages en `/utp-malla-optima/`.
 - **Decisión:** `vite.config.ts` usa `process.env.VITE_BASE ?? '/utp-malla-optima/'`; el manifest de la PWA
   fija `start_url` y `scope` en esa base. La demo usa `VITE_BASE=/` (Root Directory: raíz, Vite,
@@ -110,6 +120,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
   - Recarga mínima: US$ 2.00 + 6 % de impuesto (US$ 0.12) = US$ 2.12. El saldo puede tardar de 24 a 72 h en
     acreditarse (fuente: platform.deepseek.com/top_up, revisado el 2026-10-22).
 - **Alternativas descartadas:** activar herramientas o búsqueda web; respuestas en texto libre.
+- **Actualización:** `max_tokens` pasó a 1200 en análisis y 600 en chat, y se agregó el código `PAUSADO`
+  ([D-025](#d-025)). El resto sigue vigente.
 - **Consecuencias:** códigos de error propios: `SIN_SALDO` (402), `LIMITE` (429), `PROVEEDOR_CAIDO` (5xx o
   timeout), `ENTRADA_INVALIDA` (400) y `RESPUESTA_INVALIDA`.
 
@@ -127,6 +139,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
   - El historial vive en memoria.
   - Según la política de privacidad de DeepSeek, los datos se guardan en servidores de la R. P. China; también
     lo han reportado medios como VentureBeat y TechTarget. Por eso se mantiene el aviso de consentimiento.
+- **Actualización:** el registro del proxy ahora agrega tokens y costo estimado ([D-026](#d-026)); sigue sin
+  contenido.
 - **Alternativas descartadas:** enviar el plan completo con el nombre del archivo; guardar conversaciones.
 - **Consecuencias:** el asistente no puede usar datos personales; el aviso debe actualizarse si cambia el
   proveedor.
@@ -135,7 +149,7 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 ## D-007 · Modo mock hasta que el equipo recargue saldo
 
 - **Fecha:** 2026-10-23 (`07cd14b`).
-- **Estado:** vigente.
+- **Estado:** reemplazada por [D-025](#d-025): ya hay claves reales; fuera de producción el mock va siempre.
 - **Contexto:** el equipo no tiene clave de DeepSeek por ahora.
 - **Decisión:** sin `DEEPSEEK_API_KEY` el proxy responde con mocks armados con los datos reales del contexto
   y espera unos 800 ms. En producción, sin clave, el mock solo se activa con `AI_MOCK=true`.
@@ -333,3 +347,154 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
   - No se hace push sin pedirlo.
 - **Alternativas descartadas:** un único PR grande; squash.
 - **Consecuencias:** cada PR se revisa por separado y conserva su historia.
+
+<a id="d-022"></a>
+## D-022 · Persona del asesor IA y glosario estudiantil en el prompt
+
+- **Fecha:** 2026-10-23 (`d8dbf3b`).
+- **Estado:** vigente.
+- **Contexto:** el primer prompt sonaba neutro y no entendía cómo escriben los alumnos ("jalé", "bika",
+  "tranca", "full chamba").
+- **Decisión:**
+  - El asistente es "el asesor académico IA de MallaU": un compañero de últimos ciclos, directo, motivador y
+    cercano, que tutea. Nunca dice que es una persona, un profesor ni personal de la UTP.
+  - El prompt trae un glosario estudiantil (jalar, bika, trika, tranca/yuca, hueco, cachimbo, chamba, matri,
+    cruce, profe), 15 reglas y 3 ejemplos de tono con datos ficticios.
+  - El texto es **estático**: un prefijo idéntico en cada llamada aprovecha la caché de DeepSeek, que cobra
+    mucho menos.
+- **Alternativas descartadas:** interpolar datos en el prompt (rompe la caché); ejemplos con cursos reales
+  (un test verifica que el prompt no tiene códigos del fixture).
+- **Consecuencias:** un test fija la huella sha256 del prompt. Los mocks siguen las mismas reglas
+  ([`mockRespuestas.ts`](../src/application/ai/mockRespuestas.ts)).
+
+<a id="d-023"></a>
+## D-023 · La jerga es un espejo
+
+- **Fecha:** 2026-10-23 (`d8dbf3b`, `ba827fa`).
+- **Estado:** vigente.
+- **Contexto:** la jerga acerca, pero con un alumno formal suena fuera de lugar, y junto a un monto o una regla
+  le quita seriedad.
+- **Decisión:** el asistente usa jerga solo si el alumno la usó primero, con moderación. Si el alumno escribe
+  formal, responde sin jerga. Nunca usa jerga al dar montos, reglas o riesgos.
+- **Alternativas descartadas:** jerga siempre; nunca jerga.
+- **Consecuencias:** la evaluación ([D-027](#d-027)) marca como MAYOR la jerga ante un alumno formal y la jerga
+  en la misma frase que un monto. "jalado" cuenta como jerga solo ante un alumno formal, porque también es el
+  término de MallaU.
+
+<a id="d-024"></a>
+## D-024 · Bika y trika: regla con la Ley Universitaria 30220, art. 102
+
+- **Fecha:** 2026-10-23 (`d8dbf3b`).
+- **Estado:** vigente.
+- **Contexto:** desaprobar varias veces el mismo curso tiene consecuencias, y MallaU no guarda el número de
+  intentos.
+- **Decisión:**
+  - El número de intentos se toma de lo que dice el alumno; nunca se asume.
+  - Bika (2 veces): el próximo intento es clave, porque según la Ley Universitaria 30220 (art. 102) desaprobar
+    la misma materia por tercera vez lleva a una separación temporal de un año. Recomendar priorizar el curso
+    en su ventana, llevar menos carga y pedir tutoría.
+  - Trika (3 veces): con empatía, separación temporal de un año según la ley (una cuarta desaprobación lleva
+    al retiro definitivo); la UTP puede tener reglas propias, así que hablar con el tutor o con Servicios
+    Académicos. No se inventan detalles del reglamento de la UTP.
+- **Alternativas descartadas:** guardar intentos en MallaU; citar un reglamento de la UTP que no está en el
+  repo.
+- **Consecuencias:** cómo aplica la UTP el art. 102 está **(por verificar)** con la universidad; por eso la
+  respuesta deriva al tutor o a Servicios Académicos.
+
+<a id="d-025"></a>
+## D-025 · Control de gasto en el proxy: origen, interruptor, límites, tokens y previews en mock
+
+- **Fecha:** 2026-10-23 (`806d84f`). Reemplaza a [D-007](#d-007).
+- **Estado:** vigente.
+- **Contexto:** ya hay claves reales de DeepSeek y cada llamada cuesta.
+- **Decisión:**
+  - Origen: sin un `Origin` de `ALLOWED_ORIGINS`, 403 sin leer el cuerpo ni llamar a DeepSeek.
+  - Interruptor `AI_PAUSADO=true`: responde `PAUSADO` (503). El frontend muestra "El asistente está en pausa por
+    mantenimiento…", también para `SIN_SALDO`: al alumno nunca se le dice que se acabó el saldo.
+  - Límites (solo llamadas reales): `AI_LIMITE_IP_HORA` (15) por IP por hora y `AI_LIMITE_DIARIO` (200) por día
+    de Lima. IP de `x-forwarded-for` (primer valor) o `x-real-ip`, guardada solo como sha256 con `AI_SALT`.
+  - `RateLimiter` en memoria (best effort, por instancia) o Upstash Redis por su API REST (INCR + EXPIRE), si
+    hay `UPSTASH_REDIS_REST_*` o `KV_REST_API_*`. Si Upstash falla, sigue en memoria.
+  - Al superar un límite: `LIMITE` (429) con mensaje y `reintentarEn`; el frontend muestra la hora aproximada.
+  - `max_tokens`: 1200 en análisis y 600 en chat.
+  - Previews: si `VERCEL_ENV` no es `production`, el proxy usa siempre el mock, aunque exista la clave. La web
+    en preview usa `VITE_AI_MOCK=true` ([D-028](#d-028)).
+- **Alternativas descartadas:** dependencias de rate limit (`@upstash/ratelimit`); dejar pasar todo si Upstash
+  falla; avisar al alumno que no hay saldo.
+- **Consecuencias:** sin Upstash, cada instancia cuenta por su cuenta (el límite real puede ser mayor).
+  `AI_SALT` debe definirse en producción.
+
+<a id="d-026"></a>
+## D-026 · Registro de consumo por llamada real, sin contenido
+
+- **Fecha:** 2026-10-23 (`1dca5b5`). Actualiza el punto de logs de [D-006](#d-006).
+- **Estado:** vigente.
+- **Contexto:** hace falta saber cuánto cuesta cada consulta sin guardar lo que escribe el alumno.
+- **Decisión:** una línea JSON por petición (`console.log`) con `modo`, `codigo`, `duracion_ms` y `mock`. En las
+  llamadas reales agrega `modelo`, `intentos`, `prompt_tokens`, `prompt_cache_hit_tokens`,
+  `prompt_cache_miss_tokens`, `completion_tokens`, `tarifa` y `costo_usd`. Precios de deepseek-flash en
+  `ai-proxy/src/consumo.ts`, dados por el autor el 2026-10-23: US$ 0.15/M de entrada sin caché, US$ 0.003/M con
+  caché y US$ 0.60/M de salida en horario normal; el doble en horario pico.
+- **Alternativas descartadas:** registrar el contexto o los mensajes; registrar la IP.
+- **Consecuencias:** la franja del horario pico está **(por verificar)**: se configura con `DEEPSEEK_PICO_UTC`;
+  sin ella, el costo se estima con la tarifa normal.
+
+<a id="d-027"></a>
+## D-027 · Evaluación manual contra la API real (`pnpm evaluar`)
+
+- **Fecha:** 2026-10-23 (`0601e9a`).
+- **Estado:** vigente.
+- **Contexto:** los tests usan `fetch` simulado; hay que medir cómo responde el modelo real con el prompt nuevo.
+- **Decisión:** `ai-proxy/scripts/evaluar.ts` (Node 24, sin dependencias) usa la misma `llamarDeepSeek` que
+  producción con 38 casos agrupados por tipo de fallo, 3 repeticiones por defecto y chequeos CRÍTICO / MAYOR /
+  MENOR. Un caso pasa solo si pasan todas sus repeticiones. Tope de gasto `EVAL_MAX_USD` (1.00). Reporte en
+  `docs/evaluaciones/` y salida 1 si hay algún CRÍTICO. `--simulado` recorre todo sin gastar.
+- **Alternativas descartadas:** correrla en CI (gasta saldo en cada push); un framework de evaluación externo.
+- **Consecuencias:** si el reporte muestra fallos, el prompt no se cambia sin revisarlo antes con el autor.
+  Los fixtures se generan con `buildAIContext` y un test falla si dejan de coincidir.
+
+<a id="d-028"></a>
+## D-028 · Despliegue solo en Vercel: dos proyectos, rama de producción `main`
+
+- **Fecha:** 2026-10-23 (`1a47203`). Reemplaza a [D-003](#d-003) y [D-004](#d-004).
+- **Estado:** vigente.
+- **Contexto:** se deja GitHub Pages; la web y el proxy ya iban a vivir en Vercel.
+- **Decisión:**
+  - Dos proyectos de Vercel conectados al repo, con rama de producción `main`: la web (raíz) y el proxy
+    (Root Directory `ai-proxy`).
+  - `vite.config.ts` usa la base `/` por defecto; `VITE_BASE` queda opcional.
+  - Se eliminan `.github/workflows/deploy.yml` y la dependencia `gh-pages`.
+  - `ignoreCommand` en `vercel.json` (ignora `ai-proxy/` y `docs/`) y en `ai-proxy/vercel.json` (solo
+    `ai-proxy/`).
+  - Las previews de la web usan `VITE_AI_MOCK=true` y nunca llaman al proxy real.
+- **Alternativas descartadas:** mantener GitHub Pages en paralelo.
+- **Consecuencias:** `pnpm verify:base` comprueba la base `/`, una subruta y que el service worker solo tenga la
+  ruta de navegación (no cachea el proxy). La creación de los proyectos en Vercel está **(por verificar)**: no
+  consta en el repo.
+
+<a id="d-029"></a>
+## D-029 · `main` forzado a `b/final1`, con respaldo en `respaldo/main-antes-de-force`
+
+- **Fecha:** 2026-10-23. Confirmado en git: `origin/main` y `origin/b/final1` apuntan a `9cbfd8e` (merge del
+  PR #10); el tag `respaldo/main-antes-de-force` apunta a `90962be` (merge del PR #1 en `main`).
+- **Estado:** vigente.
+- **Contexto:** `main` tenía la arquitectura mock de `feature/implementacion-ia` (PR #1) y el trabajo nuevo se
+  integró en `b/final1` (PRs #7, #9, #10 y #11, fusionados el 2026-10-23).
+- **Decisión:** `main` se igualó a `b/final1` con un push forzado. El estado anterior queda en el tag
+  `respaldo/main-antes-de-force`. El PR #6 (`dev` → `main`) quedó cerrado sin fusionar.
+- **Alternativas descartadas:** **(por verificar)**: no constan en el repo.
+- **Consecuencias:** las ramas nuevas salen de `origin/main` (p. ej. `feat/ia-real`). La hora exacta del push
+  forzado y quién lo hizo están **(por verificar)**: no constan en el repo.
+
+<a id="d-030"></a>
+## D-030 · Finales de línea LF en el repo (`.gitattributes`)
+
+- **Fecha:** 2026-10-23 (`2c21610`).
+- **Estado:** vigente.
+- **Contexto:** con `core.autocrlf=true`, los snapshots salían con CRLF y Vitest los reescribía con LF
+  ([F-026](fallos.md#f-026)).
+- **Decisión:** `.gitattributes` con `* text=auto eol=lf` (y binarios explícitos: `xlsx`, `png`, `jpg`, `ico`,
+  `woff2`); repo renormalizado.
+- **Alternativas descartadas:** pedir a cada uno que cambie `core.autocrlf`.
+- **Consecuencias:** correr `pnpm test` dos veces deja `git status` limpio en Windows. Un test verifica el
+  `.gitattributes` y que los snapshots no tengan CRLF.

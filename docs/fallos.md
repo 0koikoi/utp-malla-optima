@@ -2,7 +2,7 @@
 
 # Fallos
 
-Cada fallo tiene un ID estable (F-001…). Estados: **corregido**, **pendiente**, **no priorizado**.
+Cada fallo tiene un ID estable (F-001…). Estados: **corregido**, **pendiente**, **no priorizado**, **no aplicable**.
 Hashes confirmados con `git log`; lo que no se pudo confirmar está marcado **(por verificar)**.
 Plantilla: [plantillas.md](plantillas.md#fallo).
 
@@ -33,8 +33,9 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 | [F-021](#f-021) | Descuento bancario sobre el recargo por horas, por confirmar | pendiente |
 | [F-022](#f-022) | En el celular, un toast tapa el botón del asistente | no priorizado |
 | [F-023](#f-023) | Hover oscuro `#F43F5E` con blanco: 3.6:1 | no priorizado |
-| [F-024](#f-024) | No hay etiqueta visible de respuestas simuladas | no priorizado |
+| [F-024](#f-024) | No hay etiqueta visible de respuestas simuladas | no aplicable |
 | [F-025](#f-025) | El tooltip "Preguntas rápidas" queda fijo sobre los mensajes | no priorizado |
+| [F-026](#f-026) | Los snapshots quedaban modificados al correr los tests en Windows | corregido |
 
 ---
 
@@ -207,6 +208,21 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Tests:** `tests/ai/whatIfVentana.test.ts`, `ai-proxy/tests/handler.test.ts`, huella del prompt en
   `ai-proxy/tests/systemPrompt.test.ts`.
 
+<a id="f-026"></a>
+### F-026 · Los snapshots quedaban modificados al correr los tests en Windows
+
+- **Fecha:** 2026-10-23
+- **Síntoma:** después de `pnpm test`, `git status` mostraba modificados
+  `ai-proxy/tests/__snapshots__/systemPrompt.test.ts.snap` y `tests/ai/__snapshots__/buildAIContext.test.ts.snap`,
+  sin cambios de contenido (`git diff` vacío).
+- **Causa raíz:** finales de línea. Con `core.autocrlf=true` y sin `.gitattributes`, Git sacaba los `.snap` con
+  CRLF y Vitest los reescribía con LF. No había fechas, rutas ni orden de claves variable en los snapshots.
+- **Archivo:** `.gitattributes` (nuevo).
+- **Estado:** corregido ([D-030](decisiones.md#d-030)): `* text=auto eol=lf` y renormalización. Correr `pnpm test`
+  dos veces seguidas deja `git status` limpio.
+- **Commit:** `2c21610`.
+- **Test:** `tests/repo/finalesDeLinea.test.ts`.
+
 ## Pendientes
 
 <a id="f-015"></a>
@@ -315,7 +331,10 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
   `MockAIClient` local, la cabecera dice "En línea · demo".
 - **Causa raíz:** el cliente HTTP no sabe si el proxy respondió en mock.
 - **Archivo:** `src/infrastructure/ai/HttpAIClient.ts`, `ai-proxy/src/handler.ts`.
-- **Estado:** no priorizado. **Commit:** —. **Test:** —.
+- **Estado:** no aplicable desde [D-028](decisiones.md#d-028) (2026-10-23): ya no hay una demo con el proxy en
+  mock. En producción el proxy llama a DeepSeek, y las previews de la web usan `VITE_AI_MOCK=true`, que activa
+  `MockAIClient` y muestra "En línea · demo". El mock del proxy solo queda para `AI_MOCK=true` o sus previews,
+  que nadie usa desde la web. **Commit:** `1a47203`. **Test:** `tests/ai/httpAIClient.test.ts` (`VITE_AI_MOCK`).
 
 <a id="f-025"></a>
 ### F-025 · El tooltip "Preguntas rápidas" queda fijo sobre los mensajes
