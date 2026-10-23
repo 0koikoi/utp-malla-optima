@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { exportPlanPNG } from '../services/exportPlanPNG';
 import { obtenerCiclosDisponibles, obtenerSiguienteCiclo } from '../domain/rules/cycleRules';
+import { esJaladoSinReplanificar } from '../domain/rules/courseRules';
 import { FinancialConfigurationProvider } from '../infrastructure/configuration/FinancialConfigurationProvider';
 import { useTheme } from './useTheme';
 import { useTutorialState } from './useTutorialState';
@@ -48,7 +49,8 @@ export function useAppController() {
   const mostrarConfiguracion = !mostrarAyuda && (modalContexto || (sinContexto && tutorialCompletado));
   const pendientesBanco = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'banco');
   const llevados = cursos.filter((curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO').length;
-  const planificados = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo').length;
+  const planificados = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
+    !esJaladoSinReplanificar(curso, cicloActual)).length;
   const creditosElectivos = cursos.filter((curso) => curso.tipo === 'ELECTIVO' &&
     (curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO' || curso.ubicacion === 'periodo'))
     .reduce((suma, curso) => suma + curso.creditos, 0);
