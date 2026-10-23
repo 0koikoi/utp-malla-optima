@@ -19,6 +19,8 @@ export const explicarPlan = (explicacion: ExplicacionPlan): string => {
       return `Se eligió un solo electivo: ${explicacion.curso.nombre} (${explicacion.curso.horasSemanales} h, ${formatCredits(explicacion.curso.creditos)} cr). Se selecciona por menos horas y, en empate, más créditos. Se coloca al final de los obligatorios si cabe; los demás electivos quedan en el banco como alternativas.`;
     case 'ELECTIVO_CUBIERTO':
       return 'Ya hay un electivo aprobado, convalidado, en curso o en un bloque cerrado. No se añaden electivos adicionales.';
+    case 'JALADOS_PRIMERO':
+      return `Primero se ${explicacion.total === 1 ? 'colocó tu curso jalado' : `colocaron tus ${explicacion.total} cursos jalados`} en el Ciclo ${explicacion.ciclo}, como exige la UTP; el resto se organiza alrededor.`;
     case 'CONSERVADOS':
       return `Se conservaron ${explicacion.total} pendientes con asignaciones cerradas o vinculadas a veranos manuales válidos. Sus prerrequisitos y cargas se consideran al planificar.`;
     case 'PENDIENTES':

@@ -186,7 +186,10 @@ export const generarPlanificacionAutomatica = (
   if (excluidos.length) explicacion.push({ tipo: 'CICLOS_EXCLUIDOS', ciclos: excluidos });
   if (electivoElegido) explicacion.push({ tipo: 'ELECTIVO_ELEGIDO', curso: electivoElegido });
   else if (electivoCubierto) explicacion.push({ tipo: 'ELECTIVO_CUBIERTO' });
-  if (conservados.size) explicacion.push({ tipo: 'CONSERVADOS', total: conservados.size });
+  // Los jalados se fijan en el periodo de recuperación, pero no son asignaciones conservadas del estudiante.
+  const totalConservados = conservados.size - jalados.length;
+  if (jalados.length) explicacion.push({ tipo: 'JALADOS_PRIMERO', total: jalados.length, ciclo: periodoRecuperacion!.cicloReferencia });
+  if (totalConservados) explicacion.push({ tipo: 'CONSERVADOS', total: totalConservados });
   if (noPlanificados.length) explicacion.push({ tipo: 'PENDIENTES', total: noPlanificados.length });
   else if (pendientes.length || electivoElegido) explicacion.push({ tipo: 'COMPLETADOS' });
 
@@ -204,7 +207,7 @@ export const generarPlanificacionAutomatica = (
     .filter(({ total, limite }) => total > limite);
   if (advertenciasHoras.length) explicacion.push({ tipo: 'ADVERTENCIAS_HORAS', horas: LIMITE_HORAS_PERIODO });
   return { cursos, cicloInicio, cicloFinal, periodoInicio, limiteHoras: LIMITE_HORAS_PLANIFICACION,
-    totalPlanificados: nuevasAsignaciones.size, totalConservados: conservados.size,
+    totalPlanificados: nuevasAsignaciones.size, totalConservados,
     ciclos, noPlanificados, explicacion, advertenciasHoras };
 };
 

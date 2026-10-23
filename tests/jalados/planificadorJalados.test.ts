@@ -37,6 +37,9 @@ describe('Planificador automático con jalados', () => {
     const ciclo8 = propuesta.cursos.filter((curso) => curso.ubicacion === 'periodo' && obtenerPeriodoCurso(curso).id === 'ciclo-8');
     expect(calcularHorasEfectivas(ciclo8, 'REGULAR')).toBeLessThanOrEqual(LIMITE_HORAS_PLANIFICACION);
     expect(() => validarCargaPlanificacionAutomatica(propuesta)).not.toThrow();
+    // El jalado se explica aparte; no cuenta como asignación conservada.
+    expect(propuesta.explicacion).toContainEqual({ tipo: 'JALADOS_PRIMERO', total: 1, ciclo: 8 });
+    expect(propuesta.totalConservados).toBe(0);
   });
 
   it('con I60N jalado lo pone en ciclo-8 y sus dependientes después', async () => {

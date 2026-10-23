@@ -41,6 +41,7 @@ export type ExplicacionPlan =
   | { tipo: 'ELECTIVO_ELEGIDO'; curso: { nombre: string; horasSemanales: number; creditos: number } }
   | { tipo: 'ELECTIVO_CUBIERTO' }
   | { tipo: 'CONSERVADOS'; total: number }
+  | { tipo: 'JALADOS_PRIMERO'; total: number; ciclo: number }
   | { tipo: 'PENDIENTES'; total: number }
   | { tipo: 'COMPLETADOS' }
   | { tipo: 'ADVERTENCIAS_HORAS'; horas: number };

@@ -498,6 +498,6 @@
 .curso-jalar-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border: 1px solid var(--rose-border); border-radius: 5px; background: transparent; color: var(--rose-border); font-size: 0.72rem; font-weight: 750; cursor: pointer; }
 .curso-jalar-btn:hover { background: var(--rose-subtle, rgba(239, 35, 60, 0.08)); }
 .curso-card.curso-jalado { border-left-color: var(--rose-primary); }
-.curso-estado-chip.jalado-chip { color: var(--rose-primary); }
+.curso-estado-chip.jalado-chip { color: var(--rose-primary); padding-right: 46px; line-height: 1.2; }
 .curso-card.curso-invalido { border-color: var(--amber-primary); border-left-color: var(--amber-primary); }
 .curso-estado-chip.invalido-chip { color: var(--amber-dark); padding-right: 46px; line-height: 1.2; }
