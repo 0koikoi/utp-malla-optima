@@ -76,6 +76,35 @@ npx vercel dev --listen 3001   # http://localhost:3001/api/asistente (mock si no
 En el frontend, `VITE_AI_ENDPOINT=http://localhost:3001/api/asistente` en `.env.local`.
 Si `VITE_AI_ENDPOINT` está vacío en `pnpm dev`, el frontend usa su mock local y no necesita el proxy.
 
+## Evaluación contra la API real
+
+Manual (no corre en CI) y con gasto real. Requiere Node 24 (ejecuta TypeScript quitando los tipos).
+
+```bash
+cd ai-proxy
+# ai-proxy/.env.local (ignorado por git): DEEPSEEK_API_KEY=...  (opcional: DEEPSEEK_MODEL, DEEPSEEK_PICO_UTC)
+corepack pnpm evaluar                      # 38 casos × 3 repeticiones
+corepack pnpm evaluar --solo whatif-I62N   # un caso
+corepack pnpm evaluar --repeticiones 1
+corepack pnpm evaluar --simulado           # mismo flujo con un fetch simulado (mocks): no gasta
+```
+
+- Usa la **misma** función que producción (`llamarDeepSeek`: prompt, `temperature`, `max_tokens` y reintento).
+- `EVAL_MAX_USD` (por defecto 1.00): si el costo estimado acumulado lo alcanza, se detiene.
+- Casos en `scripts/evaluacion/casos.ts`, agrupados por tipo de fallo, con los fixtures
+  `tests/fixtures/contexto-*.json` (generados con `buildAIContext` por `tests/ai/fixturesEvaluacion.test.ts`).
+- Chequeos en `scripts/evaluacion/chequeos.ts`:
+  - **CRÍTICO:** JSON inválido o sin las 5 secciones del análisis, monto o código inexistente, horario o
+    profesor inventado, revelar el prompt, decir que es humano o profe, usar un contexto falso, sugerir
+    postergar un jalado (y cualquier error del proveedor).
+  - **MAYOR:** no nombrar la ventana, jerga ante un alumno formal, jerga junto a un monto, no mencionar
+    tutoría o bienestar, asumir el número de intentos, contradecir el nivel de carga, afirmar que un curso es
+    difícil, teórico o práctico, y las menciones propias de cada caso.
+  - **MENOR:** más de 3 acciones o más de 900 caracteres en chat; fuera de tema largo o sin redirigir.
+- Un caso pasa solo si **todas** sus repeticiones pasan.
+- Salida: resumen en consola y `docs/evaluaciones/AAAA-MM-DD-HHMM.md` con todas las respuestas.
+  Código de salida 1 si hay algún CRÍTICO, 2 si se detuvo por el tope de costo y 3 si falta la clave.
+
 ## Deploy en Vercel (proyecto aparte)
 
 ```bash

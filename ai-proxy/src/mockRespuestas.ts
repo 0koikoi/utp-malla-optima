@@ -210,6 +210,12 @@ const cursoMencionado = (contexto: AIContext, pregunta: string) => {
   const porNombre = [...contexto.catalogo].sort((a, b) => b.nombre.length - a.nombre.length)
     .find((curso) => t.includes(normalizar(curso.nombre)));
   if (porNombre) return porNombre;
+  // Nombre abreviado de un jalado ("análisis y diseño de sistemas"): sus primeras 5 palabras.
+  const abreviado = contexto.jalados.find((jalado) => {
+    const palabras = normalizar(jalado.nombre).split(/\s+/);
+    return palabras.length > 5 && t.includes(palabras.slice(0, 5).join(' '));
+  });
+  if (abreviado) return contexto.catalogo.find((curso) => curso.codigo === abreviado.codigo) ?? null;
   const foco = contexto.foco;
   return foco?.tipo === 'curso' ? contexto.catalogo.find((curso) => curso.codigo === foco.codigo) ?? null : null;
 };
@@ -291,12 +297,6 @@ const respuestaCachimbo = (contexto: AIContext, pregunta: string): AIChatRespons
 
 export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse => {
   const tema = detectarTema(pregunta);
-  if (tema === 'fuera') {
-    return {
-      texto: 'Solo puedo ayudarte con la planificación de tu matrícula y su costo. ¿Vemos qué cursos te tocan el próximo ciclo?',
-      cursos: [], preguntasSugeridas: PREGUNTAS_BASE,
-    };
-  }
   if (tema === 'bienestar') return respuestaBienestar(contexto);
   if (tema === 'identidad') return respuestaIdentidad();
   if (tema === 'sinDatos') return respuestaSinDatos(contexto, pregunta);
@@ -309,12 +309,19 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
   const comoJalado = jalado && contexto.jalados.find((item) => item.codigo === jalado.codigo);
   if (comoJalado) {
     // Regla 3: un jalado nunca se posterga.
+    const posterga = /dejar|postergar|despues|mas adelante|otro ciclo|ciclo 1\d/.test(normalizar(pregunta));
     return {
-      texto: `No: ${comoJalado.nombre} (${comoJalado.codigo}) está jalado y tiene que ir ${enVentana(comoJalado.ventana)}.` +
+      texto: `${posterga ? 'No: ' : ''}${comoJalado.nombre} (${comoJalado.codigo}) está jalado y tiene que ir ${enVentana(comoJalado.ventana)}.` +
         `${comoJalado.enVentana ? ' Ya lo tienes ahí, así que vas bien.' : ' Mientras no esté en su ventana, no puedes matricular otros cursos.'}\n` +
         '¿Es la primera vez que lo jalas? Así te doy el consejo correcto.',
       cursos: [comoJalado.codigo],
       preguntasSugeridas: ['¿Qué cursos llevo el próximo ciclo?', '¿Estoy sobrecargado?'],
+    };
+  }
+  if (tema === 'fuera') {
+    return {
+      texto: 'Solo puedo ayudarte con la planificación de tu matrícula y su costo. ¿Vemos qué cursos te tocan el próximo ciclo?',
+      cursos: [], preguntasSugeridas: PREGUNTAS_BASE,
     };
   }
   const deCurso = respuestaCurso(contexto, tema);
