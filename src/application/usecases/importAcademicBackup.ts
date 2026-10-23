@@ -37,6 +37,7 @@ const BackupCourseSchema = z.object({
   prerrequisitos: z.array(z.string()).default([]),
   disciplina: z.string().optional(),
   esLaboratorio: z.boolean().optional(),
+  jalado: z.boolean().optional(),
 });
 
 const TarifasDetalleSchema = z.object({

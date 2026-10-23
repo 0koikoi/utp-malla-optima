@@ -2,7 +2,7 @@ import type { AcademicRepositories } from '../application/ports/AcademicReposito
 import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import { crearPeriodoRegular, crearPeriodoVerano, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
-import { cursoBloqueado, ordenarCursos } from '../domain/rules/courseRules';
+import { cursoBloqueado, esJaladoSinReplanificar, ordenarCursos } from '../domain/rules/courseRules';
 import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import {
@@ -86,7 +86,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       set({ notificacionMovimiento: { tipo: 'INMOVIBLE', cursoNombre: curso.nombre } });
       return false;
     }
-    if (state.cicloActual && curso.ubicacion === 'periodo' &&
+    if (state.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, state.cicloActual) &&
         periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), state.cicloActual)) {
       set({ notificacionMovimiento: notificacionPeriodoBloqueado(curso.nombre) });
       return false;

@@ -4,6 +4,7 @@ import {
   determinarPrimerPeriodoPlanificable, obtenerPeriodoCurso,
 } from '../rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, permiteVeranoDespuesDe } from '../rules/academicContextRules';
+import { esJaladoSinReplanificar } from '../rules/courseRules';
 
 const ESTADOS_CUMPLIDOS = new Set(['APROBADO', 'CONVALIDADO']);
 
@@ -22,6 +23,7 @@ const resolverCicloActual = (cursos: Curso[], contexto: ContextoPrerrequisitos):
  * b) es EN_CURSO y el destino es posterior al ciclo actual (el plan asume que se aprobará);
  * c) es PENDIENTE y está ubicado en un periodo anterior al destino que no está bloqueado; o
  * d) no existe en la malla (nivelación / requisito externo).
+ * Un curso jalado que sigue en su ciclo original nunca cumple.
  */
 export const prerrequisitoCumplido = (
   codigo: string,
@@ -39,7 +41,7 @@ export const prerrequisitoCumplido = (
     return periodoDestino.orden > periodoActual.orden;
   }
 
-  if (requisito.ubicacion !== 'periodo') return false;
+  if (requisito.ubicacion !== 'periodo' || esJaladoSinReplanificar(requisito, cicloActual)) return false;
   const periodoRequisito = obtenerPeriodoCurso(requisito);
   if (cicloActual && periodoBloqueadoPorCicloActual(periodoRequisito, cicloActual)) return false;
   return periodoRequisito.orden < periodoDestino.orden;

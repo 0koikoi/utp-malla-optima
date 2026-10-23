@@ -6,6 +6,7 @@ import { optimizarSemestre } from '../semesterOptimizationService';
 import { determinarTotalCiclos, normalizarTotalCiclos, normalizarCiclosExcluidos, obtenerCiclosDisponibles } from '../../rules/cycleRules';
 import { obtenerAsignacionesConservadas } from '../preservedPlanningAssignments';
 import { periodoBloqueadoPorCicloActual } from '../../rules/academicContextRules';
+import { esJaladoSinReplanificar } from '../../rules/courseRules';
 import { prerrequisitosCumplidos } from './prerequisiteChecks';
 import { horasValidas, motivosNoPlanificado } from './unplannedReasons';
 import type { CicloPlanificadoResumen, ExplicacionPlan, OpcionesPlanificacion, ResultadoPlanificacionAutomatica } from './types';
@@ -35,6 +36,7 @@ export const generarPlanificacionAutomatica = (
   const electivoCubierto = cursosBase.some((curso) => curso.tipo === 'ELECTIVO' &&
     (ESTADOS_COMPLETADOS.has(curso.estado) || curso.estado === 'EN_CURSO' ||
       curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' && cicloActual > 0 &&
+      !esJaladoSinReplanificar(curso, cicloActual) &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual)));
   const electivos = cursosBase.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE')
     .sort((a, b) => (horasValidas(a) ? a.horasSemanales : Infinity) - (horasValidas(b) ? b.horasSemanales : Infinity) ||
@@ -42,7 +44,7 @@ export const generarPlanificacionAutomatica = (
   const electivoElegido = electivoCubierto ? undefined : electivos[0];
   // Solo se recalculan pendientes futuros; el historial y los bloques cerrados se conservan.
   for (const curso of electivos) {
-    if (curso.ubicacion === 'periodo' && cicloActual > 0 &&
+    if (curso.ubicacion === 'periodo' && cicloActual > 0 && !esJaladoSinReplanificar(curso, cicloActual) &&
         periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual)) continue;
     curso.ciclo = curso.cicloOrigen;
     curso.tipoPeriodo = 'REGULAR';

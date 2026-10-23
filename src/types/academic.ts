@@ -28,6 +28,12 @@ export interface Curso {
   prerrequisitos: string[];
   esLaboratorio?: boolean;
   estado: EstadoCurso;
+  /**
+   * Curso desaprobado. Su estado es PENDIENTE: mientras siga en el ciclo donde
+   * se jaló (un periodo bloqueado) no cumple prerrequisitos ni se cotiza; al
+   * replanificarlo en un periodo futuro se comporta como cualquier pendiente.
+   */
+  jalado?: boolean;
 }
 
 export interface CursoReferencia {

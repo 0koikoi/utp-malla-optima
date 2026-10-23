@@ -1,5 +1,5 @@
 import type { Curso, PeriodoAcademico, PeriodoIngreso } from '../../types/academic';
-import { cursoBloqueado } from '../../domain/rules/courseRules';
+import { cursoBloqueado, esJaladoSinReplanificar } from '../../domain/rules/courseRules';
 import {
   validarDestinoNoAnterior,
   validarLimiteCreditosVerano,
@@ -39,7 +39,8 @@ export function moveCourseUseCase(
     return { ok: false as const, reason: 'LOCKED' as MoveCourseFailureReason };
   }
 
-  if (contexto.cicloActual && curso.ubicacion === 'periodo' &&
+  // Un jalado sale de su ciclo bloqueado hacia un periodo futuro.
+  if (contexto.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, contexto.cicloActual) &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), contexto.cicloActual)) {
     return { ok: false as const, reason: 'SOURCE_PERIOD_LOCKED' as MoveCourseFailureReason };
   }
