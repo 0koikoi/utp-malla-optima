@@ -145,13 +145,25 @@ export const mockAnalisis = (contexto: AIContext): AIAnalisisResponse => {
   return { resumen, secciones, preguntasSugeridas: PREGUNTAS_BASE };
 };
 
-type Tema = 'financiero' | 'carga' | 'whatIf' | 'ruta' | 'electivos' | 'conviene' | 'fuera';
+type Tema = 'bienestar' | 'identidad' | 'sinDatos' | 'intentos' | 'cachimbo'
+  | 'financiero' | 'carga' | 'whatIf' | 'ruta' | 'electivos' | 'conviene' | 'fuera';
+
+const normalizar = (texto: string) => texto.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+
+/** Palabras del glosario del prompt: la jerga es un espejo, solo se usa si el alumno la usó. */
+const JERGA = /\b(bika|trika|tranca|yuca|huecos?|cachimbos?|chamba|matri|cruces?|profes?|full)\b/;
+export const usaJerga = (texto: string) => JERGA.test(normalizar(texto));
 
 const detectarTema = (texto: string): Tema => {
-  const t = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  if (/presupuesto|alcanza|cuesta|costo|pagar|cuota|precio|pension|descuento|plata|dinero/.test(t)) return 'financiero';
+  const t = normalizar(texto);
+  if (/estres|no puedo mas|dejar la (u|carrera|universidad)|quiero dejar|agobi|ansios/.test(t)) return 'bienestar';
+  if (/eres (una |un )?(persona|humano|profe|profesor|docente|real)|hablo con (una persona|alguien)/.test(t)) return 'identidad';
+  if (/horario|hueco|cruce|seccion|profe|docente|\bnotas?\b|tranca|yuca|dificil/.test(t)) return 'sinDatos';
+  if (/\bbika\b|\btrika\b|(segunda|tercera) vez|(dos|tres|2|3) veces/.test(t)) return 'intentos';
+  if (/cachimbo|primer ciclo/.test(t)) return 'cachimbo';
+  if (/presupuesto|alcanza|cuesta|costo|pagar|pago|cuota|precio|pension|descuento|plata|dinero|matricula/.test(t)) return 'financiero';
   if (/jal|desaprueb|repruebo/.test(t)) return 'whatIf';
-  if (/sobrecarg|carga|horas|pesado|cansad/.test(t)) return 'carga';
+  if (/sobrecarg|carga|cargo|horas|pesado|cansad|chamba|trabaj/.test(t)) return 'carga';
   if (/electivo/.test(t)) return 'electivos';
   if (/ruta|egresar|terminar|acabar|ciclos me faltan|graduar/.test(t)) return 'ruta';
   if (/conviene|llevarlo|ahora|matricul|ciclo|curso|plan/.test(t)) return 'conviene';
@@ -192,31 +204,185 @@ const desdeSeccion = (seccion: AISeccion | null, preguntas: string[]): AIChatRes
   ? { texto: `${seccion.detalle}${seccion.acciones.length ? `\n${seccion.acciones.map((accion) => `• ${accion}`).join('\n')}` : ''}`, cursos: seccion.cursos, preguntasSugeridas: preguntas }
   : { texto: 'No tengo ese dato en tu plan todavía. Planifica tus cursos y vuelve a preguntarme.', cursos: [], preguntasSugeridas: preguntas };
 
+/** Curso del catálogo cuyo nombre aparece en la pregunta, o el curso en foco. */
+const cursoMencionado = (contexto: AIContext, pregunta: string) => {
+  const t = normalizar(pregunta);
+  const porNombre = [...contexto.catalogo].sort((a, b) => b.nombre.length - a.nombre.length)
+    .find((curso) => t.includes(normalizar(curso.nombre)));
+  if (porNombre) return porNombre;
+  const foco = contexto.foco;
+  return foco?.tipo === 'curso' ? contexto.catalogo.find((curso) => curso.codigo === foco.codigo) ?? null : null;
+};
+
+/** Ventana del curso: la de CONTEXTO.jalados si ya está jalado; si no, la de su what-if. */
+const ventanaDe = (contexto: AIContext, codigo: string) =>
+  contexto.jalados.find((jalado) => jalado.codigo === codigo)?.ventana
+  ?? contexto.whatIf.find((item) => item.codigo === codigo)?.ventanaSiJala
+  ?? (contexto.foco?.tipo === 'curso' && contexto.foco.codigo === codigo ? contexto.foco.ventanaRecuperacion : []);
+
+const cargaEnUnaFrase = (contexto: AIContext) => contexto.proximoPeriodo
+  ? `Tu ${contexto.proximoPeriodo.etiqueta} suma ${horas(contexto.carga.horas)} y su nivel de carga es ${contexto.carga.nivel}.`
+  : 'Todavía no tienes cursos planificados para el próximo periodo.';
+
+const respuestaBienestar = (contexto: AIContext): AIChatResponse => ({
+  texto: 'Lo que sientes es válido, y no tienes que cargar con todo sin ayuda: busca apoyo en tutoría o en bienestar universitario de la UTP, para eso están.\n' +
+    `En lo práctico, ${cargaEnUnaFrase(contexto).replace(/^T/, 't')} Si quieres, vemos juntos qué curso mover para alivianar ese periodo.`,
+  cursos: [],
+  preguntasSugeridas: ['¿Qué curso me conviene dejar para después?', '¿Estoy sobrecargado?'],
+});
+
+const respuestaIdentidad = (): AIChatResponse => ({
+  texto: 'Soy una IA: el asesor académico de MallaU. No soy una persona ni personal de la UTP, pero te ayudo a ordenar tu plan con los datos que cargaste.',
+  cursos: [],
+  preguntasSugeridas: PREGUNTAS_BASE,
+});
+
+/** Regla 7: MallaU no tiene horarios, secciones, profesores, notas ni dificultad real. */
+const respuestaSinDatos = (contexto: AIContext, pregunta: string): AIChatResponse => {
+  const t = normalizar(pregunta);
+  const falta = /profe|docente/.test(t) ? 'información de los profesores'
+    : /\bnotas?\b/.test(t) ? 'tus notas'
+      : /tranca|yuca|dificil/.test(t) ? 'datos de la dificultad real de los cursos'
+        : 'los horarios ni las secciones';
+  const cursos = contexto.proximoPeriodo?.cursos ?? [];
+  const masHoras = [...cursos].sort((a, b) => b.horas - a.horas)[0];
+  const ofrezco = masHoras
+    ? `Lo que sí veo es la carga en horas: en el ${contexto.proximoPeriodo!.etiqueta} el curso con más horas es ${masHoras.nombre} (${masHoras.codigo}), con ${horas(masHoras.horas)}, y el periodo suma ${horas(contexto.carga.horas)}.`
+    : 'Lo que sí puedo es decirte qué cursos llevar, en qué orden y cuántas horas suman.';
+  return {
+    texto: `Eso no lo tengo: MallaU no tiene ${falta}. ${ofrezco} ¿Te ayudo con eso?`,
+    cursos: masHoras ? [masHoras.codigo] : [],
+    preguntasSugeridas: ['¿Qué cursos llevo el próximo ciclo?', '¿Estoy sobrecargado?'],
+  };
+};
+
+/** Regla 8: bika o trika solo si el alumno lo dice; la ley se cita sin jerga. */
+const respuestaIntentos = (contexto: AIContext, pregunta: string): AIChatResponse => {
+  const t = normalizar(pregunta);
+  const curso = cursoMencionado(contexto, pregunta);
+  const nombre = curso ? `${curso.nombre} (${curso.codigo})` : 'ese curso';
+  if (/\btrika\b|tercera vez|(tres|3) veces/.test(t)) {
+    return {
+      texto: `Sé que es un momento difícil y está bien sentirlo. Según la Ley Universitaria 30220 (art. 102), desaprobar la misma materia por tercera vez lleva a una separación temporal de un año, y una cuarta desaprobación, al retiro definitivo. La UTP puede tener reglas propias, así que habla con tu tutor o con Servicios Académicos antes de la matrícula para saber exactamente cómo aplica en tu caso con ${nombre}.`,
+      cursos: curso ? [curso.codigo] : [],
+      preguntasSugeridas: ['¿Qué cursos llevo el próximo ciclo?', '¿Estoy sobrecargado?'],
+    };
+  }
+  return {
+    texto: `Con ${nombre}, el próximo intento es clave: según la Ley Universitaria 30220 (art. 102), desaprobar la misma materia por tercera vez lleva a una separación temporal de un año.\n` +
+      `• Dale prioridad y llévalo ${curso ? enVentana(ventanaDe(contexto, curso.codigo)) : 'en su ventana de recuperación'}.\n` +
+      '• Lleva menos carga ese periodo.\n• Pide tutoría o asesoría antes de matricularte.',
+    cursos: curso ? [curso.codigo] : [],
+    preguntasSugeridas: ['¿Qué curso me conviene dejar para después?', '¿Estoy sobrecargado?'],
+  };
+};
+
+/** El alumno dice ser de primer ciclo, pero el contexto dice otra cosa: se le hace notar con amabilidad. */
+const respuestaCachimbo = (contexto: AIContext, pregunta: string): AIChatResponse | null => {
+  const ciclo = contexto.perfil.cicloActual;
+  if (ciclo === null || ciclo <= 1) return null;
+  const jerga = usaJerga(pregunta);
+  return {
+    texto: `Veo en tu plan que vas en el Ciclo ${ciclo}, así que ${jerga ? 'ya no serías cachimbo' : 'no estarías en primer ciclo'}. ¿Quizás falta actualizar tu ciclo actual? Revísalo en la configuración y te ayudo con lo que sigue.`,
+    cursos: [],
+    preguntasSugeridas: ['¿Qué cursos llevo el próximo ciclo?', '🗺️ Mi ruta hasta egresar'],
+  };
+};
+
 export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse => {
   const tema = detectarTema(pregunta);
   if (tema === 'fuera') {
-    return { texto: 'Solo puedo ayudarte con la planificación de tu matrícula y su costo.', cursos: [], preguntasSugeridas: PREGUNTAS_BASE };
+    return {
+      texto: 'Solo puedo ayudarte con la planificación de tu matrícula y su costo. ¿Vemos qué cursos te tocan el próximo ciclo?',
+      cursos: [], preguntasSugeridas: PREGUNTAS_BASE,
+    };
+  }
+  if (tema === 'bienestar') return respuestaBienestar(contexto);
+  if (tema === 'identidad') return respuestaIdentidad();
+  if (tema === 'sinDatos') return respuestaSinDatos(contexto, pregunta);
+  if (tema === 'intentos') return respuestaIntentos(contexto, pregunta);
+  if (tema === 'cachimbo') {
+    const incoherente = respuestaCachimbo(contexto, pregunta);
+    if (incoherente) return incoherente;
+  }
+  const jalado = cursoMencionado(contexto, pregunta);
+  const comoJalado = jalado && contexto.jalados.find((item) => item.codigo === jalado.codigo);
+  if (comoJalado) {
+    // Regla 3: un jalado nunca se posterga.
+    return {
+      texto: `No: ${comoJalado.nombre} (${comoJalado.codigo}) está jalado y tiene que ir ${enVentana(comoJalado.ventana)}.` +
+        `${comoJalado.enVentana ? ' Ya lo tienes ahí, así que vas bien.' : ' Mientras no esté en su ventana, no puedes matricular otros cursos.'}\n` +
+        '¿Es la primera vez que lo jalas? Así te doy el consejo correcto.',
+      cursos: [comoJalado.codigo],
+      preguntasSugeridas: ['¿Qué cursos llevo el próximo ciclo?', '¿Estoy sobrecargado?'],
+    };
   }
   const deCurso = respuestaCurso(contexto, tema);
   if (deCurso) return deCurso;
   const otras = (excluir: string) => ['¿Me alcanza mi presupuesto?', '¿Estoy sobrecargado?', '¿Qué pasa si jalo un curso?', '¿Qué electivo me conviene?']
     .filter((item) => !item.toLowerCase().includes(excluir)).slice(0, 3);
+  const trabaja = /trabaj|chamba/.test(normalizar(pregunta));
+  const focoCiclo = contexto.foco?.tipo === 'ciclo' ? contexto.foco : null;
   switch (tema) {
-    case 'financiero': return desdeSeccion(seccionFinanciera(contexto), otras('presupuesto'));
-    case 'carga': return desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));
-    case 'whatIf': return desdeSeccion(seccionWhatIf(contexto), otras('jalo'));
+    case 'financiero': {
+      if (focoCiclo?.escenarios.length) {
+        const [base, ...otrosMetodos] = focoCiclo.escenarios;
+        const masBarato = [...otrosMetodos].sort((a, b) => a.total - b.total)[0];
+        return {
+          texto: `El ${focoCiclo.periodo.etiqueta} cuesta ${soles(base.total)} (${base.nombre}): matrícula de ${soles(base.matricula)} y ${base.numeroCuotas} cuotas de ${soles(base.cuotaMensual)}.` +
+            (masBarato && masBarato.total < base.total ? ` Con ${masBarato.nombre} pagarías ${soles(masBarato.total)}.` : '') +
+            ' Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.',
+          cursos: [], preguntasSugeridas: otras('presupuesto'),
+        };
+      }
+      const respuesta = desdeSeccion(seccionFinanciera(contexto), otras('presupuesto'));
+      // Otro monto en la pregunta: no se recalcula; se usa el presupuesto del plan y se explica cómo cambiarlo.
+      return /\d{3,}/.test(pregunta) && contexto.financiero?.presupuestoMensual !== null
+        ? { ...respuesta, texto: `Uso el presupuesto que tienes en tu plan; si quieres probar con otro monto, cámbialo en tu presupuesto mensual y vuelve a preguntarme.\n${respuesta.texto}` }
+        : respuesta;
+    }
+    case 'carga': {
+      const respuesta = desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));
+      if (!trabaja) return respuesta;
+      // Regla 9: matiza el consejo sin cambiar los números; la jerga solo si el alumno la usó.
+      const consejo = usaJerga(pregunta)
+        ? 'Si estás con mucha chamba, te conviene llevar menos horas este periodo y asegurar los cursos que abren tu ruta.'
+        : 'Si trabajas, te conviene llevar menos horas este periodo y asegurar los cursos que abren tu ruta.';
+      return { ...respuesta, texto: `${respuesta.texto}\n${consejo}` };
+    }
+    case 'whatIf': {
+      // Regla 8: nunca se asume cuántas veces lo jaló.
+      if (!/jale|jalaste|jalado/.test(normalizar(pregunta))) return desdeSeccion(seccionWhatIf(contexto), otras('jalo'));
+      if (!contexto.jalados.length) {
+        return {
+          texto: 'Lo siento, pero tiene solución. ¿Qué curso fue y es la primera vez que lo jalas? Márcalo como jalado en tu plan (menú (i) del curso) y te digo en qué periodo tienes que llevarlo.',
+          cursos: [], preguntasSugeridas: ['¿Qué pasa si jalo un curso?', '¿Estoy sobrecargado?'],
+        };
+      }
+      const respuesta = desdeSeccion(seccionWhatIf(contexto), otras('jalo'));
+      return { ...respuesta, texto: `${respuesta.texto}\n¿Es la primera vez que lo jalas? Así te doy el consejo correcto.` };
+    }
     case 'electivos': return desdeSeccion(seccionElectivos(contexto), otras('electivo'));
     case 'ruta': return desdeSeccion(seccionRuta(contexto), otras('ruta'));
     default: {
-      if (contexto.foco?.tipo === 'ciclo') {
-        const { periodo: resumen, carga, escenarios } = contexto.foco;
+      if (focoCiclo) {
+        const { periodo: resumen, carga, escenarios } = focoCiclo;
         return {
           texto: `${resumen.etiqueta}: ${resumen.cursos.length} cursos, ${horas(carga.horas)} y ${resumen.creditos} créditos. Nivel de carga: ${carga.nivel}.` +
             (escenarios[0] ? `\nCuesta ${soles(escenarios[0].total)} sin descuento.` : ''),
           cursos: resumen.cursos, preguntasSugeridas: ['¿Estoy sobrecargado?', '¿Me alcanza mi presupuesto?'],
         };
       }
-      return desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));
+      const respuesta = desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));
+      const primero = contexto.jalados[0];
+      // Regla 3: con un jalado, ese curso va primero.
+      return primero
+        ? {
+          ...respuesta,
+          texto: `Primero va ${primero.nombre} (${primero.codigo}), que está jalado: tiene que ir ${enVentana(primero.ventana)}.\n${respuesta.texto}`,
+          cursos: [primero.codigo, ...respuesta.cursos.filter((codigo) => codigo !== primero.codigo)],
+        }
+        : respuesta;
     }
   }
 };
