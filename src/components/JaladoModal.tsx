@@ -6,6 +6,7 @@ import { crearPeriodoAcademico } from '../domain/rules/academicPeriodRules';
 import { simularJalado } from '../domain/services/whatIfService';
 import { textoVentana, ventanaJalado } from '../domain/rules/jaladoRules';
 import { useAcademicStore } from '../store/useAcademicStore';
+import { pluralizar } from '../utils/pluralizar';
 
 interface Props {
   curso: Curso;
@@ -66,7 +67,7 @@ export function JaladoModal({ curso, onClose }: Props) {
           <p><b>{curso.nombre}</b> quedará como jalado en su ciclo. Mientras siga ahí no cuenta como prerrequisito ni se cotiza.</p>
           {ventana && <p className="jalado-recovery-note"><b>Deberás llevarlo {ventana}.</b> Hasta agregarlo allí no podrás sumar otros cursos a ese periodo ni a los siguientes.</p>}
           {simulacion.cursosBloqueados.length > 0 ? <>
-            <h3>Cursos que no podrás llevar hasta aprobarlo</h3>
+            <h3>{pluralizar(simulacion.cursosBloqueados.length, 'Curso que no podrás llevar', 'Cursos que no podrás llevar')} hasta aprobarlo</h3>
             <ul className="jalado-preview-list">
               {simulacion.cursosBloqueados.map((item) => <li key={item.codigo}>
                 <span>{item.codigo}</span><strong>{item.nombre}</strong><small>Origen C{item.cicloOrigen}</small>
@@ -74,13 +75,14 @@ export function JaladoModal({ curso, onClose }: Props) {
             </ul>
           </> : <p>No bloquea ningún otro curso de la malla.</p>}
           {simulacion.planificadosInvalidos.length > 0 && <>
-            <h3>Planificados que quedarán inválidos</h3>
+            <h3>{pluralizar(simulacion.planificadosInvalidos.length, 'Planificado que quedará inválido', `${simulacion.planificadosInvalidos.length} planificados que quedarán inválidos`)}</h3>
             <ul className="jalado-preview-list jalado-preview-invalid">
               {simulacion.planificadosInvalidos.map((item) => <li key={item.codigo}>
                 <span>{item.codigo}</span><strong>{nombres.get(item.codigo)}</strong><small>{etiquetaPeriodo(item.periodoId)}</small>
               </li>)}
             </ul>
-            <p className="jalado-preview-note">No se moverán: quedarán marcados para que los reubiques.</p>
+            <p className="jalado-preview-note">{pluralizar(simulacion.planificadosInvalidos.length,
+              'No se moverá: quedará marcado para que lo reubiques.', 'No se moverán: quedarán marcados para que los reubiques.')}</p>
           </>}
           <div className="confirm-actions">
             <button type="button" onClick={onClose}>Cancelar</button>

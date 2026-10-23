@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AlertTriangle, Clock3, Gauge, LockKeyhole, X } from 'lucide-react';
+import { pluralizar } from '../utils/pluralizar';
 import { useAcademicStore } from '../store/useAcademicStore';
 
 export function PrerequisitoToast() {
@@ -29,7 +30,7 @@ export function PrerequisitoToast() {
       : tipo === 'JALADO'
         ? 'Curso marcado como jalado'
       : tipo === 'JALADO_OBLIGATORIO'
-        ? 'Curso jalado obligatorio'
+        ? pluralizar(Math.max(1, faltantes.length), 'Curso jalado obligatorio', 'Cursos jalados obligatorios')
       : tipo === 'DATOS_DESACTUALIZADOS'
         ? 'Vuelve a subir tu Excel'
       : tipo === 'PRERREQUISITOS'

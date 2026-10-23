@@ -2,6 +2,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import type { Curso, NotificacionMovimiento, PeriodoAcademico, CursoReferencia } from '../../types/academic';
 import type { moveCourseUseCase } from '../../application/usecases/moveCourseUseCase';
 import { mensajeRecargoHoras } from '../../domain/rules/planningRules';
+import { pluralizar } from '../../utils/pluralizar';
 
 export const notificacionDesdeResultado = (
   curso: Curso,
@@ -77,7 +78,9 @@ export const notificacionJalado = (
   return {
     tipo: 'JALADO', cursoNombre: curso.nombre, faltantes: invalidos, deshacerJalado: curso.codigo,
     mensaje: invalidos.length
-      ? `quedó como jalado.${recuperacion} Estos cursos planificados ya no cumplen sus prerrequisitos:`
+      ? `quedó como jalado.${recuperacion} ${pluralizar(invalidos.length,
+        'Este curso planificado ya no cumple sus prerrequisitos:',
+        `Estos ${invalidos.length} cursos planificados ya no cumplen sus prerrequisitos:`)}`
       : `quedó como jalado.${recuperacion}`,
   };
 };
@@ -86,7 +89,8 @@ export const notificacionJaladoRetirado = (
   cursoNombre: string, afectados: CursoReferencia[], ventana: string
 ): NotificacionMovimiento | null => afectados.length ? {
   tipo: 'IMPACTO_DESCENDIENTE', cursoNombre, faltantes: afectados,
-  mensaje: `volvió a su ciclo original. Estos cursos quedan marcados (falta llevar curso jalado) hasta que lo lleves ${ventana || 'en su periodo de recuperación'}:`,
+  mensaje: `volvió a su ciclo original. ${pluralizar(afectados.length, 'Este curso queda marcado',
+    `Estos ${afectados.length} cursos quedan marcados`)} (falta llevar curso jalado) hasta que lo lleves ${ventana || 'en su periodo de recuperación'}:`,
 } : null;
 
 export const notificacionPlanAplicado = (

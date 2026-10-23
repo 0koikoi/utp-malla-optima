@@ -2,6 +2,14 @@ import type { Curso, PeriodoIngreso } from '../../types/academic';
 import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { esJaladoSinReplanificar } from '../../domain/rules/courseRules';
+import { formatCredits } from '../../utils/formatCredits';
+import { pluralizar } from '../../utils/pluralizar';
+
+/** "1 cr jalado" / "4 cr jalados": concuerda con los créditos que se muestran. */
+export const textoCreditos = (creditos: number, singular: string, plural: string): string => {
+  const texto = formatCredits(creditos);
+  return `${texto} cr ${pluralizar(Number(texto), singular, plural)}`;
+};
 
 interface SummerVisibility {
   ciclo: number;

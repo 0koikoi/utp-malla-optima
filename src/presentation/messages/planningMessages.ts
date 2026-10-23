@@ -1,10 +1,12 @@
 import type { ExplicacionPlan, MotivoNoPlanificado } from '../../domain/services/automaticPlanningService';
 import { formatCredits } from '../../utils/formatCredits';
+import { pluralizar } from '../../utils/pluralizar';
 
 export const explicarPlan = (explicacion: ExplicacionPlan): string => {
   switch (explicacion.tipo) {
     case 'RESUMEN':
-      return `Se organizaron ${explicacion.total} cursos pendientes desde el ciclo ${explicacion.cicloInicio} hasta el ${explicacion.cicloFinal}, utilizando solo ciclos regulares${explicacion.veranoJalados ? ' (el verano se usa únicamente para recuperar jalados)' : ''}.`;
+      return `${pluralizar(explicacion.total, 'Se organizó 1 curso pendiente', `Se organizaron ${explicacion.total} cursos pendientes`)} desde el ciclo ${explicacion.cicloInicio} hasta el ${explicacion.cicloFinal}, utilizando solo ciclos regulares${explicacion.jaladosEnVerano
+        ? ` (el verano se usa únicamente para ${pluralizar(explicacion.jaladosEnVerano, 'tu curso jalado', `tus ${explicacion.jaladosEnVerano} cursos jalados`)})` : ''}.`;
     case 'LIMITE':
       return `Cada ciclo que recibe nuevas asignaciones respeta hasta ${explicacion.horas} horas semanales. Los créditos son informativos y no limitan la propuesta.`;
     case 'PRIORIDAD_OBLIGATORIOS':
@@ -20,7 +22,7 @@ export const explicarPlan = (explicacion: ExplicacionPlan): string => {
     case 'ELECTIVO_CUBIERTO':
       return 'Ya hay un electivo aprobado, convalidado, en curso o en un bloque cerrado. No se añaden electivos adicionales.';
     case 'JALADOS_PRIMERO':
-      return `Primero se ${explicacion.total === 1 ? 'colocó tu curso jalado' : `colocaron tus ${explicacion.total} cursos jalados`} en el ${explicacion.periodos.join(' y en el ')}, el primer periodo de su ventana de recuperación, como exige la UTP; el resto se organiza en los ciclos regulares.`;
+      return `Primero se ${pluralizar(explicacion.total, 'colocó tu curso jalado', `colocaron tus ${explicacion.total} cursos jalados`)} en el ${explicacion.periodos.join(' y en el ')}, el primer periodo de su ventana de recuperación, como exige la UTP; el resto se organiza en los ciclos regulares.`;
     case 'CONSERVADOS':
       return `Se conservaron ${explicacion.total} pendientes con asignaciones cerradas o vinculadas a veranos manuales válidos. Sus prerrequisitos y cargas se consideran al planificar.`;
     case 'PENDIENTES':

@@ -194,7 +194,7 @@ export const generarPlanificacionAutomatica = (
   }
   const explicacion: ExplicacionPlan[] = [
     { tipo: 'RESUMEN', total: nuevasAsignaciones.size, cicloInicio, cicloFinal,
-      veranoJalados: [...destinoJalado.values()].some((destino) => destino.tipo === 'VERANO') },
+      jaladosEnVerano: [...destinoJalado.values()].filter((destino) => destino.tipo === 'VERANO').length },
     { tipo: 'LIMITE', horas: LIMITE_HORAS_PLANIFICACION },
     { tipo: 'PRIORIDAD_OBLIGATORIOS' },
     { tipo: 'APROBADOS_SIN_CARGA' },

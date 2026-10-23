@@ -32,7 +32,7 @@ export interface CursoNoPlanificado {
 }
 
 export type ExplicacionPlan =
-  | { tipo: 'RESUMEN'; total: number; cicloInicio: number; cicloFinal: number; veranoJalados?: boolean }
+  | { tipo: 'RESUMEN'; total: number; cicloInicio: number; cicloFinal: number; jaladosEnVerano?: number }
   | { tipo: 'LIMITE'; horas: number }
   | { tipo: 'PRIORIDAD_OBLIGATORIOS' }
   | { tipo: 'APROBADOS_SIN_CARGA' }

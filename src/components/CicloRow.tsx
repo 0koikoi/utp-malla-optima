@@ -18,7 +18,8 @@ import {
   obtenerHorasSinRecargo,
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
-import { avisosCargaFila, resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
+import { avisosCargaFila, resumenCicloPasado, textoCreditos } from '../presentation/selectors/plannerCardRules';
+import { pluralizar } from '../utils/pluralizar';
 import { useShallow } from 'zustand/react/shallow';
 import { esRegresoAlOrigen, gruposPorVentana, jaladosFaltantesEn } from '../domain/rules/jaladoRules';
 
@@ -49,6 +50,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
     return gruposPorVentana(jaladosFaltantesEn(fila, state.cursos, state), state.cursos, state)
       .flatMap(({ nombres, ventana }) => [nombres, ventana]);
   }));
+  const totalJaladosPendientes = useAcademicStore((state) =>
+    jaladosFaltantesEn(crearPeriodoAcademico(tipoPeriodo, numCiclo), state.cursos, state).length);
   // Un jalado en movimiento (modo táctil) puede volver a su ciclo original aunque esté bloqueado.
   const jaladoVuelveAqui = useAcademicStore((state) => {
     const enMovimiento = state.cursos.find((curso) => curso.codigo === state.cursoAMover);
@@ -144,8 +147,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
         <span className="tier-name">{esVerano ? `Verano ${numCiclo}` : `Ciclo ${numCiclo}`}</span>
         {resumenPasado ? <div className="tier-stats">
           <span className="stat-chip stat-horas">{resumenPasado.horas}h sem.</span>
-          <span className="stat-chip">{formatCredits(resumenPasado.creditos)} cr llevados</span>
-          {resumenPasado.creditosJalados > 0 && <span className="stat-chip stat-jalados">{formatCredits(resumenPasado.creditosJalados)} cr jalados</span>}
+          <span className="stat-chip">{textoCreditos(resumenPasado.creditos, 'llevado', 'llevados')}</span>
+          {resumenPasado.creditosJalados > 0 && <span className="stat-chip stat-jalados">{textoCreditos(resumenPasado.creditosJalados, 'jalado', 'jalados')}</span>}
         </div> : <div className="tier-stats">
           <span className={`stat-chip stat-horas ${excesoHoras ? 'stat-hours-warning' : ''}`}>{totalHoras}h {esVerano ? 'ef.' : 'sem.'}</span>
           <span className="stat-chip">{formatCredits(totalCreditos)} cr</span>
@@ -188,7 +191,7 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
             <button type="button" disabled={agregandoJalados} onClick={() => {
               setAgregandoJalados(true);
               void agregarJaladosARecuperacion(periodo).finally(() => setAgregandoJalados(false));
-            }}>Agregar jalados a este {esVerano ? 'verano' : 'ciclo'}</button>
+            }}>{pluralizar(totalJaladosPendientes, 'Agregar jalado', 'Agregar jalados')} a este {esVerano ? 'verano' : 'ciclo'}</button>
           </div>
         )}
         {cursoAMover && (!esPeriodoBloqueado || jaladoVuelveAqui) && (
