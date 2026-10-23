@@ -49,6 +49,7 @@ export type TipoNotificacionMovimiento =
   | 'LIMITE_CREDITOS_VERANO'
   | 'LIMITE_HORAS'
   | 'IMPACTO_DESCENDIENTE'
+  | 'JALADO'
   | 'ERROR_PERSISTENCIA';
 
 export interface NotificacionMovimiento {
@@ -59,4 +60,6 @@ export interface NotificacionMovimiento {
   periodoDestino?: string;
   limite?: number;
   valorActual?: number;
+  /** Código del curso recién marcado como jalado; habilita la acción Deshacer. */
+  deshacerJalado?: string;
 }

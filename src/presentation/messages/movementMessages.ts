@@ -65,6 +65,13 @@ export const notificacionPorConflictos = (
   };
 };
 
+export const notificacionJalado = (curso: CursoReferencia, invalidos: CursoReferencia[]): NotificacionMovimiento => ({
+  tipo: 'JALADO', cursoNombre: curso.nombre, faltantes: invalidos, deshacerJalado: curso.codigo,
+  mensaje: invalidos.length
+    ? 'quedó como jalado. Estos cursos planificados ya no cumplen sus prerrequisitos; muévelos cuando lo replanifiques:'
+    : 'quedó como jalado. Puedes arrastrarlo a un periodo futuro para volver a llevarlo.',
+});
+
 export const notificacionPlanAplicado = (
   advertencias: { periodo: PeriodoAcademico; total: number; limite: number }[]
 ): NotificacionMovimiento | null => advertencias.length ? {

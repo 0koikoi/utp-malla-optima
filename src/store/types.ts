@@ -1,4 +1,4 @@
-import type { Curso, EstadoCurso, NotificacionMovimiento, PeriodoAcademico, PeriodoIngreso } from '../types/academic';
+import type { Curso, CursoReferencia, NotificacionMovimiento, PeriodoAcademico, PeriodoIngreso } from '../types/academic';
 import type { Tarifario } from '../types/financial';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 import type { StateCreator } from 'zustand';
@@ -22,7 +22,10 @@ export interface AcademicStore {
   eliminarCiclo: (ciclo: number) => Promise<boolean>;
   setContextoAcademico: (ingreso: PeriodoIngreso, ciclo: number) => Promise<void>;
   setCursos: (cursos: Curso[], nombreArchivo?: string) => Promise<void>;
-  updateEstadoCurso: (codigo: string, estado: EstadoCurso) => Promise<void>;
+  /** Marca un curso EN_CURSO como jalado y devuelve los planificados que quedaron inválidos. */
+  marcarComoJalado: (codigo: string) => Promise<CursoReferencia[] | null>;
+  /** Deshace marcarComoJalado: el curso vuelve a EN_CURSO, bloqueado en el ciclo actual. */
+  desmarcarJalado: (codigo: string) => Promise<boolean>;
   moverCursoAPeriodo: (codigo: string, periodo: PeriodoAcademico) => Promise<boolean>;
   moverCursoACiclo: (codigo: string, nuevoCiclo: number) => Promise<boolean>;
   moverCursoAVerano: (codigo: string, despuesDelCiclo: number) => Promise<boolean>;

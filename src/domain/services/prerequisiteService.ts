@@ -100,6 +100,20 @@ export const validarPrerequisitosParaCiclo = (
 ): { valido: boolean; faltantes: CursoReferencia[] } =>
   validarPrerequisitosParaPeriodo(curso, todosLosCursos, crearPeriodoRegular(cicloDestino));
 
+/**
+ * Un pendiente planificado es inválido si sus prerrequisitos no se cumplen para
+ * su propio periodo (p. ej. tras marcar un prerrequisito como jalado). No se
+ * mueve: solo se marca en la tarjeta.
+ */
+export const esPlanificadoInvalido = (
+  curso: Curso,
+  todosLosCursos: Curso[],
+  contexto: ContextoPrerrequisitos = {}
+): boolean =>
+  curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
+  !esJaladoSinReplanificar(curso, resolverCicloActual(todosLosCursos, contexto)) &&
+  !validarPrerequisitosParaPeriodo(curso, todosLosCursos, obtenerPeriodoCurso(curso), contexto).valido;
+
 /** Cursos planificados que pierden una secuencia válida tras cambiar otra asignación. */
 export const detectarNuevosConflictosDescendientes = (
   anteriores: Curso[],
