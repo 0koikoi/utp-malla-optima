@@ -19,9 +19,7 @@ export function PeriodFinancialCard({
   const horasMostradas = esVerano
     ? resumen.horasTarifarias
     : resumen.totalHorasSemanales;
-  const pensionBaseMostrada = !esVerano && !resumen.pagoUnico && resumen.descuentoPorcentaje > 0
-    ? resumen.montoPorCuota
-    : resumen.cuotaBase;
+  const muestraCuotaConDescuento = !esVerano && !resumen.pagoUnico && resumen.descuentoPorcentaje > 0;
 
   return (
     <article
@@ -45,8 +43,18 @@ export function PeriodFinancialCard({
           <span>Matrícula:</span> {money(resumen.costoMatricula)}
         </p>
         <p>
-          <span>Pensión base:</span> {money(pensionBaseMostrada)}
+          <span>Pensión base:</span> {money(resumen.cuotaBase)}
         </p>
+        {resumen.horasExceso > 0 && resumen.costoHorasExcesoPorCuota > 0 && (
+          <p className="period-excess-line">
+            <span>Incluye horas adicionales:</span> {resumen.horasExceso} h · +{money(resumen.costoHorasExcesoPorCuota)}/cuota
+          </p>
+        )}
+        {muestraCuotaConDescuento && (
+          <p>
+            <span>Cuota con descuento:</span> {money(resumen.montoPorCuota)}
+          </p>
+        )}
         <p>
           <span>Cuotas:</span> {resumen.numeroCuotas}
         </p>

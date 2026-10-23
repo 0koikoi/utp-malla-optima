@@ -3,6 +3,7 @@ import type { Curso } from '../../../../src/types/academic';
 import { FinancialConfigurationProvider } from '../../../../src/infrastructure/configuration/FinancialConfigurationProvider';
 import { UtpFinancialConfigProvider } from '../../../../src/infrastructure/configuration/utp/UtpFinancialConfigProvider';
 import { FinancialPlanningService } from '../../../../src/financial/services/FinancialPlanningService';
+import { UniversityFinancialRulesProvider } from '../../../../src/financial/rules/UniversityFinancialRulesProvider';
 
 const crearCurso = (
   codigo: string,
@@ -55,7 +56,7 @@ describe('UTP Ate - tarifario 2026', () => {
       crearCurso('REG-4', 4),
     ];
 
-    const result = FinancialPlanningService.calcular(
+    const result = new FinancialPlanningService(new UniversityFinancialRulesProvider()).calcular(
       cursos,
       tarifario,
       'Ingeniería y Arquitectura'
@@ -75,7 +76,7 @@ describe('UTP Ate - tarifario 2026', () => {
     const tarifario = FinancialConfigurationProvider.load();
     const curso = crearCurso('VER-1', 4, 'VERANO');
 
-    const result = FinancialPlanningService.calcular(
+    const result = new FinancialPlanningService(new UniversityFinancialRulesProvider()).calcular(
       [curso],
       tarifario,
       'Ingeniería y Arquitectura',

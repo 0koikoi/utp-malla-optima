@@ -1,4 +1,5 @@
 import type { Curso, PeriodoAcademico, TipoPeriodoAcademico } from '../../types/academic';
+import type { Tarifario } from '../../types/financial';
 import { crearPeriodoRegular, determinarPeriodoActual, determinarPeriodoEnCurso, esPeriodoAnterior } from './academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from './academicContextRules';
 import { ACADEMIC_LIMITS, type AcademicLimits } from '../../config/academicLimits';
@@ -37,6 +38,35 @@ export const validarLimiteHorasPeriodo = (
     limite: limites.horasRecomendadasPeriodo,
   };
 };
+
+/**
+ * Horas cubiertas por la pensión sin recargo: el maxHoras del último rango de
+ * pensión del tarifario activo. Devuelve null si el tarifario no usa escala.
+ */
+export const obtenerHorasSinRecargo = (
+  tarifario: Tarifario | null | undefined,
+  disciplina: string
+): number | null => {
+  if (!tarifario || tarifario.modalidadPrincipal !== 'ESCALA_FIJA') return null;
+  const tarifas = tarifario.disciplinas[disciplina] ?? Object.values(tarifario.disciplinas)[0];
+  const rangos = tarifas?.rangosPension ?? [];
+  return rangos.length ? Math.max(...rangos.map((rango) => rango.maxHoras)) : null;
+};
+
+/** Aviso de recargo: las horas efectivas superan las cubiertas por el último rango de pensión. */
+export const validarRecargoHorasPeriodo = (
+  cursos: Curso[],
+  tipoPeriodo: TipoPeriodoAcademico,
+  horasSinRecargo: number | null,
+  limites: AcademicLimits = ACADEMIC_LIMITS
+): ResultadoLimite | null => {
+  if (horasSinRecargo === null) return null;
+  const total = calcularHorasEfectivas(cursos, tipoPeriodo, limites);
+  return { valido: total <= horasSinRecargo, total, limite: horasSinRecargo };
+};
+
+export const mensajeRecargoHoras = (horasSinRecargo: number): string =>
+  `Desde ${horasSinRecargo + 1} h pagas recargo por hora adicional`;
 
 /** R3 — mínimo global de créditos electivos para completar la carrera. */
 export const validarMinimoCreditosElectivos = (cursos: Curso[], limites: AcademicLimits = ACADEMIC_LIMITS): ResultadoLimite => {

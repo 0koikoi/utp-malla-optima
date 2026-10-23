@@ -1,6 +1,7 @@
 import { formatCredits } from '../../utils/formatCredits';
 import type { Curso, NotificacionMovimiento, PeriodoAcademico, CursoReferencia } from '../../types/academic';
 import type { moveCourseUseCase } from '../../application/usecases/moveCourseUseCase';
+import { mensajeRecargoHoras } from '../../domain/rules/planningRules';
 
 export const notificacionDesdeResultado = (
   curso: Curso,
@@ -8,11 +9,15 @@ export const notificacionDesdeResultado = (
   resultado: ReturnType<typeof moveCourseUseCase>
 ): NotificacionMovimiento | null => {
   if (resultado.ok) {
-    if (!resultado.warning) return null;
+    const { warning, surcharge } = resultado;
+    if (!warning && !surcharge) return null;
+    const recargo = surcharge ? `${mensajeRecargoHoras(surcharge.limite)}.` : '';
     return {
       tipo: 'LIMITE_HORAS', cursoNombre: curso.nombre, periodoDestino: periodo.etiqueta,
-      limite: resultado.warning.limite, valorActual: resultado.warning.total,
-      mensaje: `El curso se asignó a ${periodo.etiqueta}. La carga es de ${resultado.warning.total} horas efectivas y supera las ${resultado.warning.limite} horas recomendadas.`,
+      limite: warning?.limite ?? surcharge?.limite, valorActual: warning?.total ?? surcharge?.total,
+      mensaje: warning
+        ? [`El curso se asignó a ${periodo.etiqueta}. La carga es de ${warning.total} horas efectivas y supera las ${warning.limite} horas recomendadas.`, recargo].filter(Boolean).join(' ')
+        : `El curso se asignó a ${periodo.etiqueta} con ${surcharge!.total} horas efectivas. ${recargo}`,
     };
   }
 

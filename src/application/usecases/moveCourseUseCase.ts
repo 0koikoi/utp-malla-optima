@@ -4,6 +4,7 @@ import {
   validarDestinoNoAnterior,
   validarLimiteCreditosVerano,
   validarLimiteHorasPeriodo,
+  validarRecargoHorasPeriodo,
 } from '../../domain/rules/planningRules';
 import { validarPrerequisitosParaPeriodo } from '../../domain/services/prerequisiteService';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
@@ -24,7 +25,10 @@ export function moveCourseUseCase(
   cursos: Curso[],
   codigo: string,
   periodo: PeriodoAcademico,
-  contexto: { cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null; ciclosExcluidos?: number[] } = {}
+  contexto: {
+    cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null; ciclosExcluidos?: number[];
+    horasSinRecargo?: number | null;
+  } = {}
 ) {
   const curso = cursos.find((item) => item.codigo === codigo);
   if (!curso) return { ok: false as const, reason: 'NOT_FOUND' as MoveCourseFailureReason };
@@ -56,7 +60,7 @@ export function moveCourseUseCase(
     };
   }
 
-  const validation = validarPrerequisitosParaPeriodo(curso, cursos, periodo);
+  const validation = validarPrerequisitosParaPeriodo(curso, cursos, periodo, contexto);
   if (!validation.valido) {
     return {
       ok: false as const,
@@ -87,12 +91,17 @@ export function moveCourseUseCase(
   }
 
   const horas = validarLimiteHorasPeriodo(cursosDestino, periodo.tipo);
+  const recargo = validarRecargoHorasPeriodo(cursosDestino, periodo.tipo, contexto.horasSinRecargo ?? null);
   return {
     ok: true as const,
     warning: !horas.valido ? {
       reason: 'HOUR_LIMIT' as const,
       total: horas.total,
       limite: horas.limite,
+    } : null,
+    surcharge: recargo && !recargo.valido ? {
+      total: recargo.total,
+      limite: recargo.limite,
     } : null,
     cursos: cursos.map((item) =>
       item.codigo === codigo
