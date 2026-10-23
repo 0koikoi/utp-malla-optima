@@ -1,6 +1,7 @@
 import type { Curso, PeriodoIngreso } from '../../types/academic';
 import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
+import { esJaladoSinReplanificar } from '../../domain/rules/courseRules';
 
 interface SummerVisibility {
   ciclo: number;
@@ -26,4 +27,18 @@ export const puedeRetirarCursoRapido = (curso: Curso, cicloActual: number | null
 export const etiquetaPrerrequisito = (codigo: string, cursos: Curso[]): string => {
   const requisito = cursos.find((item) => item.codigo === codigo);
   return requisito ? `${codigo} · ${requisito.nombre}` : `${codigo} (nivelación / fuera de la malla)`;
+};
+
+/**
+ * Resumen informativo de un ciclo ya pasado: horas y créditos de lo llevado
+ * (aprobado, convalidado o jalado en ese ciclo). No se cotiza ni genera avisos.
+ */
+export const resumenCicloPasado = (cursos: Curso[], cicloActual: number | null) => {
+  const llevados = cursos.filter((curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO' ||
+    esJaladoSinReplanificar(curso, cicloActual));
+  return {
+    horas: llevados.reduce((suma, curso) => suma + curso.horasSemanales, 0),
+    creditos: llevados.reduce((suma, curso) => suma + curso.creditos, 0),
+    creditosJalados: llevados.filter((curso) => curso.jalado).reduce((suma, curso) => suma + curso.creditos, 0),
+  };
 };

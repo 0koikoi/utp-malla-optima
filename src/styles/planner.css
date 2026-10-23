@@ -503,3 +503,5 @@
 .cycle-remove-error { color: var(--rose-primary); font-size: 0.6rem; }
 @media (max-width: 640px) { .add-cycle-btn { margin-left: 0; } }
 @media (max-width: 640px) { .removable-cycle .tier-label { padding-top: 6px; padding-left: 38px; } }
+
+.stat-chip.stat-jalados { color: var(--rose-primary); border-color: var(--rose-border); }

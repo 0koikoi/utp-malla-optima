@@ -18,6 +18,7 @@ import {
   obtenerHorasSinRecargo,
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
+import { resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
 
 interface Props {
   numCiclo: number;
@@ -77,7 +78,9 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   );
   const totalCreditos = cursosParaCarga.reduce((acc, curso) => acc + curso.creditos, 0);
   const totalHoras = calcularHorasEfectivas(cursosParaCarga, tipoPeriodo);
-  const excesoHoras = totalHoras > LIMITE_HORAS_PERIODO;
+  // Los ciclos pasados solo informan lo llevado: sin cotización ni avisos de carga.
+  const resumenPasado = esPeriodoPasado && !esVerano ? resumenCicloPasado(cursos, cicloActual) : null;
+  const excesoHoras = !resumenPasado && totalHoras > LIMITE_HORAS_PERIODO;
   const horasSinRecargo = obtenerHorasSinRecargo(tarifario, disciplinaActiva);
   const conRecargo = horasSinRecargo !== null && totalHoras > horasSinRecargo;
   const cursosLlevados = cursos.filter(
@@ -119,14 +122,18 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       >
         {esVerano ? <Sun size={17} className="summer-icon" /> : <span className="tier-num">{numCiclo}</span>}
         <span className="tier-name">{esVerano ? `Verano ${numCiclo}` : `Ciclo ${numCiclo}`}</span>
-        <div className="tier-stats">
+        {resumenPasado ? <div className="tier-stats">
+          <span className="stat-chip stat-horas">{resumenPasado.horas}h sem.</span>
+          <span className="stat-chip">{formatCredits(resumenPasado.creditos)} cr llevados</span>
+          {resumenPasado.creditosJalados > 0 && <span className="stat-chip stat-jalados">{formatCredits(resumenPasado.creditosJalados)} cr jalados</span>}
+        </div> : <div className="tier-stats">
           <span className={`stat-chip stat-horas ${excesoHoras ? 'stat-hours-warning' : ''}`}>{totalHoras}h {esVerano ? 'ef.' : 'sem.'}</span>
           <span className="stat-chip">{formatCredits(totalCreditos)} cr</span>
           {pensionBasePeriodo !== null && (
             <span className="stat-chip stat-price">S/ {pensionBasePeriodo.toFixed(2)}</span>
           )}
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
-        </div>
+        </div>}
         {excesoHoras && <span className="tier-hours-warning" title={`La carga supera las ${LIMITE_HORAS_PERIODO} horas recomendadas; se permite planificar.`}><AlertTriangle size={11} /> Más de {LIMITE_HORAS_PERIODO} h</span>}
         {conRecargo && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
         {!habilitado ? (
