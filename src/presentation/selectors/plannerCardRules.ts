@@ -21,3 +21,9 @@ export const mostrarFilaVerano = ({
 export const puedeRetirarCursoRapido = (curso: Curso, cicloActual: number | null): boolean =>
   cicloActual !== null && curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
   !periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual);
+
+/** Texto de un prerrequisito en la tarjeta; los que no existen en la malla son de nivelación. */
+export const etiquetaPrerrequisito = (codigo: string, cursos: Curso[]): string => {
+  const requisito = cursos.find((item) => item.codigo === codigo);
+  return requisito ? `${codigo} · ${requisito.nombre}` : `${codigo} (nivelación / fuera de la malla)`;
+};

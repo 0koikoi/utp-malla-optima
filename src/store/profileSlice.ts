@@ -68,7 +68,7 @@ export const createProfileSlice = (repos: AcademicRepositories): AcademicSlice<P
       : curso));
     const ciclosExcluidos = normalizarCiclosExcluidos([...state.ciclosExcluidos, ciclo]);
     const afectados = cursosCiclo.length
-      ? detectarNuevosConflictosDescendientes(state.cursos, cursos, cursosCiclo[0].codigo) : [];
+      ? detectarNuevosConflictosDescendientes(state.cursos, cursos, cursosCiclo[0].codigo, state) : [];
     await repos.transaction(async () => {
       if (cursosCiclo.length) await repos.courses.saveMany(cursos);
       await repos.profile.save({ ciclosExcluidos, totalCiclos: state.totalCiclos });

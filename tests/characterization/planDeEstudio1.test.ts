@@ -111,10 +111,10 @@ describe('Caracterización - 8vo ciclo planificado en ciclo-8', () => {
     }
   });
 
-  it('isCursoDesbloqueado marca como bloqueados S73T e I62N (prerrequisito EN_CURSO)', () => {
-    // BUG #5, cambiar cuando se corrija: un prerrequisito EN_CURSO (o planificado antes)
-    // debería desbloquear el curso, igual que en validarPrerequisitosParaPeriodo.
-    expect(isCursoDesbloqueado(buscar(cursos, '100000S73T'), cursos)).toBe(false);
-    expect(isCursoDesbloqueado(buscar(cursos, '100000I62N'), cursos)).toBe(false);
+  it('isCursoDesbloqueado desbloquea S73T e I62N (prerrequisito EN_CURSO)', () => {
+    // BUG #5 corregido: un prerrequisito EN_CURSO desbloquea el curso para el próximo
+    // periodo planificable, con la misma regla que validarPrerequisitosParaPeriodo.
+    expect(isCursoDesbloqueado(buscar(cursos, '100000S73T'), cursos)).toBe(true);
+    expect(isCursoDesbloqueado(buscar(cursos, '100000I62N'), cursos)).toBe(true);
   });
 });

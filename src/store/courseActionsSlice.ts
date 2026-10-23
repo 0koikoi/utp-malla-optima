@@ -3,6 +3,7 @@ import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import { crearPeriodoRegular, crearPeriodoVerano, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
 import { cursoBloqueado, ordenarCursos } from '../domain/rules/courseRules';
+import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import {
   notificacionDesdeResultado, notificacionErrorPersistencia,
@@ -47,6 +48,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const resultado = moveCourseUseCase(state.cursos, codigo, periodo, {
       cicloActual: state.cicloActual, periodoIngreso: state.periodoIngreso,
       ciclosExcluidos: state.ciclosExcluidos,
+      horasSinRecargo: obtenerHorasSinRecargo(state.tarifario, state.disciplinaActiva),
     });
     if (!resultado.ok) {
       set({ notificacionMovimiento: notificacionDesdeResultado(curso, periodo, resultado) });
@@ -54,7 +56,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     }
     const cursosActualizados = ordenarCursos(resultado.cursos);
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
-    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo);
+    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
     try {
       await repos.courses.update(codigo, {
@@ -92,7 +94,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const cursosActualizados = ordenarCursos(state.cursos.map((item) => item.codigo === codigo
       ? { ...item, ciclo: item.cicloOrigen, tipoPeriodo: 'REGULAR' as const, ubicacion: 'banco' as const }
       : item));
-    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo);
+    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     try {
       await repos.courses.update(codigo, {
         ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR', ubicacion: 'banco',

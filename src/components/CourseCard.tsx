@@ -8,7 +8,7 @@ import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado } from '../domain/services/prerequisiteService';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
-import { puedeRetirarCursoRapido } from '../presentation/selectors/plannerCardRules';
+import { etiquetaPrerrequisito, puedeRetirarCursoRapido } from '../presentation/selectors/plannerCardRules';
 import { ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, X } from 'lucide-react';
 
 interface Props {
@@ -19,11 +19,9 @@ interface Props {
 const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const estaSeleccionado = useAcademicStore((state) =>
     state.cursosSeleccionadosParaMatricula.includes(curso.codigo));
-  const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos));
-  const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) => {
-    const req = state.cursos.find((item) => item.codigo === codigo);
-    return req ? `${codigo} · ${req.nombre}` : codigo;
-  })));
+  const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos, state));
+  const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) =>
+    etiquetaPrerrequisito(codigo, state.cursos))));
   const habilitaA = useAcademicStore(useShallow((state) => state.cursos
     .filter((item) => item.prerrequisitos.includes(curso.codigo))
     .map((item) => item.nombre)));

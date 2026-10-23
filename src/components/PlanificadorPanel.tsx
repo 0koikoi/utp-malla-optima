@@ -34,9 +34,9 @@ export function PlanificadorPanel() {
     .reduce((suma, curso) => suma + curso.creditos, 0);
   const resumen = useMemo(() => tarifario
     ? financialPlanning.calcular(cursos, tarifario, disciplinaActiva, {
-        metodoPago, pagoUnicoPorPeriodo: pagoUnico,
+        metodoPago, pagoUnicoPorPeriodo: pagoUnico, cicloActual,
       })
-    : null, [cursos, tarifario, disciplinaActiva, metodoPago, pagoUnico, financialPlanning]);
+    : null, [cursos, tarifario, disciplinaActiva, metodoPago, pagoUnico, cicloActual, financialPlanning]);
 
   useLayoutEffect(() => {
     if (confirmar) confirmarRef.current?.querySelector<HTMLButtonElement>('button')?.focus();

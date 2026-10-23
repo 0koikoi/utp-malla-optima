@@ -1,4 +1,6 @@
 import type { Curso } from '../../types/academic';
+import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
+import { periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
 import type { Tarifario } from '../../types/financial';
 import type { FinancialPeriod, FinancialSummary } from '../models/FinancialPeriod';
 import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules';
@@ -6,6 +8,8 @@ import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules
 export interface FinancialEngineOptions {
   metodoPago?: string;
   pagoUnicoPorPeriodo?: Record<string, boolean>;
+  /** Con ciclo actual, los ciclos regulares bloqueados (ciclo <= actual) no se cotizan. */
+  cicloActual?: number | null;
 }
 
 export class FinancialEngine {
@@ -25,6 +29,9 @@ export class FinancialEngine {
 
     cursos
       .filter((curso) => curso.ubicacion === 'periodo' && curso.estado === 'PENDIENTE')
+      // El verano del ciclo actual sigue cotizándose; solo se excluyen los regulares bloqueados.
+      .filter((curso) => !opciones.cicloActual || curso.tipoPeriodo !== 'REGULAR' ||
+        !periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), opciones.cicloActual))
       .forEach((curso) => {
         const key =
           curso.tipoPeriodo === 'VERANO'
