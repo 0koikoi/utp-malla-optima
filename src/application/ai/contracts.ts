@@ -87,6 +87,66 @@ const PeriodoResumenSchema = z.object({
   creditos: z.number(),
 });
 
+/**
+ * Restas y totales que la IA no debe hacer (D-001): todo lo que puede necesitar para responder
+ * "cuánto me falta" o "cuánto me paso" ya viene calculado aquí.
+ */
+const DerivadosSchema = z.object({
+  /** Horas del próximo periodo frente al tope de la escala y a las 24 h recomendadas (0 si no se pasa). */
+  horas: z.object({
+    proximoPeriodo: z.number(),
+    topeEscala: z.number().nullable(),
+    sobreTopeEscala: z.number(),
+    margenTopeEscala: z.number(),
+    recomendadas: z.number(),
+    sobreRecomendadas: z.number(),
+    margenRecomendadas: z.number(),
+  }),
+  /** Cada escenario de pago del próximo periodo contra el presupuesto; null sin presupuesto. */
+  presupuesto: z.array(z.object({
+    id: z.enum(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva', 'pago_unico']),
+    alcanza: z.boolean(),
+    /** presupuesto - cuotaMensual (negativo = no alcanza). */
+    diferenciaMes: monto,
+    /** Lo que falta (> 0 si no alcanza) o sobra cada mes, en positivo. */
+    faltaPorMes: monto,
+    sobraPorMes: monto,
+    /** diferenciaMes × numeroCuotas: las cuotas del ciclo (la matrícula se paga aparte). */
+    diferenciaCiclo: monto,
+    faltaPorCiclo: monto,
+    sobraPorCiclo: monto,
+  })).nullable(),
+  creditos: z.object({
+    /** Suma de los créditos de todos los cursos de la malla (incluye todos los electivos ofrecidos). */
+    totalMalla: z.number(),
+    obligatorios: z.number(),
+    /** Créditos electivos mínimos (academic.json, creditosMinimosElectivos). */
+    electivosMinimos: z.number(),
+    /** obligatorios + electivosMinimos. */
+    paraEgresar: z.number(),
+    /** Aprobados o convalidados que cuentan: obligatorios + electivos hasta el mínimo. */
+    aprobadosQueCuentan: z.number(),
+    enCurso: z.number(),
+    /** paraEgresar - aprobadosQueCuentan (incluye lo que está en curso). */
+    faltanParaEgresar: z.number(),
+    /** faltanParaEgresar - créditos obligatorios en curso: lo que faltaría si aprueba todo lo que lleva. */
+    faltanSiApruebaEnCurso: z.number(),
+    ciclosRestantes: z.number().int(),
+  }),
+  /** Cursos del próximo periodo: si se puede mover sin dejar inválidos otros cursos planificados. */
+  cursosProximoPeriodo: z.array(z.object({
+    codigo: z.string(),
+    nombre: z.string(),
+    creditos: z.number(),
+    horas: z.number(),
+    estado: z.enum(['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'PENDIENTE']),
+    jalado: z.boolean(),
+    sePuedeMover: z.boolean(),
+    /** Cursos planificados que quedarían sin su prerrequisito si se mueve. */
+    bloquearia: z.array(z.string()),
+  })),
+});
+
 const WhatIfSchema = z.object({
   codigo: z.string(),
   origen: z.enum(['EN_CURSO', 'PROXIMO_PERIODO']),
@@ -189,8 +249,10 @@ export const AIContextSchema = z.object({
     topeEscalaPension: z.number().nullable(),
   }),
   foco: z.discriminatedUnion('tipo', [z.object({ tipo: z.literal('plan') }), FocoCicloSchema, FocoCursoSchema]).nullable(),
+  derivados: DerivadosSchema,
 });
 export type AIContext = z.infer<typeof AIContextSchema>;
+export type AIDerivados = z.infer<typeof DerivadosSchema>;
 export type AICursoPlanificado = z.infer<typeof CursoPlanificadoSchema>;
 export type AIEscenarioPeriodo = z.infer<typeof EscenarioPeriodoSchema>;
 export type AICarga = z.infer<typeof CargaSchema>;

@@ -147,6 +147,19 @@ describe('mocks - tono del asesor', () => {
     verificarDatos(contexto, texto);
   });
 
+  it('derivados: créditos para egresar, estado de un curso y diferencia con un método de pago, sin restar en el mock', () => {
+    const plan1 = leer('contexto-plan1.json');
+    const creditos = mockChat(plan1, '¿cuántos créditos me faltan para egresar?').texto;
+    expect(creditos).toContain(`necesitas ${plan1.derivados.creditos.paraEgresar} créditos`);
+    expect(creditos).toContain(`Te faltan ${plan1.derivados.creditos.faltanParaEgresar}`);
+    const calculo = mockChat(plan1, '¿convalidé cálculo II?');
+    expect(calculo.texto).toBe('Según tu plan, CÁLCULO II (100000I1N0) está aprobado, con 2 créditos.');
+    const bcp = mockChat(plan1, '¿cuánto me falta para llegar a 900 con BCP?').texto;
+    expect(bcp).toContain('S/ 908.14');
+    expect(bcp).toContain('te faltan S/ 8.14 al mes (S/ 40.70 en el ciclo)');
+    verificarDatos(plan1, bcp);
+  });
+
   it('el análisis mock solo usa montos y códigos del contexto, con máximo 3 acciones por sección', () => {
     for (const ctx of [contexto, contextoJalado]) {
       const analisis = mockAnalisis(ctx);
@@ -164,6 +177,7 @@ describe('mocks - snapshot del tono', () => {
       'arma mi horario sin huecos', 'hice bika en inteligencia de negocios', 'hice trika en cálculo, ¿me botan?',
       'jalé un curso', '¿eres una persona?', 'ya no puedo más, quiero dejar la u', 'hazme mi tarea de cálculo',
       'estoy full chamba, ¿me cargo mucho?', 'Buenas tardes, ¿qué electivo me recomienda?',
+      '¿cuántos créditos me faltan para egresar?', '¿convalidé cálculo II?', '¿cuánto me falta para llegar a 900 con BCP?',
     ];
     expect(Object.fromEntries(preguntas.map((pregunta) => [pregunta, mockChat(contexto, pregunta).texto]))).toMatchSnapshot();
   });

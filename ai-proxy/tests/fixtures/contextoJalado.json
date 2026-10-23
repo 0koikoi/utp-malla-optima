@@ -1028,5 +1028,100 @@
   "factorHorasVerano": 2,
   "topeEscalaPension": 22
  },
- "foco": null
+ "foco": null,
+ "derivados": {
+  "horas": {
+   "proximoPeriodo": 25,
+   "topeEscala": 22,
+   "sobreTopeEscala": 3,
+   "margenTopeEscala": 0,
+   "recomendadas": 24,
+   "sobreRecomendadas": 1,
+   "margenRecomendadas": 0
+  },
+  "presupuesto": null,
+  "creditos": {
+   "totalMalla": 210,
+   "obligatorios": 197,
+   "electivosMinimos": 3,
+   "paraEgresar": 200,
+   "aprobadosQueCuentan": 121,
+   "enCurso": 16,
+   "faltanParaEgresar": 79,
+   "faltanSiApruebaEnCurso": 63,
+   "ciclosRestantes": 3
+  },
+  "cursosProximoPeriodo": [
+   {
+    "codigo": "100000S06I",
+    "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+    "creditos": 3,
+    "horas": 4,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000S72T",
+    "nombre": "GESTIÓN DEL SERVICIO TI",
+    "creditos": 3,
+    "horas": 4,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000S73T",
+    "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+    "creditos": 3,
+    "horas": 4,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000H01C",
+    "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+    "creditos": 3,
+    "horas": 3,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000TD09",
+    "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+    "creditos": 3,
+    "horas": 4,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000I62N",
+    "nombre": "INTELIGENCIA DE NEGOCIOS",
+    "creditos": 4,
+    "horas": 4,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   },
+   {
+    "codigo": "100000S71T",
+    "nombre": "NEGOCIACIÓN Y NARRATIVA",
+    "creditos": 2,
+    "horas": 2,
+    "estado": "PENDIENTE",
+    "jalado": false,
+    "sePuedeMover": true,
+    "bloquearia": []
+   }
+  ]
+ }
 }

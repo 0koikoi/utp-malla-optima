@@ -47,5 +47,17 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
     creditosMaximosVerano: 11, creditosMinimosElectivos: 3, factorHorasVerano: 2, topeEscalaPension: 22,
   },
   foco: null,
+  derivados: {
+    horas: { proximoPeriodo: 4, topeEscala: 22, sobreTopeEscala: 0, margenTopeEscala: 18, recomendadas: 24, sobreRecomendadas: 0, margenRecomendadas: 20 },
+    presupuesto: null,
+    creditos: {
+      totalMalla: 10, obligatorios: 7, electivosMinimos: 3, paraEgresar: 10, aprobadosQueCuentan: 0, enCurso: 3,
+      faltanParaEgresar: 10, faltanSiApruebaEnCurso: 7, ciclosRestantes: 1,
+    },
+    cursosProximoPeriodo: [{
+      codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', creditos: 4, horas: 4, estado: 'PENDIENTE',
+      jalado: false, sePuedeMover: true, bloquearia: [],
+    }],
+  },
   ...cambios,
 });

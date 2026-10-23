@@ -27,34 +27,41 @@ const conCodigo = (contexto: AIContext, codigo: string) => `${nombreDe(contexto,
 
 const PREGUNTAS_BASE = ['¿Me alcanza mi presupuesto?', '¿Estoy sobrecargado?', '¿Qué electivo me conviene?'];
 
+/** Diferencia contra el presupuesto ya calculada en CONTEXTO.derivados (el mock tampoco resta). */
+const derivadoPresupuesto = (contexto: AIContext, id: string) =>
+  contexto.derivados.presupuesto?.find((item) => item.id === id) ?? null;
+
+const frasePresupuesto = (contexto: AIContext, id: string) => {
+  const derivado = derivadoPresupuesto(contexto, id);
+  const presupuesto = contexto.financiero?.presupuestoMensual;
+  if (!derivado || presupuesto === null || presupuesto === undefined) return null;
+  return derivado.alcanza
+    ? `Tu presupuesto de ${soles(presupuesto)} cubre la cuota y te sobran ${soles(derivado.sobraPorMes)} al mes.`
+    : `Tu presupuesto de ${soles(presupuesto)} no cubre la cuota: te faltan ${soles(derivado.faltaPorMes)} al mes (${soles(derivado.faltaPorCiclo)} en el ciclo).`;
+};
+
 const seccionFinanciera = (contexto: AIContext): AISeccion | null => {
   const financiero = contexto.financiero;
   const escenarios = financiero?.proximoPeriodo ?? [];
   if (!financiero || !escenarios.length || !contexto.proximoPeriodo) return null;
   const elegido = escenarios.find((item) => item.id === financiero.metodoPagoElegido.id) ?? escenarios[0];
   const mejor = [...escenarios].sort((a, b) => a.total - b.total)[0];
-  const diferencia = elegido.diferenciaPresupuesto;
-  const nivel: Nivel = diferencia !== null && diferencia < 0 ? 'riesgo'
+  const derivado = derivadoPresupuesto(contexto, elegido.id);
+  const nivel: Nivel = derivado && !derivado.alcanza ? 'riesgo'
     : contexto.proximoPeriodo.horasExceso > 0 ? 'atencion' : 'ok';
   const partes = [
     `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
   ];
   if (mejor.id !== elegido.id) partes.push(`La opción más barata es ${mejor.nombre}: ${soles(mejor.total)}.`);
-  if (contexto.proximoPeriodo.horasExceso > 0 && financiero.costoHoraAdicional !== null) {
-    partes.push(`Tienes ${horas(contexto.proximoPeriodo.horasExceso)} sobre la escala; cada hora adicional cuesta ${soles(financiero.costoHoraAdicional)} por cuota.`);
+  if (contexto.derivados.horas.sobreTopeEscala > 0 && financiero.costoHoraAdicional !== null) {
+    partes.push(`Tienes ${horas(contexto.derivados.horas.sobreTopeEscala)} sobre la escala; cada hora adicional cuesta ${soles(financiero.costoHoraAdicional)} por cuota.`);
   }
-  if (diferencia !== null) {
-    partes.push(diferencia < 0
-      ? `Tu presupuesto de ${soles(financiero.presupuestoMensual!)} no cubre la cuota: te faltan ${soles(-diferencia)} al mes.`
-      : `Tu presupuesto de ${soles(financiero.presupuestoMensual!)} cubre la cuota y te sobran ${soles(diferencia)} al mes.`);
-  } else {
-    partes.push('Si me dices tu presupuesto mensual, te digo si te alcanza.');
-  }
+  partes.push(frasePresupuesto(contexto, elegido.id) ?? 'Si me dices tu presupuesto mensual, te digo si te alcanza.');
   partes.push('Montos referenciales: verifícalos en el portal de la UTP antes de pagar.');
   const acciones = [
     ...(mejor.id !== elegido.id ? [`Evalúa pagar con ${mejor.nombre}.`] : []),
     ...(contexto.proximoPeriodo.horasExceso > 0 ? ['Quita horas para no pagar recargo.'] : []),
-    ...(diferencia === null ? ['Ingresa tu presupuesto mensual.'] : []),
+    ...(derivado ? [] : ['Ingresa tu presupuesto mensual.']),
   ].slice(0, 3);
   return { tipo: 'financiero', nivel, titulo: 'Costo del próximo periodo', detalle: partes.join(' '), acciones, cursos: [] };
 };
@@ -62,9 +69,11 @@ const seccionFinanciera = (contexto: AIContext): AISeccion | null => {
 const seccionCarga = (contexto: AIContext): AISeccion => {
   const { carga, proximoPeriodo } = contexto;
   const pesados = (proximoPeriodo?.cursos ?? []).filter((curso) => curso.horas >= 4).map((curso) => curso.codigo);
+  const { sobreTopeEscala, topeEscala } = contexto.derivados.horas;
+  const sobreTope = sobreTopeEscala > 0 && topeEscala !== null ? ` Son ${horas(sobreTopeEscala)} sobre el tope de ${horas(topeEscala)} de la escala.` : '';
   const detalle = !proximoPeriodo
     ? 'Aún no tienes cursos planificados para el próximo periodo.'
-    : `${proximoPeriodo.etiqueta}: ${horas(carga.horas)} y ${proximoPeriodo.totalCreditos} créditos. ${carga.motivos.join(' ') || 'La carga está dentro de lo recomendado.'}`;
+    : `${proximoPeriodo.etiqueta}: ${horas(carga.horas)} y ${proximoPeriodo.totalCreditos} créditos. ${carga.motivos.join(' ') || 'La carga está dentro de lo recomendado.'}${sobreTope}`;
   const acciones = carga.nivel === 'ok'
     ? ['Mantén un horario fijo de estudio.']
     : ['Mueve un curso de 4 h a otro periodo.', 'Reserva tiempo para los cursos largos.', 'Revisa la ruta antes de matricularte.'];
@@ -145,7 +154,7 @@ export const mockAnalisis = (contexto: AIContext): AIAnalisisResponse => {
   return { resumen, secciones, preguntasSugeridas: PREGUNTAS_BASE };
 };
 
-type Tema = 'bienestar' | 'identidad' | 'sinDatos' | 'intentos' | 'cachimbo'
+type Tema = 'bienestar' | 'identidad' | 'sinDatos' | 'intentos' | 'cachimbo' | 'estadoCurso' | 'creditos'
   | 'financiero' | 'carga' | 'whatIf' | 'ruta' | 'electivos' | 'conviene' | 'fuera';
 
 const normalizar = (texto: string) => texto.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
@@ -161,7 +170,9 @@ const detectarTema = (texto: string): Tema => {
   if (/horario|hueco|cruce|seccion|profe|docente|\bnotas?\b|tranca|yuca|dificil/.test(t)) return 'sinDatos';
   if (/\bbika\b|\btrika\b|(segunda|tercera) vez|(dos|tres|2|3) veces/.test(t)) return 'intentos';
   if (/cachimbo|primer ciclo/.test(t)) return 'cachimbo';
-  if (/presupuesto|alcanza|cuesta|costo|pagar|pago|cuota|precio|pension|descuento|plata|dinero|matricula/.test(t)) return 'financiero';
+  if (/convalid|\baprobe\b|ya (lo )?lleve|ya (lo )?aprobe/.test(t)) return 'estadoCurso';
+  if (/creditos? (me )?faltan|faltan .*creditos|creditos .*egresar/.test(t)) return 'creditos';
+  if (/presupuesto|alcanza|cuesta|costo|pagar|pago|cuota|precio|pension|descuento|plata|dinero|matricula|\bbcp\b|bbva|interbank|scotiabank|llegar a \d/.test(t)) return 'financiero';
   if (/jal|desaprueb|repruebo/.test(t)) return 'whatIf';
   if (/sobrecarg|carga|cargo|horas|pesado|cansad|chamba|trabaj/.test(t)) return 'carga';
   if (/electivo/.test(t)) return 'electivos';
@@ -295,6 +306,42 @@ const respuestaCachimbo = (contexto: AIContext, pregunta: string): AIChatRespons
   };
 };
 
+const ESTADOS: Record<string, string> = { APROBADO: 'aprobado', CONVALIDADO: 'convalidado', EN_CURSO: 'en curso', PENDIENTE: 'pendiente' };
+
+/** Estado y créditos de un curso, tal cual están en CONTEXTO.catalogo. */
+const respuestaEstadoCurso = (contexto: AIContext, pregunta: string): AIChatResponse => {
+  const curso = cursoMencionado(contexto, pregunta);
+  if (!curso) {
+    return {
+      texto: '¿De qué curso me hablas? Dime su nombre como aparece en tu malla y te digo su estado.',
+      cursos: [], preguntasSugeridas: ['¿Cuántos créditos me faltan para egresar?'],
+    };
+  }
+  return {
+    texto: `Según tu plan, ${curso.nombre} (${curso.codigo}) está ${ESTADOS[curso.estado]}, con ${curso.creditos} créditos.`,
+    cursos: [curso.codigo], preguntasSugeridas: ['¿Cuántos créditos me faltan para egresar?', '🗺️ Mi ruta hasta egresar'],
+  };
+};
+
+/** Créditos para egresar: todo viene de CONTEXTO.derivados.creditos. */
+const respuestaCreditos = (contexto: AIContext): AIChatResponse => {
+  const { creditos } = contexto.derivados;
+  return {
+    texto: `Para egresar necesitas ${creditos.paraEgresar} créditos (${creditos.obligatorios} obligatorios y ${creditos.electivosMinimos} electivos como mínimo). Te faltan ${creditos.faltanParaEgresar}; si apruebas lo que llevas ahora, quedarían ${creditos.faltanSiApruebaEnCurso}, en ${creditos.ciclosRestantes} ciclos más según la propuesta del planificador.`,
+    cursos: [], preguntasSugeridas: ['🗺️ Mi ruta hasta egresar', '¿Qué electivo me conviene?'],
+  };
+};
+
+/** Método de pago nombrado en la pregunta ("con BCP", "con pago único"), o null. */
+const metodoMencionado = (pregunta: string) => {
+  const t = normalizar(pregunta);
+  if (/\bbcp\b|bbva/.test(t)) return 'bcp_bbva';
+  if (/interbank|scotiabank/.test(t)) return 'interbank_scotiabank';
+  if (/pago unico/.test(t)) return 'pago_unico';
+  if (/sin descuento/.test(t)) return 'sin_descuento';
+  return null;
+};
+
 export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse => {
   const tema = detectarTema(pregunta);
   if (tema === 'bienestar') return respuestaBienestar(contexto);
@@ -305,6 +352,8 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
     const incoherente = respuestaCachimbo(contexto, pregunta);
     if (incoherente) return incoherente;
   }
+  if (tema === 'estadoCurso') return respuestaEstadoCurso(contexto, pregunta);
+  if (tema === 'creditos') return respuestaCreditos(contexto);
   const jalado = cursoMencionado(contexto, pregunta);
   const comoJalado = jalado && contexto.jalados.find((item) => item.codigo === jalado.codigo);
   if (comoJalado) {
@@ -339,6 +388,16 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
           texto: `El ${focoCiclo.periodo.etiqueta} cuesta ${soles(base.total)} (${base.nombre}): matrícula de ${soles(base.matricula)} y ${base.numeroCuotas} cuotas de ${soles(base.cuotaMensual)}.` +
             (masBarato && masBarato.total < base.total ? ` Con ${masBarato.nombre} pagarías ${soles(masBarato.total)}.` : '') +
             ' Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.',
+          cursos: [], preguntasSugeridas: otras('presupuesto'),
+        };
+      }
+      const metodo = metodoMencionado(pregunta);
+      const escenario = metodo && contexto.financiero?.proximoPeriodo.find((item) => item.id === metodo);
+      if (escenario) {
+        const presupuesto = frasePresupuesto(contexto, escenario.id);
+        return {
+          texto: `Con ${escenario.nombre}, la cuota del ${contexto.proximoPeriodo?.etiqueta ?? 'próximo periodo'} es ${soles(escenario.cuotaMensual)} y el total ${soles(escenario.total)}.` +
+            `${presupuesto ? ` ${presupuesto}` : ''} Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.`,
           cursos: [], preguntasSugeridas: otras('presupuesto'),
         };
       }

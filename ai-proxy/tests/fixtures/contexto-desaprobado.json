@@ -815,5 +815,29 @@
     "factorHorasVerano": 2,
     "topeEscalaPension": 22
   },
-  "foco": null
+  "foco": null,
+  "derivados": {
+    "horas": {
+      "proximoPeriodo": 0,
+      "topeEscala": 22,
+      "sobreTopeEscala": 0,
+      "margenTopeEscala": 22,
+      "recomendadas": 24,
+      "sobreRecomendadas": 0,
+      "margenRecomendadas": 24
+    },
+    "presupuesto": null,
+    "creditos": {
+      "totalMalla": 210,
+      "obligatorios": 197,
+      "electivosMinimos": 3,
+      "paraEgresar": 200,
+      "aprobadosQueCuentan": 117,
+      "enCurso": 19,
+      "faltanParaEgresar": 83,
+      "faltanSiApruebaEnCurso": 64,
+      "ciclosRestantes": 3
+    },
+    "cursosProximoPeriodo": []
+  }
 }

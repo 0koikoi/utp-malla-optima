@@ -1184,5 +1184,141 @@
       }
     ],
     "jaladosEnVentana": []
+  },
+  "derivados": {
+    "horas": {
+      "proximoPeriodo": 25,
+      "topeEscala": 22,
+      "sobreTopeEscala": 3,
+      "margenTopeEscala": 0,
+      "recomendadas": 24,
+      "sobreRecomendadas": 1,
+      "margenRecomendadas": 0
+    },
+    "presupuesto": [
+      {
+        "id": "sin_descuento",
+        "alcanza": false,
+        "diferenciaMes": -31.43,
+        "faltaPorMes": 31.43,
+        "sobraPorMes": 0,
+        "diferenciaCiclo": -157.15,
+        "faltaPorCiclo": 157.15,
+        "sobraPorCiclo": 0
+      },
+      {
+        "id": "interbank_scotiabank",
+        "alcanza": true,
+        "diferenciaMes": 15.14,
+        "faltaPorMes": 0,
+        "sobraPorMes": 15.14,
+        "diferenciaCiclo": 75.7,
+        "faltaPorCiclo": 0,
+        "sobraPorCiclo": 75.7
+      },
+      {
+        "id": "bcp_bbva",
+        "alcanza": false,
+        "diferenciaMes": -8.14,
+        "faltaPorMes": 8.14,
+        "sobraPorMes": 0,
+        "diferenciaCiclo": -40.7,
+        "faltaPorCiclo": 40.7,
+        "sobraPorCiclo": 0
+      },
+      {
+        "id": "pago_unico",
+        "alcanza": true,
+        "diferenciaMes": 38.43,
+        "faltaPorMes": 0,
+        "sobraPorMes": 38.43,
+        "diferenciaCiclo": 192.15,
+        "faltaPorCiclo": 0,
+        "sobraPorCiclo": 192.15
+      }
+    ],
+    "creditos": {
+      "totalMalla": 210,
+      "obligatorios": 197,
+      "electivosMinimos": 3,
+      "paraEgresar": 200,
+      "aprobadosQueCuentan": 121,
+      "enCurso": 19,
+      "faltanParaEgresar": 79,
+      "faltanSiApruebaEnCurso": 60,
+      "ciclosRestantes": 3
+    },
+    "cursosProximoPeriodo": [
+      {
+        "codigo": "100000S06I",
+        "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+        "creditos": 3,
+        "horas": 4,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000S72T",
+        "nombre": "GESTIÓN DEL SERVICIO TI",
+        "creditos": 3,
+        "horas": 4,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000S73T",
+        "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+        "creditos": 3,
+        "horas": 4,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000H01C",
+        "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+        "creditos": 3,
+        "horas": 3,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000TD09",
+        "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+        "creditos": 3,
+        "horas": 4,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000I62N",
+        "nombre": "INTELIGENCIA DE NEGOCIOS",
+        "creditos": 4,
+        "horas": 4,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      },
+      {
+        "codigo": "100000S71T",
+        "nombre": "NEGOCIACIÓN Y NARRATIVA",
+        "creditos": 2,
+        "horas": 2,
+        "estado": "PENDIENTE",
+        "jalado": false,
+        "sePuedeMover": true,
+        "bloquearia": []
+      }
+    ]
   }
 }

@@ -13,7 +13,7 @@ import { FinancialPlanningService } from '../../financial/services/FinancialPlan
 import { UniversityFinancialRulesProvider } from '../../financial/rules/UniversityFinancialRulesProvider';
 import { generateOptimalPlanUseCase } from '../usecases/generateOptimalPlanUseCase';
 import type {
-  AICarga, AIContext, AICursoPlanificado, AIEscenarioPeriodo, AIFoco, AIFocoContexto, AIWhatIf,
+  AICarga, AIContext, AICursoPlanificado, AIDerivados, AIEscenarioPeriodo, AIFoco, AIFocoContexto, AIWhatIf,
 } from './contracts';
 
 /**
@@ -252,6 +252,77 @@ const construirFoco = (
   };
 };
 
+const positivo = (valor: number) => r2(Math.max(0, valor));
+
+/**
+ * CONTEXTO.derivados: las restas y totales que la IA no debe hacer (D-001).
+ * Créditos para egresar = obligatorios + el mínimo de electivos de academic.json (creditosMinimosElectivos);
+ * los electivos aprobados cuentan solo hasta ese mínimo.
+ */
+export const calcularDerivados = (
+  cursos: Curso[], carga: AICarga, escenarios: AIEscenarioPeriodo[], presupuesto: number | null,
+  cursosProximos: Curso[], whatIfProximos: Omit<AIWhatIf, 'origen'>[], ciclosRestantes: number,
+): AIDerivados => {
+  const tope = carga.topeEscala;
+  const obligatorios = cursos.filter((curso) => curso.tipo === 'OBLIGATORIO');
+  const electivosAprobados = sumar(cursos.filter((curso) => curso.tipo === 'ELECTIVO' && COMPLETADOS.has(curso.estado)), 'creditos');
+  const paraEgresar = r2(sumar(obligatorios, 'creditos') + MINIMO_CREDITOS_ELECTIVOS);
+  const aprobadosQueCuentan = r2(sumar(obligatorios.filter((curso) => COMPLETADOS.has(curso.estado)), 'creditos')
+    + Math.min(electivosAprobados, MINIMO_CREDITOS_ELECTIVOS));
+  const faltanParaEgresar = positivo(paraEgresar - aprobadosQueCuentan);
+  const obligatoriosEnCurso = sumar(obligatorios.filter((curso) => curso.estado === 'EN_CURSO'), 'creditos');
+  const bloqueos = new Map(whatIfProximos.map((item) => [item.codigo, item.planificadosInvalidos.map((afectado) => afectado.codigo)]));
+  return {
+    horas: {
+      proximoPeriodo: carga.horas,
+      topeEscala: tope,
+      sobreTopeEscala: tope === null ? 0 : positivo(carga.horas - tope),
+      margenTopeEscala: tope === null ? 0 : positivo(tope - carga.horas),
+      recomendadas: carga.limiteRecomendado,
+      sobreRecomendadas: positivo(carga.horas - carga.limiteRecomendado),
+      margenRecomendadas: positivo(carga.limiteRecomendado - carga.horas),
+    },
+    presupuesto: presupuesto === null ? null : escenarios.map((escenario) => {
+      const diferenciaMes = r2(presupuesto - escenario.cuotaMensual);
+      const diferenciaCiclo = r2(diferenciaMes * escenario.numeroCuotas);
+      return {
+        id: escenario.id,
+        alcanza: diferenciaMes >= 0,
+        diferenciaMes,
+        faltaPorMes: positivo(-diferenciaMes),
+        sobraPorMes: positivo(diferenciaMes),
+        diferenciaCiclo,
+        faltaPorCiclo: positivo(-diferenciaCiclo),
+        sobraPorCiclo: positivo(diferenciaCiclo),
+      };
+    }),
+    creditos: {
+      totalMalla: sumar(cursos, 'creditos'),
+      obligatorios: sumar(obligatorios, 'creditos'),
+      electivosMinimos: MINIMO_CREDITOS_ELECTIVOS,
+      paraEgresar,
+      aprobadosQueCuentan,
+      enCurso: sumar(cursos.filter((curso) => curso.estado === 'EN_CURSO'), 'creditos'),
+      faltanParaEgresar,
+      faltanSiApruebaEnCurso: positivo(faltanParaEgresar - obligatoriosEnCurso),
+      ciclosRestantes,
+    },
+    cursosProximoPeriodo: cursosProximos.map((curso) => {
+      const bloquearia = bloqueos.get(curso.codigo) ?? [];
+      return {
+        codigo: curso.codigo,
+        nombre: curso.nombre,
+        creditos: curso.creditos,
+        horas: curso.horasSemanales,
+        estado: curso.estado,
+        jalado: esCursoJalado(curso),
+        sePuedeMover: bloquearia.length === 0,
+        bloquearia,
+      };
+    }),
+  };
+};
+
 export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesContextoIA = {}): AIContext => {
   const { cursos, tarifario, disciplinaActiva, cicloActual, periodoIngreso } = estado;
   const contextoJalados = { cicloActual, periodoIngreso };
@@ -287,6 +358,9 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     };
   })();
 
+  const carga = calcularCarga(cursosProximos, siguiente?.periodo.tipo ?? 'REGULAR', topeEscala, prioridades);
+  const escenariosProximos = siguiente && entorno ? escenariosPeriodo(siguiente.periodo.id, entorno) : [];
+  const whatIfProximos = cursosProximos.map((curso) => whatIfDe(curso, estado));
   const metodo = tarifario?.metodosPago?.[estado.metodoPago];
   const tarifas = tarifario ? tarifario.disciplinas[disciplinaActiva] ?? Object.values(tarifario.disciplinas)[0] : undefined;
 
@@ -334,15 +408,15 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
       metodoPagoElegido: { id: estado.metodoPago, nombre: metodo?.nombre ?? estado.metodoPago },
       costoHoraAdicional: tarifas?.costoHoraAdicional ?? null,
       presupuestoMensual: presupuesto,
-      proximoPeriodo: siguiente ? escenariosPeriodo(siguiente.periodo.id, entorno) : [],
+      proximoPeriodo: escenariosProximos,
       planCompleto: ESCENARIOS.map((id) => ({
         id, nombre: nombreEscenario(id, tarifario), total: r2(calcularEscenario(id, entorno).totalGeneral),
       })),
     } : null,
-    carga: calcularCarga(cursosProximos, siguiente?.periodo.tipo ?? 'REGULAR', topeEscala, prioridades),
+    carga,
     whatIf: [
       ...conEstado('EN_CURSO').map((curso) => ({ ...whatIfDe(curso, estado), origen: 'EN_CURSO' as const })),
-      ...cursosProximos.map((curso) => ({ ...whatIfDe(curso, estado), origen: 'PROXIMO_PERIODO' as const })),
+      ...whatIfProximos.map((item) => ({ ...item, origen: 'PROXIMO_PERIODO' as const })),
     ],
     ruta,
     electivos: cursos.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE').map((curso) => ({
@@ -356,5 +430,8 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     })),
     limites: { ...ACADEMIC_LIMITS, topeEscalaPension: topeEscala },
     foco: construirFoco(opciones.foco, estado, prioridades, topeEscala, entorno),
+    derivados: calcularDerivados(
+      cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
+    ),
   };
 };

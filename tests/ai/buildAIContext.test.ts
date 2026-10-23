@@ -36,6 +36,35 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(contexto).toMatchSnapshot();
   });
 
+  it('derivados: horas sobre el tope y las 24 h, diferencia por escenario, créditos para egresar (D-001)', () => {
+    const { derivados, financiero, ruta } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
+    expect(derivados.horas).toEqual({
+      proximoPeriodo: 25, topeEscala: 22, sobreTopeEscala: 3, margenTopeEscala: 0, recomendadas: 24, sobreRecomendadas: 1, margenRecomendadas: 0,
+    });
+    // BCP / BBVA: cuota 908.14 contra 900 → faltan 8.14 al mes y 40.70 en las 5 cuotas.
+    expect(derivados.presupuesto?.find((item) => item.id === 'bcp_bbva')).toEqual({
+      id: 'bcp_bbva', alcanza: false, diferenciaMes: -8.14, faltaPorMes: 8.14, sobraPorMes: 0, diferenciaCiclo: -40.7, faltaPorCiclo: 40.7, sobraPorCiclo: 0,
+    });
+    for (const escenario of financiero!.proximoPeriodo) {
+      expect(derivados.presupuesto?.find((item) => item.id === escenario.id)?.diferenciaMes).toBe(escenario.diferenciaPresupuesto);
+    }
+    // 197 obligatorios + 3 electivos mínimos (academic.json); 121 aprobados o convalidados; 19 en curso.
+    expect(derivados.creditos).toEqual({
+      totalMalla: 210, obligatorios: 197, electivosMinimos: 3, paraEgresar: 200, aprobadosQueCuentan: 121, enCurso: 19,
+      faltanParaEgresar: 79, faltanSiApruebaEnCurso: 60, ciclosRestantes: ruta.ciclosRestantes,
+    });
+    expect(derivados.cursosProximoPeriodo.map((curso) => curso.codigo)).toEqual(CURSOS_OCTAVO);
+    expect(derivados.cursosProximoPeriodo[0]).toMatchObject({ creditos: 3, horas: 4, estado: 'PENDIENTE', jalado: false, sePuedeMover: true, bloquearia: [] });
+    expect(buildAIContext(store.getState()).derivados.presupuesto).toBeNull();
+  });
+
+  it('derivados: un curso que es prerrequisito de otro planificado después no se puede mover', async () => {
+    const dependiente = store.getState().cursos.find((curso) => curso.estado === 'PENDIENTE' && curso.prerrequisitos.includes('100000S06I'))!;
+    expect(await store.getState().moverCursoAPeriodo(dependiente.codigo, crearPeriodoRegular(9))).toBe(true);
+    const s06i = buildAIContext(store.getState()).derivados.cursosProximoPeriodo.find((curso) => curso.codigo === '100000S06I');
+    expect(s06i).toMatchObject({ sePuedeMover: false, bloquearia: [dependiente.codigo] });
+  });
+
   it('calcula perfil, próximo periodo y carga', () => {
     const { perfil, proximoPeriodo, carga } = buildAIContext(store.getState());
     expect(perfil).toMatchObject({ periodoIngreso: 'marzo', cicloActual: 7, creditos: { enCurso: 19, pendientes: 70 } });
