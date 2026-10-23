@@ -1,4 +1,4 @@
-import type { Curso } from '../../types/academic';
+import type { Curso, PeriodoIngreso } from '../../types/academic';
 import {
   generarPlanificacionAutomatica,
   type ResultadoPlanificacionAutomatica,
@@ -6,16 +6,18 @@ import {
 
 export interface GenerateOptimalPlanInput {
   cursos: Curso[];
-  limiteCreditos?: number;
   totalCiclos?: number;
+  ciclosExcluidos?: number[];
   cicloActual?: number | null;
+  periodoIngreso?: PeriodoIngreso | null;
 }
 
 export const generateOptimalPlanUseCase = (
   input: GenerateOptimalPlanInput
 ): ResultadoPlanificacionAutomatica =>
   generarPlanificacionAutomatica(input.cursos, {
-    limiteCreditos: input.limiteCreditos,
     totalCiclos: input.totalCiclos,
+    ciclosExcluidos: input.ciclosExcluidos,
     cicloActual: input.cicloActual,
+    periodoIngreso: input.periodoIngreso,
   });

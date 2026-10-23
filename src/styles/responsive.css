@@ -32,9 +32,9 @@
 
   /* ── Variables móvil ── */
   :root {
-    --topbar-h: 40px;
+    --topbar-h: 48px;
     --nav-h:    auto;
-    --chrome-h: 40px; /* solo topbar, nav no es sticky en móvil */
+    --chrome-h: 136px; /* marca y controles; se ajusta a la altura real */
     --aside-w:  100%;
   }
 
@@ -94,71 +94,80 @@
     font-size: 0.9rem;
   }
 
-  /* ── Layout principal: columna ── */
-  #app-main {
-    flex-direction: column;
-    min-height: unset;
+  /* ── Dos mitades del espacio disponible bajo la barra fija ── */
+  body, #root, .academic-app {
+    min-height: 100dvh;
   }
-
-  /* ── Aside Pendientes: colapsable desde abajo ── */
-  #panel-pendientes {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: unset;
-    width: 100%;
-    height: 52px;               /* altura colapsada: solo el header */
-    z-index: 900;
-    border-right: none;
-    border-top: 2px solid rgba(0,0,0,0.1);
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
-    transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+  #app-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    height: calc(100dvh - var(--chrome-h));
+    min-height: 0;
     overflow: hidden;
   }
-  #panel-pendientes.mob-open {
-    height: 55vh;
-    overflow: visible;
-  }
-  #panel-pendientes.mob-open #pozo-cursos {
-    overflow-y: auto;
+  #app-main:has(#panel-pendientes.collapsed) {
+    grid-template-rows: minmax(0, 1fr) 52px;
   }
 
-  /* Header del aside: actúa como handle de drag */
-  .aside-head {
+  /* ── Banco inferior: visible por defecto y con scroll propio ── */
+  #panel-pendientes, #panel-pendientes.collapsed {
+    grid-column: 1;
+    grid-row: 2;
+    position: relative;
+    top: auto;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    z-index: 900;
+    border-right: none;
+    border-top: 2px solid var(--border-strong);
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    overflow: clip;
+  }
+
+  .aside-head, #panel-pendientes.collapsed .aside-head {
+    min-height: 50px;
+    flex-direction: row;
+    align-items: center;
     cursor: pointer;
     padding: 10px 14px;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
   }
-  /* Indicador de expansión */
-  .aside-head::after {
-    content: '▲';
-    font-size: 0.6rem;
-    color: var(--t-light);
-    margin-left: auto;
-    transition: transform 0.3s ease;
+  #panel-pendientes.collapsed .aside-head-title span {
+    display: inline;
   }
-  #panel-pendientes.mob-open .aside-head::after {
-    transform: rotate(180deg);
+  #panel-pendientes.collapsed .aside-count {
+    order: 0;
   }
 
   .aside-hint {
     padding: 4px 14px 5px;
     font-size: 0.6rem;
   }
-
-  #pozo-cursos {
-    overflow-y: hidden; /* se activa solo cuando está abierto */
-    padding: 4px 10px 80px; /* padding extra para que el último card no quede tapado */
+  .aside-hint, .pozo-search-wrap, .aside-tap-target {
+    flex-shrink: 0;
   }
 
-  /* ── Planificador: ocupa todo el ancho ── */
+  #pozo-cursos {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 10px 16px;
+  }
+  #panel-pendientes:has(.aside-tap-target) #pozo-cursos {
+    padding-bottom: 80px; /* espacio para la barra de movimiento por toque */
+  }
+
+  /* ── Ciclos superiores: scroll independiente del banco ── */
   #panel-planificador {
-    padding: 12px 10px 120px; /* 120px de margen inferior para que no quede tapado por el aside */
-    overflow-y: unset;
-    flex: unset;
-    min-height: 100vh;
+    grid-column: 1;
+    grid-row: 1;
+    padding: 12px 10px 20px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   /* ── Ciclos: layout compacto ── */
@@ -234,6 +243,22 @@
   }
 }
 
+/* En móvil horizontal, el banco completo se desplaza para dejar espacio a los cursos. */
+@media (max-width: 640px) and (max-height: 500px) {
+  #panel-pendientes.expanded {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #panel-pendientes.expanded .aside-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  #panel-pendientes.expanded #pozo-cursos {
+    flex: none;
+    overflow: visible;
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    RESPONSIVE — MÓVIL PEQUEÑO (≤ 380px)

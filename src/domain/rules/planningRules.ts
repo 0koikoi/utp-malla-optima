@@ -1,11 +1,13 @@
 import type { Curso, PeriodoAcademico, TipoPeriodoAcademico } from '../../types/academic';
 import { crearPeriodoRegular, determinarPeriodoActual, determinarPeriodoEnCurso, esPeriodoAnterior } from './academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from './academicContextRules';
+import { ACADEMIC_LIMITS, type AcademicLimits } from '../../config/academicLimits';
 
-export const LIMITE_HORAS_PERIODO = 26;
-export const FACTOR_HORAS_VERANO = 2;
-export const LIMITE_CREDITOS_VERANO = 11;
-export const MINIMO_CREDITOS_ELECTIVOS = 3;
+export const LIMITE_HORAS_PERIODO = ACADEMIC_LIMITS.horasRecomendadasPeriodo;
+export const LIMITE_HORAS_PLANIFICACION = ACADEMIC_LIMITS.horasMaximasPlanificacion;
+export const FACTOR_HORAS_VERANO = ACADEMIC_LIMITS.factorHorasVerano;
+export const LIMITE_CREDITOS_VERANO = ACADEMIC_LIMITS.creditosMaximosVerano;
+export const MINIMO_CREDITOS_ELECTIVOS = ACADEMIC_LIMITS.creditosMinimosElectivos;
 
 export interface ResultadoLimite {
   valido: boolean;
@@ -15,45 +17,47 @@ export interface ResultadoLimite {
 
 export const calcularHorasEfectivas = (
   cursos: Curso[],
-  tipoPeriodo: TipoPeriodoAcademico
+  tipoPeriodo: TipoPeriodoAcademico,
+  limites: AcademicLimits = ACADEMIC_LIMITS
 ): number => {
   const horas = cursos.reduce((total, curso) => total + curso.horasSemanales, 0);
-  return tipoPeriodo === 'VERANO' ? horas * FACTOR_HORAS_VERANO : horas;
+  return tipoPeriodo === 'VERANO' ? horas * limites.factorHorasVerano : horas;
 };
 
-/** R2 — máximo recomendado de 22 horas efectivas por periodo. */
+/** Recomendación manual de 24 horas efectivas; el exceso genera una advertencia. */
 export const validarLimiteHorasPeriodo = (
   cursos: Curso[],
-  tipoPeriodo: TipoPeriodoAcademico
+  tipoPeriodo: TipoPeriodoAcademico,
+  limites: AcademicLimits = ACADEMIC_LIMITS
 ): ResultadoLimite => {
-  const total = calcularHorasEfectivas(cursos, tipoPeriodo);
+  const total = calcularHorasEfectivas(cursos, tipoPeriodo, limites);
   return {
-    valido: total <= LIMITE_HORAS_PERIODO,
+    valido: total <= limites.horasRecomendadasPeriodo,
     total,
-    limite: LIMITE_HORAS_PERIODO,
+    limite: limites.horasRecomendadasPeriodo,
   };
 };
 
 /** R3 — mínimo global de créditos electivos para completar la carrera. */
-export const validarMinimoCreditosElectivos = (cursos: Curso[]): ResultadoLimite => {
+export const validarMinimoCreditosElectivos = (cursos: Curso[], limites: AcademicLimits = ACADEMIC_LIMITS): ResultadoLimite => {
   const total = cursos
     .filter((curso) => curso.tipo === 'ELECTIVO')
     .reduce((suma, curso) => suma + curso.creditos, 0);
 
   return {
-    valido: total >= MINIMO_CREDITOS_ELECTIVOS,
+    valido: total >= limites.creditosMinimosElectivos,
     total,
-    limite: MINIMO_CREDITOS_ELECTIVOS,
+    limite: limites.creditosMinimosElectivos,
   };
 };
 
 /** R4 — máximo 11 créditos por verano. */
-export const validarLimiteCreditosVerano = (cursos: Curso[]): ResultadoLimite => {
+export const validarLimiteCreditosVerano = (cursos: Curso[], limites: AcademicLimits = ACADEMIC_LIMITS): ResultadoLimite => {
   const total = cursos.reduce((suma, curso) => suma + curso.creditos, 0);
   return {
-    valido: total <= LIMITE_CREDITOS_VERANO,
+    valido: total <= limites.creditosMaximosVerano,
     total,
-    limite: LIMITE_CREDITOS_VERANO,
+    limite: limites.creditosMaximosVerano,
   };
 };
 

@@ -57,6 +57,10 @@ export interface Tarifario {
   limitesAcademicos?: {
     creditosMinimos: number;
     creditosMaximos: number;
+    horasRecomendadasPeriodo?: number;
+    horasMaximasPlanificacion?: number;
+    creditosMaximosVerano?: number;
+    creditosMinimosElectivos?: number;
   };
   /** Multiplicador de horas usado solo para el cálculo tarifario de verano. */
   multiplicadorHorasVerano?: number;

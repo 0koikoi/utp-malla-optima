@@ -1,30 +1,18 @@
 import type { UniversityFinancialRules } from './UniversityFinancialRules';
 import { inferLegacyFinancialRulesId } from './financialRulesCompatibility';
-import { UtpFinancialRules } from './utp/UtpFinancialRules';
-
-interface FinancialRulesRegistration {
-  id: string;
-  create: () => UniversityFinancialRules;
-}
+import './registerFinancialRules';
+import { getFinancialRules, registerFinancialRules, type FinancialRulesRegistration } from './financialRulesRegistry';
 
 export interface FinancialRulesReference {
   universidadId: string;
   reglasFinancierasId?: string;
 }
 
-const normalizeId = (value: string): string => value.trim().toLowerCase();
+export interface FinancialRulesResolver {
+  resolve(reference: FinancialRulesReference): UniversityFinancialRules;
+}
 
-const REGISTRATIONS: FinancialRulesRegistration[] = [
-  {
-    id: 'utp',
-    create: () => new UtpFinancialRules(),
-  },
-  {
-    // Alias temporal para tarifarios persistidos antes de normalizar el id de reglas.
-    id: 'utp-2026',
-    create: () => new UtpFinancialRules(),
-  },
-];
+const normalizeId = (value: string): string => value.trim().toLowerCase();
 
 /**
  * Resuelve reglas financieras por un identificador explícito y estable.
@@ -33,8 +21,12 @@ const REGISTRATIONS: FinancialRulesRegistration[] = [
  * reglasFinancierasId no existe, se mantiene un fallback compatible basado
  * en universidadId. Una referencia explícita desconocida siempre falla.
  */
-export class UniversityFinancialRulesProvider {
-  static resolve(reference: FinancialRulesReference): UniversityFinancialRules {
+export class UniversityFinancialRulesProvider implements FinancialRulesResolver {
+  register(registration: FinancialRulesRegistration): void {
+    registerFinancialRules(registration);
+  }
+
+  resolve(reference: FinancialRulesReference): UniversityFinancialRules {
     const explicitRulesId = reference.reglasFinancierasId?.trim();
     const rulesId = explicitRulesId
       ? normalizeId(explicitRulesId)
@@ -46,7 +38,7 @@ export class UniversityFinancialRulesProvider {
       );
     }
 
-    const registration = REGISTRATIONS.find(({ id }) => id === rulesId);
+    const registration = getFinancialRules(rulesId);
 
     if (!registration) {
       throw new Error(

@@ -1,5 +1,5 @@
-import type { Curso, CursoReferencia, PeriodoAcademico } from '../types/academic';
-import { crearPeriodoRegular, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
+import type { Curso, CursoReferencia, PeriodoAcademico } from '../../types/academic';
+import { crearPeriodoRegular, obtenerPeriodoCurso } from '../rules/academicPeriodRules';
 
 const ESTADOS_CUMPLIDOS = new Set(['APROBADO', 'CONVALIDADO']);
 

@@ -14,9 +14,12 @@ export function PrerequisitoToast() {
   if (!notificacionMovimiento) return null;
 
   const { tipo } = notificacionMovimiento;
+  const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE';
   const faltantes = notificacionMovimiento.faltantes ?? [];
   const titulo =
-    tipo === 'INMOVIBLE'
+    tipo === 'ERROR_PERSISTENCIA'
+      ? 'No se pudo guardar'
+      : tipo === 'INMOVIBLE'
       ? 'Curso bloqueado'
       : tipo === 'IMPACTO_DESCENDIENTE'
         ? 'Impacto en cursos posteriores'
@@ -26,7 +29,7 @@ export function PrerequisitoToast() {
           ? 'Periodo no disponible'
           : tipo === 'LIMITE_CREDITOS_VERANO'
             ? 'Límite de verano'
-            : 'Límite de horas';
+            : 'Carga horaria recomendada superada';
 
   const Icono =
     tipo === 'INMOVIBLE'
@@ -38,7 +41,7 @@ export function PrerequisitoToast() {
           : AlertTriangle;
 
   return (
-    <div className="planner-toast" role="alert" aria-live="assertive">
+    <div className={`planner-toast ${esAdvertencia ? 'planner-toast-warning' : ''}`} role={esAdvertencia ? 'status' : 'alert'} aria-live={esAdvertencia ? 'polite' : 'assertive'}>
       <div className="planner-toast-head">
         <Icono size={17} />
         <strong>{titulo}</strong>

@@ -1,18 +1,24 @@
 import type { Curso, PeriodoIngreso } from '../types/academic';
 import { permiteVeranoDespuesDe } from '../domain/rules/academicContextRules';
+import { normalizarCiclosExcluidos } from '../domain/rules/cycleRules';
 import { downloadBlob } from './backupService';
+import { APP_FULL_NAME } from '../config/appIdentity';
 
 /** Exporta una representación legible de la malla sin depender de la captura del DOM. */
 export async function exportPlanPNG(
   cursos: Curso[],
   totalCiclos: number,
   cicloActual: number | null,
-  ingreso: PeriodoIngreso | null
+  ingreso: PeriodoIngreso | null,
+  ciclosExcluidos: readonly number[] = []
 ): Promise<void> {
+  const retirados = new Set(normalizarCiclosExcluidos(ciclosExcluidos));
   const periodos = Array.from({ length: totalCiclos }, (_, index) => index + 1)
     .flatMap((ciclo) => [
-      { ciclo, verano: false },
-      ...(ingreso && permiteVeranoDespuesDe(ciclo, ingreso) ? [{ ciclo, verano: true }] : []),
+      ...(!retirados.has(ciclo) ? [{ ciclo, verano: false }] : []),
+      ...(ingreso && permiteVeranoDespuesDe(ciclo, ingreso) && (!retirados.has(ciclo) ||
+        cursos.some((curso) => curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'VERANO' && curso.ciclo === ciclo))
+        ? [{ ciclo, verano: true }] : []),
     ]);
   const escala = 2;
   const ancho = 1100;
@@ -30,7 +36,7 @@ export async function exportPlanPNG(
   ctx.fillRect(0, 0, ancho, 112);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 31px Arial, sans-serif';
-  ctx.fillText('MallaU · Planificación académica', 38, 56);
+  ctx.fillText(APP_FULL_NAME, 38, 56);
   ctx.font = '17px Arial, sans-serif';
   ctx.fillStyle = '#cbd1e2';
   ctx.fillText(`Inicio: ${ingreso ?? 'sin configurar'}   ·   Ciclo actual: ${cicloActual ?? 'sin configurar'}`, 38, 86);

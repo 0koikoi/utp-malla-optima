@@ -1,6 +1,6 @@
 import type { Curso } from '../../../types/academic';
 import type { Tarifario, ResumenFinanciero } from '../../../types/financial';
-import { calcularPresupuesto } from '../../../utils/budgetEngine';
+import { calcularPresupuesto } from '../../engine/budgetCalculator';
 import type { UniversityFinancialRules } from '../UniversityFinancialRules';
 
 export class UtpFinancialRules implements UniversityFinancialRules {

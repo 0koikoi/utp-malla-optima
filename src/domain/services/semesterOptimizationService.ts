@@ -1,5 +1,5 @@
 import type { Curso } from '../../types/academic';
-import { calcularImpactoFuturo } from './recommendationService';
+import { calcularPrioridadesPendientes, type PrioridadPendiente } from './recommendationService';
 
 export interface CursoOptimizado {
   cursos: Curso[];
@@ -8,78 +8,51 @@ export interface CursoOptimizado {
   impacto: number;
 }
 
-export interface RestriccionesPeriodo {
-  maxHoras?: number;
-  factorHoras?: number;
-}
-
 interface OpcionDP extends CursoOptimizado {
-  cantidad: number;
+  longitud: number;
 }
 
-const ESCALA_CREDITOS = 10;
-
+const ESCALA_HORAS = 1000;
 const esMejorOpcion = (candidata: OpcionDP, actual?: OpcionDP): boolean => {
   if (!actual) return true;
   if (candidata.impacto !== actual.impacto) return candidata.impacto > actual.impacto;
-  if (candidata.cantidad !== actual.cantidad) return candidata.cantidad > actual.cantidad;
-  return candidata.creditos > actual.creditos;
+  if (candidata.longitud !== actual.longitud) return candidata.longitud > actual.longitud;
+  if (candidata.cursos.length !== actual.cursos.length) return candidata.cursos.length > actual.cursos.length;
+  return candidata.horas > actual.horas;
 };
 
-/**
- * Selecciona la combinación de cursos con mayor impacto académico posible sin
- * exceder el límite de créditos y, cuando se especifica, el límite de horas.
- */
+/** Mochila por horas. Los créditos se suman únicamente para el resumen. */
 export const optimizarSemestre = (
   cursosDisponibles: Curso[],
-  maxCreditos: number,
-  mallaCompleta: Curso[] = cursosDisponibles,
-  restricciones: RestriccionesPeriodo = {}
+  maxHoras: number,
+  prioridades: ReadonlyMap<string, PrioridadPendiente> = calcularPrioridadesPendientes(cursosDisponibles)
 ): CursoOptimizado => {
-  if (cursosDisponibles.length === 0 || maxCreditos <= 0) {
-    return { cursos: [], creditos: 0, horas: 0, impacto: 0 };
-  }
+  const vacio: OpcionDP = { cursos: [], creditos: 0, horas: 0, impacto: 0, longitud: 0 };
+  if (!Number.isFinite(maxHoras) || maxHoras <= 0) return vacio;
 
-  const limite = Math.max(0, Math.round(maxCreditos * ESCALA_CREDITOS));
-  const factorHoras = restricciones.factorHoras ?? 1;
-  const dp = new Map<number, OpcionDP>();
-  dp.set(0, { cursos: [], creditos: 0, horas: 0, impacto: 0, cantidad: 0 });
-
-  cursosDisponibles.forEach((curso) => {
-    const peso = Math.max(0, Math.round(curso.creditos * ESCALA_CREDITOS));
-    const impactoCurso = calcularImpactoFuturo(curso.codigo, mallaCompleta);
-    const estados = [...dp.entries()].sort((a, b) => b[0] - a[0]);
-
-    estados.forEach(([creditosUsados, opcion]) => {
-      const nuevoPeso = creditosUsados + peso;
-      if (nuevoPeso > limite) return;
-
-      const nuevasHoras = opcion.horas + curso.horasSemanales * factorHoras;
-      if (restricciones.maxHoras !== undefined && nuevasHoras > restricciones.maxHoras) return;
+  const limite = Math.floor(maxHoras * ESCALA_HORAS);
+  const dp = new Map<number, OpcionDP>([[0, vacio]]);
+  for (const curso of cursosDisponibles) {
+    if (!Number.isFinite(curso.horasSemanales) || curso.horasSemanales <= 0) continue;
+    const peso = Math.ceil(curso.horasSemanales * ESCALA_HORAS - 1e-9);
+    const prioridad = prioridades.get(curso.codigo);
+    for (const [horasUsadas, opcion] of [...dp.entries()]) {
+      const nuevoPeso = horasUsadas + peso;
+      const horas = opcion.horas + curso.horasSemanales;
+      if (nuevoPeso > limite || horas > maxHoras) continue;
 
       const candidata: OpcionDP = {
         cursos: [...opcion.cursos, curso],
         creditos: opcion.creditos + curso.creditos,
-        horas: nuevasHoras,
-        impacto: opcion.impacto + impactoCurso,
-        cantidad: opcion.cantidad + 1,
+        horas,
+        impacto: opcion.impacto + (prioridad?.impacto ?? 0),
+        longitud: opcion.longitud + (prioridad?.longitudCadena ?? 1),
       };
+      if (esMejorOpcion(candidata, dp.get(nuevoPeso))) dp.set(nuevoPeso, candidata);
+    }
+  }
 
-      if (esMejorOpcion(candidata, dp.get(nuevoPeso))) {
-        dp.set(nuevoPeso, candidata);
-      }
-    });
-  });
-
-  let mejor: OpcionDP = { cursos: [], creditos: 0, horas: 0, impacto: 0, cantidad: 0 };
-  dp.forEach((opcion) => {
-    if (esMejorOpcion(opcion, mejor)) mejor = opcion;
-  });
-
-  return {
-    cursos: mejor.cursos,
-    creditos: mejor.creditos,
-    horas: mejor.horas,
-    impacto: mejor.impacto,
-  };
+  let mejor = vacio;
+  for (const opcion of dp.values()) if (esMejorOpcion(opcion, mejor)) mejor = opcion;
+  return { cursos: mejor.cursos, creditos: mejor.creditos, horas: mejor.horas, impacto: mejor.impacto };
 };

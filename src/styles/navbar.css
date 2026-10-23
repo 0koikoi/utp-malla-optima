@@ -1,20 +1,27 @@
 /* Barra de Navegación (Controles Glassmorphic) */
 #app-nav {
-  position: sticky;
-  top: var(--topbar-h);
-  z-index: 1050;
-  height: var(--nav-h);
+  position: relative;
+  z-index: 1;
+  min-height: var(--nav-h);
   background: var(--bg-nav);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(0,0,0,0.08);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 8px 18px;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: visible;
 }
+.nav-spacer { flex: 1 1 auto; }
+.nav-final-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.faculty-toggle { flex-shrink: 0; }
+.faculty-toggle svg:last-child { width: 14px; height: 14px; }
+.faculty-popover { width: min(310px, calc(100vw - 16px)); }
+.faculty-option { justify-content: space-between; white-space: normal; }
+.faculty-option[aria-pressed="true"] { background: var(--blue-subtle); color: var(--blue-dark); }
+.faculty-error { padding: 6px 10px; color: var(--rose-dark); font-size: .72rem; }
 
 .inline-icon {
   vertical-align: -1px;
@@ -44,7 +51,7 @@
 .nav-group-label {
   display: flex;
   align-items: center;
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--t-muted);
   text-transform: uppercase;
@@ -626,7 +633,7 @@
 .nav-control-btn,
 .nav-action,
 .nav-cancel-move {
-  min-height: 29px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -635,15 +642,17 @@
   border-radius: var(--r-btn);
   background: var(--bg-nav-item);
   color: var(--t-primary);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 650;
   cursor: pointer;
   transition: all var(--tr);
   white-space: nowrap;
 }
-.nav-control-btn { padding: 5px 12px; }
+.nav-control-btn { padding: 7px 14px; }
 .nav-control-btn:hover, .nav-action.secondary:hover { background: var(--bg-surface-subtle); color: var(--blue-primary); }
-.nav-action { padding: 6px 11px; }
+.nav-action { padding: 7px 13px; }
+.nav-action svg, .nav-control-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+.save-as-toggle svg:last-child { width: 14px; height: 14px; }
 .nav-action.primary { background: var(--accent); border-color: var(--accent); color: var(--t-white); }
 .nav-action.primary:hover { background: var(--accent-hov); }
 .nav-action.secondary { background: var(--bg-surface); border-color: var(--border-default); color: var(--t-secondary); }
@@ -676,4 +685,3 @@
   white-space: nowrap;
 }
 .nav-status-chips b { color: var(--t-primary); }
-
