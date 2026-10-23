@@ -1,0 +1,82 @@
+import { esquemaRespuesta, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta } from './contracts.js';
+import { SYSTEM_PROMPT } from './systemPrompt.js';
+
+export const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+export const MODELO_POR_DEFECTO = 'deepseek-flash';
+
+export class ErrorProveedor extends Error {
+  readonly codigo: AIErrorCodigo;
+  readonly status: number;
+
+  constructor(codigo: AIErrorCodigo, status: number) {
+    super(codigo);
+    this.codigo = codigo;
+    this.status = status;
+  }
+}
+
+/** Mensajes para DeepSeek: system = prompt + esquema; user = contexto (con el foco); luego el historial. */
+export const construirMensajes = (peticion: AIRequest) => [
+  {
+    role: 'system',
+    content: `${SYSTEM_PROMPT}\n\nESQUEMA JSON de la respuesta (modo "${peticion.modo}"):\n${JSON.stringify(esquemaRespuesta(peticion.modo))}`,
+  },
+  { role: 'user', content: `CONTEXTO:\n${JSON.stringify(peticion.contexto)}` },
+  ...peticion.mensajes.map((mensaje) => ({ role: mensaje.rol, content: mensaje.texto })),
+];
+
+/** Sin herramientas, búsqueda web ni fetch: tienen cobro aparte. */
+export const construirCuerpo = (peticion: AIRequest, modelo: string) => ({
+  model: modelo,
+  messages: construirMensajes(peticion),
+  response_format: { type: 'json_object' },
+  temperature: 0.3,
+  max_tokens: 1200,
+  stream: false,
+});
+
+const errorPorStatus = (status: number): ErrorProveedor => {
+  if (status === 402) return new ErrorProveedor('SIN_SALDO', 402);
+  if (status === 429) return new ErrorProveedor('LIMITE', 429);
+  // 5xx y errores de configuración (400/401/422) no los puede resolver el estudiante.
+  return new ErrorProveedor('PROVEEDOR_CAIDO', 502);
+};
+
+interface OpcionesLlamada {
+  apiKey: string;
+  modelo: string;
+  fetch: typeof fetch;
+  signal: AbortSignal;
+}
+
+const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<AIRespuesta | null> => {
+  let respuesta: Response;
+  try {
+    respuesta = await opciones.fetch(DEEPSEEK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${opciones.apiKey}` },
+      body: JSON.stringify(construirCuerpo(peticion, opciones.modelo)),
+      signal: opciones.signal,
+    });
+  } catch {
+    throw new ErrorProveedor('PROVEEDOR_CAIDO', opciones.signal.aborted ? 504 : 502);
+  }
+  if (!respuesta.ok) throw errorPorStatus(respuesta.status);
+  try {
+    const datos = await respuesta.json() as { choices?: { message?: { content?: string } }[] };
+    const contenido = datos.choices?.[0]?.message?.content ?? '';
+    return parsearRespuesta(peticion.modo, JSON.parse(contenido), peticion.contexto);
+  } catch {
+    if (opciones.signal.aborted) throw new ErrorProveedor('PROVEEDOR_CAIDO', 504);
+    return null;
+  }
+};
+
+/** Llama a DeepSeek; si la respuesta no es JSON válido según el contrato, reintenta una vez. */
+export const llamarDeepSeek = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<AIRespuesta> => {
+  for (let intento = 0; intento < 2; intento += 1) {
+    const respuesta = await intentar(peticion, opciones);
+    if (respuesta) return respuesta;
+  }
+  throw new ErrorProveedor('RESPUESTA_INVALIDA', 502);
+};
