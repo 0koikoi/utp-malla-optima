@@ -9,14 +9,15 @@ export function PrerequisitoToast() {
     if (!notificacionMovimiento) return;
     // Se deja más tiempo cuando hay una acción Deshacer disponible.
     const timer = window.setTimeout(limpiarNotificacionMovimiento,
-      notificacionMovimiento.deshacerJalado ? 10000 : 5500);
+      notificacionMovimiento.deshacerJalado || notificacionMovimiento.tipo === 'DATOS_DESACTUALIZADOS' ? 10000 : 5500);
     return () => window.clearTimeout(timer);
   }, [notificacionMovimiento, limpiarNotificacionMovimiento]);
 
   if (!notificacionMovimiento) return null;
 
   const { tipo } = notificacionMovimiento;
-  const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE' || tipo === 'JALADO';
+  const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE' || tipo === 'JALADO' ||
+    tipo === 'DATOS_DESACTUALIZADOS';
   const faltantes = notificacionMovimiento.faltantes ?? [];
   const titulo =
     tipo === 'ERROR_PERSISTENCIA'
@@ -29,6 +30,8 @@ export function PrerequisitoToast() {
         ? 'Curso marcado como jalado'
       : tipo === 'JALADO_OBLIGATORIO'
         ? 'Curso jalado obligatorio'
+      : tipo === 'DATOS_DESACTUALIZADOS'
+        ? 'Vuelve a subir tu Excel'
       : tipo === 'PRERREQUISITOS'
         ? 'Prerrequisitos pendientes'
         : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'

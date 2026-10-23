@@ -53,6 +53,7 @@ export type TipoNotificacionMovimiento =
   | 'IMPACTO_DESCENDIENTE'
   | 'JALADO'
   | 'JALADO_OBLIGATORIO'
+  | 'DATOS_DESACTUALIZADOS'
   | 'ERROR_PERSISTENCIA';
 
 export interface NotificacionMovimiento {
