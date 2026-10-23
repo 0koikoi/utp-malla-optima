@@ -6,6 +6,10 @@ import type { StateCreator } from 'zustand';
 export interface AcademicStore {
   cursos: Curso[];
   tarifario: Tarifario | null;
+  /** Método de pago de la simulación de cuotas (clave de tarifario.metodosPago). */
+  metodoPago: string;
+  /** Periodos regulares con pago único activo en la simulación. */
+  pagoUnicoPorPeriodo: Record<string, boolean>;
   disciplinaActiva: string;
   cursosSeleccionadosParaMatricula: string[];
   panelPlanificadorAbierto: boolean;
@@ -36,6 +40,8 @@ export interface AcademicStore {
   aplicarPlanificacionOptima: (resultado: ResultadoPlanificacionAutomatica) => Promise<void>;
   toggleSeleccionMatricula: (codigo: string) => void;
   setTarifario: (tarifario: Tarifario) => Promise<void>;
+  setMetodoPago: (metodoPago: string) => void;
+  setPagoUnico: (periodoId: string, activo: boolean) => void;
   setDisciplinaActiva: (disciplina: string) => Promise<void>;
   setPanelPlanificadorAbierto: (abierto: boolean) => void;
   setCursoAMover: (codigo: string | null) => void;

@@ -14,13 +14,11 @@ export function PlanificadorPanel() {
   const {
     cursos, tarifario, disciplinaActiva, panelPlanificadorAbierto, totalCiclos, ciclosExcluidos, cicloActual, periodoIngreso,
     setPanelPlanificadorAbierto, previsualizarPlanificacionOptima,
-    aplicarPlanificacionOptima,
+    aplicarPlanificacionOptima, metodoPago, setMetodoPago, pagoUnicoPorPeriodo: pagoUnico, setPagoUnico,
   } = useAcademicStore();
   const financialPlanning = useFinancialPlanning();
   const [pestana, setPestana] = useState<'academico' | 'financiero'>('academico');
   const [ajustesCuotasAbiertos, setAjustesCuotasAbiertos] = useState(false);
-  const [metodoPago, setMetodoPago] = useState('sin_descuento');
-  const [pagoUnico, setPagoUnico] = useState<Record<string, boolean>>({});
   const [avisoPago, setAvisoPago] = useState('');
   const [propuesta, setPropuesta] = useState<ResultadoPlanificacionAutomatica | null>(null);
   const [detalleAbierto, setDetalleAbierto] = useState(false);
@@ -130,7 +128,7 @@ export function PlanificadorPanel() {
         <div className="financial-scroll-panel">{resumen?.periodos.length
           ? resumen.periodos.map((periodo) => <PeriodFinancialCard key={periodo.id} periodo={periodo}
               pagoUnicoActivo={Boolean(pagoUnico[periodo.id])}
-              onTogglePagoUnico={() => { setPagoUnico((actual) => ({ ...actual, [periodo.id]: !actual[periodo.id] })); setAvisoPago('Cambios aplicados a la simulación.'); }} />)
+              onTogglePagoUnico={() => { setPagoUnico(periodo.id, !pagoUnico[periodo.id]); setAvisoPago('Cambios aplicados a la simulación.'); }} />)
           : <div className="budget-empty">No hay cursos pendientes planificados.</div>}</div>
         {resumen && <FinancialTotalCard total={resumen.totalGeneral} />}
       </div>}
