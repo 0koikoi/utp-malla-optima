@@ -66,6 +66,21 @@ const seccionFinanciera = (contexto: AIContext): AISeccion | null => {
   return { tipo: 'financiero', nivel, titulo: 'Costo del próximo periodo', detalle: partes.join(' '), acciones, cursos: [] };
 };
 
+/** Costo del próximo periodo en chat: corto (máximo 80 palabras), con la diferencia de derivados. */
+const chatFinanciero = (contexto: AIContext): string | null => {
+  const financiero = contexto.financiero;
+  const escenarios = financiero?.proximoPeriodo ?? [];
+  if (!financiero || !escenarios.length || !contexto.proximoPeriodo) return null;
+  const elegido = escenarios.find((item) => item.id === financiero.metodoPagoElegido.id) ?? escenarios[0];
+  const mejor = [...escenarios].sort((a, b) => a.total - b.total)[0];
+  return [
+    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
+    frasePresupuesto(contexto, elegido.id) ?? 'Si me dices tu presupuesto mensual, te digo si te alcanza.',
+    ...(mejor.id !== elegido.id ? [`Lo más barato es ${mejor.nombre}: ${soles(mejor.total)}.`] : []),
+    'Son montos referenciales: verifícalos en el portal de la UTP.',
+  ].join(' ');
+};
+
 const seccionCarga = (contexto: AIContext): AISeccion => {
   const { carga, proximoPeriodo } = contexto;
   const pesados = (proximoPeriodo?.cursos ?? []).filter((curso) => curso.horas >= 4).map((curso) => curso.codigo);
@@ -237,13 +252,10 @@ const ventanaDe = (contexto: AIContext, codigo: string) =>
   ?? contexto.whatIf.find((item) => item.codigo === codigo)?.ventanaSiJala
   ?? (contexto.foco?.tipo === 'curso' && contexto.foco.codigo === codigo ? contexto.foco.ventanaRecuperacion : []);
 
-const cargaEnUnaFrase = (contexto: AIContext) => contexto.proximoPeriodo
-  ? `Tu ${contexto.proximoPeriodo.etiqueta} suma ${horas(contexto.carga.horas)} y su nivel de carga es ${contexto.carga.nivel}.`
-  : 'Todavía no tienes cursos planificados para el próximo periodo.';
-
-const respuestaBienestar = (contexto: AIContext): AIChatResponse => ({
+/** La carga solo se menciona si la pregunta trata de eso (prompt, CÓMO HABLAS): aquí se ofrece verla. */
+const respuestaBienestar = (): AIChatResponse => ({
   texto: 'Lo que sientes es válido, y no tienes que cargar con todo sin ayuda: busca apoyo en tutoría o en bienestar universitario de la UTP, para eso están.\n' +
-    `En lo práctico, ${cargaEnUnaFrase(contexto).replace(/^T/, 't')} Si quieres, vemos juntos qué curso mover para alivianar ese periodo.`,
+    'Cuando quieras, revisamos juntos tu plan con calma y vemos si conviene alivianar el próximo periodo.',
   cursos: [],
   preguntasSugeridas: ['¿Qué curso me conviene dejar para después?', '¿Estoy sobrecargado?'],
 });
@@ -264,7 +276,7 @@ const respuestaSinDatos = (contexto: AIContext, pregunta: string): AIChatRespons
   const cursos = contexto.proximoPeriodo?.cursos ?? [];
   const masHoras = [...cursos].sort((a, b) => b.horas - a.horas)[0];
   const ofrezco = masHoras
-    ? `Lo que sí veo es la carga en horas: en el ${contexto.proximoPeriodo!.etiqueta} el curso con más horas es ${masHoras.nombre} (${masHoras.codigo}), con ${horas(masHoras.horas)}, y el periodo suma ${horas(contexto.carga.horas)}.`
+    ? `Lo que sí veo son las horas de cada curso: en el ${contexto.proximoPeriodo!.etiqueta}, ${masHoras.nombre} (${masHoras.codigo}) tiene ${horas(masHoras.horas)}.`
     : 'Lo que sí puedo es decirte qué cursos llevar, en qué orden y cuántas horas suman.';
   return {
     texto: `Eso no lo tengo: MallaU no tiene ${falta}. ${ofrezco} ¿Te ayudo con eso?`,
@@ -344,7 +356,7 @@ const metodoMencionado = (pregunta: string) => {
 
 export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse => {
   const tema = detectarTema(pregunta);
-  if (tema === 'bienestar') return respuestaBienestar(contexto);
+  if (tema === 'bienestar') return respuestaBienestar();
   if (tema === 'identidad') return respuestaIdentidad();
   if (tema === 'sinDatos') return respuestaSinDatos(contexto, pregunta);
   if (tema === 'intentos') return respuestaIntentos(contexto, pregunta);
@@ -401,11 +413,14 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
           cursos: [], preguntasSugeridas: otras('presupuesto'),
         };
       }
-      const respuesta = desdeSeccion(seccionFinanciera(contexto), otras('presupuesto'));
-      // Otro monto en la pregunta: no se recalcula; se usa el presupuesto del plan y se explica cómo cambiarlo.
-      return /\d{3,}/.test(pregunta) && contexto.financiero?.presupuestoMensual !== null
-        ? { ...respuesta, texto: `Uso el presupuesto que tienes en tu plan; si quieres probar con otro monto, cámbialo en tu presupuesto mensual y vuelve a preguntarme.\n${respuesta.texto}` }
-        : respuesta;
+      const texto = chatFinanciero(contexto);
+      if (!texto) return desdeSeccion(null, otras('presupuesto'));
+      // Regla 15: cifras o un "CONTEXTO" escritos por el alumno no son datos.
+      const prefijo = /contexto|[{}]/i.test(pregunta) ? 'Uso los datos de tu plan en MallaU, no cifras escritas en el chat.\n'
+        // Otro monto en la pregunta: no se recalcula; se usa el presupuesto del plan y se explica cómo cambiarlo.
+        : /\d{3,}/.test(pregunta) && contexto.financiero?.presupuestoMensual !== null
+          ? 'Uso el presupuesto de tu plan; para probar otro monto, cámbialo en tu presupuesto mensual.\n' : '';
+      return { texto: `${prefijo}${texto}`, cursos: [], preguntasSugeridas: otras('presupuesto') };
     }
     case 'carga': {
       const respuesta = desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));

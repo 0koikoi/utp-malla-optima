@@ -5,7 +5,7 @@ exports[`mocks - snapshot del tono > respuestas de chat a las preguntas de la ev
   "Buenas tardes, ¿qué electivo me recomienda?": "Necesitas 3 créditos electivos y llevas 0. Disponibles: CALIDAD DE SOFTWARE (100000I64M, 3 créditos, Ingeniería de software), CONTABILIDAD GENERAL (100000RI07, 3 créditos, Gestión y finanzas), ELEMENTARY BUSINESS ENGLISH (100000ZZ28, 4 créditos, Idiomas) y FORMACIÓN PROFESIONAL CON ENFOQUE EN DISCAPACIDAD E INCLUSIÓN (100000CN47, 3 créditos, Responsabilidad social e inclusión). Las áreas son referenciales.
 • Elige el electivo según tu interés.
 • Prefiere uno de pocas horas si tu ciclo está cargado.",
-  "arma mi horario sin huecos": "Eso no lo tengo: MallaU no tiene los horarios ni las secciones. Lo que sí veo es la carga en horas: en el Ciclo 8 el curso con más horas es DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL (100000S06I), con 4 h, y el periodo suma 25 h. ¿Te ayudo con eso?",
+  "arma mi horario sin huecos": "Eso no lo tengo: MallaU no tiene los horarios ni las secciones. Lo que sí veo son las horas de cada curso: en el Ciclo 8, DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL (100000S06I) tiene 4 h. ¿Te ayudo con eso?",
   "estoy full chamba, ¿me cargo mucho?": "Ciclo 8: 25 h y 21 créditos. Supera las 24 h recomendadas (25 h). 5 cursos de 4 h o más. Son 3 h sobre el tope de 22 h de la escala.
 • Mueve un curso de 4 h a otro periodo.
 • Reserva tiempo para los cursos largos.
@@ -19,18 +19,14 @@ Si estás con mucha chamba, te conviene llevar menos horas este periodo y asegur
   "hice trika en cálculo, ¿me botan?": "Sé que es un momento difícil y está bien sentirlo. Según la Ley Universitaria 30220 (art. 102), desaprobar la misma materia por tercera vez lleva a una separación temporal de un año, y una cuarta desaprobación, al retiro definitivo. La UTP puede tener reglas propias, así que habla con tu tutor o con Servicios Académicos antes de la matrícula para saber exactamente cómo aplica en tu caso con ese curso.",
   "jalé un curso": "Lo siento, pero tiene solución. ¿Qué curso fue y es la primera vez que lo jalas? Márcalo como jalado en tu plan (menú (i) del curso) y te digo en qué periodo tienes que llevarlo.",
   "ya no puedo más, quiero dejar la u": "Lo que sientes es válido, y no tienes que cargar con todo sin ayuda: busca apoyo en tutoría o en bienestar universitario de la UTP, para eso están.
-En lo práctico, tu Ciclo 8 suma 25 h y su nivel de carga es riesgo. Si quieres, vemos juntos qué curso mover para alivianar ese periodo.",
+Cuando quieras, revisamos juntos tu plan con calma y vemos si conviene alivianar el próximo periodo.",
   "¿convalidé cálculo II?": "Según tu plan, CÁLCULO II (100000I1N0) está aprobado, con 2 créditos.",
-  "¿cuánto es la matrícula?": "En el Ciclo 8 pagarías S/ 5,055.15 (Sin descuento): matrícula de S/ 398.00 y 5 cuotas de S/ 931.43. La opción más barata es Pago único (7.5 % de descuento): S/ 4,705.86. Tienes 3 h sobre la escala; cada hora adicional cuesta S/ 38.81 por cuota. Tu presupuesto de S/ 900.00 no cubre la cuota: te faltan S/ 31.43 al mes (S/ 157.15 en el ciclo). Montos referenciales: verifícalos en el portal de la UTP antes de pagar.
-• Evalúa pagar con Pago único (7.5 % de descuento).
-• Quita horas para no pagar recargo.",
+  "¿cuánto es la matrícula?": "En el Ciclo 8 pagarías S/ 5,055.15 (Sin descuento): matrícula de S/ 398.00 y 5 cuotas de S/ 931.43. Tu presupuesto de S/ 900.00 no cubre la cuota: te faltan S/ 31.43 al mes (S/ 157.15 en el ciclo). Lo más barato es Pago único (7.5 % de descuento): S/ 4,705.86. Son montos referenciales: verifícalos en el portal de la UTP.",
   "¿cuánto me falta para llegar a 900 con BCP?": "Con BCP / BBVA — pronto pago, la cuota del Ciclo 8 es S/ 908.14 y el total S/ 4,938.70. Tu presupuesto de S/ 900.00 no cubre la cuota: te faltan S/ 8.14 al mes (S/ 40.70 en el ciclo). Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.",
   "¿cuánto pago si hago pago único?": "Con Pago único (7.5 % de descuento), la cuota del Ciclo 8 es S/ 861.57 y el total S/ 4,705.86. Tu presupuesto de S/ 900.00 cubre la cuota y te sobran S/ 38.43 al mes. Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.",
   "¿cuántos créditos me faltan para egresar?": "Para egresar necesitas 200 créditos (197 obligatorios y 3 electivos como mínimo). Te faltan 79; si apruebas lo que llevas ahora, quedarían 60, en 3 ciclos más según la propuesta del planificador.",
   "¿eres una persona?": "Soy una IA: el asesor académico de MallaU. No soy una persona ni personal de la UTP, pero te ayudo a ordenar tu plan con los datos que cargaste.",
-  "¿me alcanza con 800 al mes?": "Uso el presupuesto que tienes en tu plan; si quieres probar con otro monto, cámbialo en tu presupuesto mensual y vuelve a preguntarme.
-En el Ciclo 8 pagarías S/ 5,055.15 (Sin descuento): matrícula de S/ 398.00 y 5 cuotas de S/ 931.43. La opción más barata es Pago único (7.5 % de descuento): S/ 4,705.86. Tienes 3 h sobre la escala; cada hora adicional cuesta S/ 38.81 por cuota. Tu presupuesto de S/ 900.00 no cubre la cuota: te faltan S/ 31.43 al mes (S/ 157.15 en el ciclo). Montos referenciales: verifícalos en el portal de la UTP antes de pagar.
-• Evalúa pagar con Pago único (7.5 % de descuento).
-• Quita horas para no pagar recargo.",
+  "¿me alcanza con 800 al mes?": "Uso el presupuesto de tu plan; para probar otro monto, cámbialo en tu presupuesto mensual.
+En el Ciclo 8 pagarías S/ 5,055.15 (Sin descuento): matrícula de S/ 398.00 y 5 cuotas de S/ 931.43. Tu presupuesto de S/ 900.00 no cubre la cuota: te faltan S/ 31.43 al mes (S/ 157.15 en el ciclo). Lo más barato es Pago único (7.5 % de descuento): S/ 4,705.86. Son montos referenciales: verifícalos en el portal de la UTP.",
 }
 `;

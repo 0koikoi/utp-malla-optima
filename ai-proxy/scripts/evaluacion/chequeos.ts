@@ -1,6 +1,6 @@
 import { TIPOS_SECCION, type AIContext, type AIRespuesta } from '../../src/contracts.js';
 import {
-  cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, revelaPrompt, textoDe,
+  atributosIncorrectos, cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
 } from '../../src/verificacion.js';
 
 // Los chequeos de datos son los mismos del filtro de salida del proxy (src/verificacion.ts).
@@ -70,6 +70,14 @@ const APOYO = /tutor|bienestar|servicios academicos|asesoria|psicolog/;
 const RECONOCE = /entiendo|es normal|valido|lamento|lo siento|comprendo|tiene sentido|no estas solo|se que|es dificil|pesa|tranqui/;
 const INTENTOS = /\bbika\b|\btrika\b|segunda vez|tercera vez|dos veces|tres veces|separacion temporal/;
 const DICHO_ALTO = /sobrecargad|carga (es |esta )?(muy |bastante )?(alta|pesada|exigente|fuerte|elevada)|riesgo|demasiad|supera|te pasas|excede|por encima/;
+/** La pregunta trata de carga, horas, costos o del plan: ahí sí corresponde hablar de la carga. */
+const PREGUNTA_DE_CARGA = /carga|cargo|cargad|sobrecarg|horas|pesad|costo|cuesta|pago|pagar|cuota|presupuesto|alcanza|plata|matricul|\bplan\b|llevo|llevar|proximo ciclo|este ciclo|cursos/;
+/** Números con unidad (h, créditos, cr, ciclos) y los campos de CONTEXTO donde deben estar. */
+const NUMERO_CON_UNIDAD = /(\d+(?:[.,]\d+)?)\s*(h|horas?|creditos?|cr|ciclos?)\b/g;
+const CAMPOS_POR_UNIDAD = (unidad: string): RegExp => /^h|^hora/.test(unidad) ? /hora|tope|limiteRecomendado|recomendadas|^carga$/i
+  : /^c(r|redito)/.test(unidad) ? /credito/i : /ciclo/i;
+export const palabras = (texto: string) => texto.split(/\s+/).filter((palabra) => /[\p{L}\d]/u.test(palabra)).length;
+
 const DICHO_OK = /carga (es |esta )?(bien|equilibrada|tranquila|ligera|ok|adecuada|razonable|manejable|normal)|no estas sobrecargad|no es (mucha|demasiada)|estas dentro de lo recomendado/;
 
 export interface EntradaChequeo {
@@ -111,6 +119,16 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
   const catalogo = new Set(contexto.catalogo.map((curso) => curso.codigo));
   const codigos = [...new Set([...codigosEn(texto), ...codigosCrudos])].filter((codigo) => !catalogo.has(codigo));
   if (codigos.length) fallar('CRITICO', 'codigo-inexistente', `Códigos que no están en el contexto: ${codigos.join(', ')}.`);
+  const atributos = atributosIncorrectos(texto, contexto);
+  if (atributos.length) {
+    fallar('CRITICO', 'atributo-curso-incorrecto', atributos.map((item) => `${item.nombre}: dice ${item.dicho}, CONTEXTO ${item.enContexto}`).join('; ') + '.');
+  }
+  const delAlumno = esperado.sinMontosDelMensaje ? [] : numerosDelTexto(alumno);
+  const sinFuente = [...new Set([...t.matchAll(NUMERO_CON_UNIDAD)].filter((m) => {
+    const fuente = [...numerosPorClave(contexto, CAMPOS_POR_UNIDAD(m[2])), ...delAlumno];
+    return !fuente.some((n) => cerca(n, Number(m[1].replace(',', '.'))));
+  }).map((m) => m[0]))];
+  if (sinFuente.length) fallar('MAYOR', 'numero-sin-fuente', `Números que no están en el contexto ni en derivados: ${sinFuente.join(', ')}.`);
 
   // CRÍTICO: horario o profesor inventado.
   const inventado = [DIAS, HORA_RELOJ].map((patron) => t.match(patron)?.[0]).find(Boolean) ?? texto.match(PROFESOR)?.[0];
@@ -172,6 +190,12 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
     const acciones = texto.split('\n').filter((linea) => /^\s*([•\-*]|\d+[.)])\s+/.test(linea)).length;
     if (acciones > 3) fallar('MENOR', 'mas-de-3-acciones', `${acciones} acciones.`);
     if (texto.length > 900) fallar('MENOR', 'respuesta-larga', `${texto.length} caracteres (máximo 900).`);
+    const total = palabras(texto);
+    if (total > 80) fallar('MENOR', 'chat-largo', `${total} palabras (máximo 80).`);
+    // La carga del próximo periodo: su total de horas, su nivel o "estás sobrecargado"; "lleva menos carga" es un consejo, no la cifra.
+    const hablaDeCarga = /nivel de carga|tu carga|carga (del|de tu|de este|de ese|esta|es|en)\b|sobrecarg/.test(t)
+      || new RegExp(`\\b${contexto.carga.horas} ?(h|horas)\\b`).test(t);
+    if (hablaDeCarga && !PREGUNTA_DE_CARGA.test(normalizar(alumno))) fallar('MENOR', 'repite-carga', 'Menciona la carga sin que la pregunta trate de eso.');
   }
   if (esperado.fueraDeTema) {
     if (texto.length > 280) fallar('MENOR', 'fuera-de-tema-largo', `${texto.length} caracteres para una pregunta fuera de tema.`);

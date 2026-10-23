@@ -1,6 +1,6 @@
 import type { AIContext, AIErrorCodigo, AIRequest, AIRespuesta } from '../../src/contracts.js';
 import { costoEstimadoUsd, sumarUso, USO_VACIO, type UsoTokens } from '../../src/consumo.js';
-import type { IntentoCrudo } from '../../src/deepseek.js';
+import type { IntentoCrudo, Verificacion } from '../../src/deepseek.js';
 import type { Caso, Fixture } from './casos.js';
 import { chequear, type Fallo, type Severidad } from './chequeos.js';
 
@@ -14,6 +14,10 @@ export interface ResultadoLlamada {
   intentos: number;
   /** Cada intento por separado (finish_reason, usage crudo, razonamiento y contenido). */
   detalle?: IntentoCrudo[];
+  /** Resultado del filtro de salida (null si la llamada falló antes). */
+  verificacion?: Verificacion | null;
+  /** Chequeos del filtro que fallaron (en la primera respuesta o en la regenerada). */
+  chequeosFiltro?: string[];
 }
 
 export interface Repeticion {
@@ -26,6 +30,8 @@ export interface Repeticion {
   respuesta: AIRespuesta | null;
   crudo: string | null;
   detalle: IntentoCrudo[];
+  verificacion: Verificacion | null;
+  chequeosFiltro: string[];
   fallos: Fallo[];
 }
 
@@ -42,6 +48,7 @@ export interface ResultadoEvaluacion {
   costoUsd: number;
   uso: UsoTokens;
   latencias: number[];
+  latenciasPorModo: Record<'analisis' | 'chat', number[]>;
 }
 
 export interface OpcionesEvaluacion {
@@ -81,7 +88,9 @@ export const evaluar = async (opciones: OpcionesEvaluacion): Promise<ResultadoEv
   const casos = opciones.solo ? opciones.casos.filter((caso) => caso.id === opciones.solo) : opciones.casos;
   if (opciones.solo && !casos.length) throw new Error(`No existe el caso "${opciones.solo}".`);
 
-  const resultado: ResultadoEvaluacion = { casos: [], detenidoPorCosto: false, costoUsd: 0, uso: USO_VACIO, latencias: [] };
+  const resultado: ResultadoEvaluacion = {
+    casos: [], detenidoPorCosto: false, costoUsd: 0, uso: USO_VACIO, latencias: [], latenciasPorModo: { analisis: [], chat: [] },
+  };
   for (const caso of casos) {
     const contexto = fixtures(caso.fixture);
     const filas: Repeticion[] = [];
@@ -94,16 +103,22 @@ export const evaluar = async (opciones: OpcionesEvaluacion): Promise<ResultadoEv
       const llamada = await llamar(peticionDe(caso, contexto));
       const ms = ahora() - inicio;
       const costoUsd = costoEstimadoUsd(llamada.uso, horarioPico());
-      const fallos = llamada.error && llamada.error !== 'RESPUESTA_INVALIDA'
-        ? [{ severidad: 'CRITICO' as Severidad, chequeo: 'error-proveedor', detalle: `La llamada falló con ${llamada.error}.` }]
-        : chequear({
+      // Se evalúa lo que ve el alumno: la respuesta que pasó el filtro de salida, o el aviso que la reemplaza.
+      const fallos: Fallo[] = llamada.error === 'RESPUESTA_NO_VERIFICADA'
+        ? [{ severidad: 'MAYOR', chequeo: 'respuesta-segura', detalle: `El filtro de salida devolvió la respuesta segura (${(llamada.chequeosFiltro ?? []).join(', ')}).` }]
+        : llamada.error === 'RESPUESTA_LARGA'
+          ? [{ severidad: 'CRITICO', chequeo: 'respuesta-cortada', detalle: 'Se cortó dos veces (finish_reason "length"): el alumno ve RESPUESTA_LARGA.' }]
+          : llamada.error && llamada.error !== 'RESPUESTA_INVALIDA'
+            ? [{ severidad: 'CRITICO' as Severidad, chequeo: 'error-proveedor', detalle: `La llamada falló con ${llamada.error}.` }]
+            : chequear({
           modo: caso.modo, contexto, mensajes: caso.mensajes, esperado: caso.esperado,
           respuesta: llamada.respuesta, codigosCrudos: codigosCrudos(llamada.crudo),
         });
-      filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, detalle: llamada.detalle ?? [], fallos });
+      filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, detalle: llamada.detalle ?? [], verificacion: llamada.verificacion ?? null, chequeosFiltro: llamada.chequeosFiltro ?? [], fallos });
       resultado.costoUsd = Number((resultado.costoUsd + costoUsd).toFixed(6));
       resultado.uso = sumarUso(resultado.uso, llamada.uso);
       resultado.latencias.push(ms);
+      resultado.latenciasPorModo[caso.modo].push(ms);
       progreso(`${fallos.length ? '✗' : '✓'} ${caso.id} #${numero} · ${ms} ms · US$ ${resultado.costoUsd.toFixed(4)}${fallos.length ? ` · ${fallos.map((fallo) => `${fallo.severidad}:${fallo.chequeo}`).join(', ')}` : ''}`);
     }
     if (filas.length) resultado.casos.push({ caso, repeticiones: filas, aprobado: filas.length === repeticiones && filas.every((fila) => !fila.fallos.length) });
@@ -122,6 +137,38 @@ export const fallosPorSeveridad = (resultado: ResultadoEvaluacion): Record<Sever
   const conteo: Record<Severidad, number> = { CRITICO: 0, MAYOR: 0, MENOR: 0 };
   for (const { repeticiones } of resultado.casos) for (const fila of repeticiones) for (const fallo of fila.fallos) conteo[fallo.severidad] += 1;
   return conteo;
+};
+
+/** Cuántas repeticiones pasaron el filtro a la primera, tras regenerar o con la respuesta segura. */
+export const resultadosFiltro = (resultado: ResultadoEvaluacion) => {
+  const filas = resultado.casos.flatMap((caso) => caso.repeticiones);
+  const conteo: Record<Verificacion, number> = { primera: 0, regenerada: 0, segura: 0 };
+  const chequeos: Record<string, number> = {};
+  for (const fila of filas) {
+    if (fila.verificacion) conteo[fila.verificacion] += 1;
+    for (const chequeo of fila.chequeosFiltro) chequeos[chequeo] = (chequeos[chequeo] ?? 0) + 1;
+  }
+  return { ...conteo, total: filas.length, chequeos };
+};
+
+export interface Criterio { nombre: string; cumple: boolean; valor: string }
+
+/** Criterios de aprobación acordados el 2026-10-23 para la salida final que ve el alumno. */
+export const criterios = (resultado: ResultadoEvaluacion): Criterio[] => {
+  const filas = resultado.casos.flatMap((caso) => caso.repeticiones);
+  const ok = filas.filter((fila) => !fila.fallos.length).length;
+  const filtro = resultadosFiltro(resultado);
+  const criticos = fallosPorSeveridad(resultado).CRITICO;
+  const p95Chat = percentil(resultado.latenciasPorModo.chat, 95);
+  const p95Analisis = percentil(resultado.latenciasPorModo.analisis, 95);
+  const pct = (parte: number) => (filas.length ? (parte / filas.length) * 100 : 0);
+  return [
+    { nombre: '0 fallos CRÍTICOS', cumple: criticos === 0, valor: String(criticos) },
+    { nombre: '≥ 95 % de repeticiones aprobadas', cumple: pct(ok) >= 95, valor: `${pct(ok).toFixed(1)} %` },
+    { nombre: 'respuestas seguras ≤ 3 %', cumple: pct(filtro.segura) <= 3, valor: `${pct(filtro.segura).toFixed(1)} %` },
+    { nombre: 'p95 chat < 6 s', cumple: p95Chat < 6000, valor: `${p95Chat} ms` },
+    { nombre: 'p95 análisis < 10 s', cumple: p95Analisis < 10_000, valor: `${p95Analisis} ms` },
+  ];
 };
 
 /** 1 si hay algún fallo CRÍTICO; 2 si se detuvo por el tope de costo; 0 si no. */

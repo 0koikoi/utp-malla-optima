@@ -64,11 +64,12 @@ describe('mocks - tono del asesor', () => {
     ['¿cuál es la tranca del 8vo?', 'datos de la dificultad real de los cursos'],
     ['¿con qué nota aprobé base de datos?', 'tus notas'],
     ['¿qué profe es bueno para inteligencia de negocios?', 'información de los profesores'],
-  ])('datos que no existen: "%s" → lo dice y ofrece la carga en horas', (pregunta, falta) => {
+  ])('datos que no existen: "%s" → lo dice y ofrece las horas de un curso, sin repetir la carga del periodo', (pregunta, falta) => {
     const { texto } = mockChat(contexto, pregunta);
     expect(texto).toContain(`MallaU no tiene ${falta}`);
     expect(texto).not.toMatch(SIN_DATOS_INVENTADOS);
-    expect(texto).toContain(`${contexto.carga.horas} h`);
+    expect(texto).toContain('las horas de cada curso');
+    expect(texto).not.toContain(`${contexto.carga.horas} h`);
     verificarDatos(contexto, texto);
   });
 

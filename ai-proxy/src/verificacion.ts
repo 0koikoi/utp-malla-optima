@@ -24,6 +24,12 @@ export const numerosDe = (valor: unknown): number[] => typeof valor === 'number'
   : Array.isArray(valor) ? valor.flatMap(numerosDe)
     : valor && typeof valor === 'object' ? Object.values(valor).flatMap(numerosDe) : [];
 
+/** Números de los campos cuyo nombre cumple `clave` (por ejemplo, todo lo que sea créditos). */
+export const numerosPorClave = (valor: unknown, clave: RegExp, dentro = false): number[] => typeof valor === 'number' ? (dentro ? [Math.abs(valor)] : [])
+  : Array.isArray(valor) ? valor.flatMap((item) => numerosPorClave(item, clave, dentro))
+    : valor && typeof valor === 'object'
+      ? Object.entries(valor).flatMap(([nombre, item]) => numerosPorClave(item, clave, dentro || clave.test(nombre))) : [];
+
 export const numerosDelTexto = (texto: string) => [...texto.matchAll(/\d+(?:[.,]\d+)?/g)].map((m) => Number(m[0].replace(',', '.')));
 
 export const codigosEn = (texto: string): string[] => [...new Set(texto.match(/\b\d{6}[A-Z0-9]{4}\b/g) ?? [])];

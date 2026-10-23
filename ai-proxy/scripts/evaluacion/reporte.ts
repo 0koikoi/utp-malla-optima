@@ -2,7 +2,7 @@ import type { AIRespuesta } from '../../src/contracts.js';
 import { PRECIOS_DEEPSEEK_FLASH } from '../../src/consumo.js';
 import type { IntentoCrudo } from '../../src/deepseek.js';
 import { SEVERIDADES } from './chequeos.js';
-import { fallosPorSeveridad, percentil, type ResultadoEvaluacion } from './ejecutar.js';
+import { criterios, fallosPorSeveridad, percentil, resultadosFiltro, type ResultadoEvaluacion } from './ejecutar.js';
 
 export interface MetaReporte {
   fecha: Date;
@@ -40,10 +40,21 @@ export const resumenConsola = (resultado: ResultadoEvaluacion, meta: MetaReporte
     `Casos aprobados (todas sus repeticiones): ${r.aprobados}/${r.total} (${porcentaje(r.aprobados, r.total)})`,
     `Repeticiones aprobadas: ${r.repeticionesOk}/${r.repeticiones} (${porcentaje(r.repeticionesOk, r.repeticiones)})`,
     `Fallos por severidad: ${SEVERIDADES.map((severidad) => `${severidad} ${r.fallos[severidad]}`).join(' · ')}`,
-    `Latencia: p50 ${percentil(resultado.latencias, 50)} ms · p95 ${percentil(resultado.latencias, 95)} ms`,
+    `Latencia: p50 ${percentil(resultado.latencias, 50)} ms · p95 ${percentil(resultado.latencias, 95)} ms`
+      + ` · chat p95 ${percentil(resultado.latenciasPorModo.chat, 95)} ms · análisis p95 ${percentil(resultado.latenciasPorModo.analisis, 95)} ms`,
+    filtroEnLinea(resultado),
     `Tokens: entrada ${uso.prompt_tokens} (con caché ${uso.prompt_cache_hit_tokens}, sin caché ${uso.prompt_cache_miss_tokens}) · salida ${uso.completion_tokens}`,
     `Costo estimado: US$ ${resultado.costoUsd.toFixed(4)} (tope US$ ${meta.maxUsd.toFixed(2)})${resultado.detenidoPorCosto ? ' · DETENIDO POR EL TOPE DE COSTO' : ''}`,
+    `Criterios: ${criterios(resultado).map((criterio) => `${criterio.cumple ? '✓' : '✗'} ${criterio.nombre} (${criterio.valor})`).join(' · ')}`,
   ].join('\n');
+};
+
+/** Lo que hizo el filtro de salida: la evaluación mide lo que ve el alumno, no solo la respuesta cruda. */
+const filtroEnLinea = (resultado: ResultadoEvaluacion) => {
+  const filtro = resultadosFiltro(resultado);
+  const chequeos = Object.entries(filtro.chequeos).map(([chequeo, veces]) => `${chequeo} ${veces}`).join(', ');
+  return `Filtro de salida: a la primera ${filtro.primera} · regeneradas ${filtro.regenerada} · seguras ${filtro.segura}`
+    + ` (${porcentaje(filtro.segura, filtro.total)})${chequeos ? ` · chequeos que fallaron: ${chequeos}` : ''}`;
 };
 
 const bloque = (texto: string) => `\`\`\`\n${texto.replace(/```/g, "'''")}\n\`\`\``;
@@ -110,7 +121,8 @@ export const reporteMarkdown = (resultado: ResultadoEvaluacion, meta: MetaReport
     lineas.push('', `### \`${caso.id}\` · ${caso.grupo}`, '', `Fixture \`${caso.fixture}\` · modo ${caso.modo}${caso.foco ? ` · foco ${caso.foco.tipo} ${caso.foco.id ?? ''}` : ''}`);
     if (caso.mensajes.length) lineas.push('', ...caso.mensajes.map((mensaje) => `> **Alumno:** ${mensaje.replace(/\n/g, ' ')}`));
     for (const fila of repeticiones) {
-      lineas.push('', `**Repetición ${fila.numero}** · ${fila.ms} ms · ${fila.intentos} intento(s) · US$ ${fila.costoUsd.toFixed(6)}${fila.error ? ` · error ${fila.error}` : ''}`, '');
+      const filtro = fila.verificacion ? ` · filtro: ${fila.verificacion}${fila.chequeosFiltro.length ? ` (${fila.chequeosFiltro.join(', ')})` : ''}` : '';
+      lineas.push('', `**Repetición ${fila.numero}** · ${fila.ms} ms · ${fila.intentos} intento(s) · US$ ${fila.costoUsd.toFixed(6)}${fila.error ? ` · error ${fila.error}` : ''}${filtro}`, '');
       lineas.push(bloque(fila.respuesta ? respuestaLegible(fila.respuesta) : (fila.crudo ?? '(sin respuesta)')));
       if (fila.fallos.length) lineas.push('', ...fila.fallos.map((fallo) => `- **${fallo.severidad}** \`${fallo.chequeo}\`: ${fallo.detalle}`));
       if (fila.detalle.length) lineas.push('', ...detalleIntentos(fila.detalle));

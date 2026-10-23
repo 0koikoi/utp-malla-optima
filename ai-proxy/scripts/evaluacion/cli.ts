@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { esHorarioPico, sumarUso, USO_VACIO } from '../../src/consumo.js';
 import { AIContextSchema, type AIContext, type AIRequest } from '../../src/contracts.js';
-import { ErrorProveedor, llamarDeepSeek, MODELO_POR_DEFECTO, type IntentoCrudo } from '../../src/deepseek.js';
+import { ErrorProveedor, llamarConVerificacion, MODELO_POR_DEFECTO, type IntentoCrudo } from '../../src/deepseek.js';
 import { TIMEOUT_MS } from '../../src/handler.js';
 import { CASOS, type Fixture } from './casos.js';
 import { codigoDeSalida, evaluar, type ResultadoLlamada } from './ejecutar.js';
@@ -50,7 +50,7 @@ export interface ConfigLlamada {
   timeoutMs?: number;
 }
 
-/** La misma función que producción (llamarDeepSeek: prompt, temperatura, max_tokens y reintento). */
+/** La misma función que producción (llamarConVerificacion: prompt, max_tokens, reintentos y filtro de salida). */
 export const crearLlamada = (config: ConfigLlamada) => async (peticion: AIRequest): Promise<ResultadoLlamada> => {
   let uso = USO_VACIO;
   let intentos = 0;
@@ -58,14 +58,17 @@ export const crearLlamada = (config: ConfigLlamada) => async (peticion: AIReques
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), config.timeoutMs ?? TIMEOUT_MS);
   try {
-    const respuesta = await llamarDeepSeek(peticion, {
+    const resultado = await llamarConVerificacion(peticion, {
       apiKey: config.apiKey, modelo: config.modelo, fetch: config.fetch, signal: controlador.signal,
       alUsar: (parcial) => { uso = sumarUso(uso, parcial); },
       alIntentar: () => { intentos += 1; },
       alResponder: (intento) => { detalle.push(intento); },
     });
     const crudo = detalle.at(-1)?.contenido ?? null;
-    return { respuesta, error: null, crudo, uso, intentos, detalle };
+    const filtro = { verificacion: resultado.verificacion, chequeosFiltro: resultado.chequeosFallidos };
+    return resultado.respuesta
+      ? { respuesta: resultado.respuesta, error: null, crudo, uso, intentos, detalle, ...filtro }
+      : { respuesta: null, error: 'RESPUESTA_NO_VERIFICADA', crudo, uso, intentos, detalle, ...filtro };
   } catch (error) {
     const crudo = detalle.at(-1)?.contenido ?? null;
     return { respuesta: null, error: error instanceof ErrorProveedor ? error.codigo : 'PROVEEDOR_CAIDO', crudo, uso, intentos, detalle };
