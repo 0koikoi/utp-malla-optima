@@ -1,5 +1,6 @@
 import type { AIContext, AIErrorCodigo, AIRequest, AIRespuesta } from '../../src/contracts.js';
 import { costoEstimadoUsd, sumarUso, USO_VACIO, type UsoTokens } from '../../src/consumo.js';
+import type { IntentoCrudo } from '../../src/deepseek.js';
 import type { Caso, Fixture } from './casos.js';
 import { chequear, type Fallo, type Severidad } from './chequeos.js';
 
@@ -11,6 +12,8 @@ export interface ResultadoLlamada {
   crudo: string | null;
   uso: UsoTokens;
   intentos: number;
+  /** Cada intento por separado (finish_reason, usage crudo, razonamiento y contenido). */
+  detalle?: IntentoCrudo[];
 }
 
 export interface Repeticion {
@@ -22,6 +25,7 @@ export interface Repeticion {
   error: AIErrorCodigo | null;
   respuesta: AIRespuesta | null;
   crudo: string | null;
+  detalle: IntentoCrudo[];
   fallos: Fallo[];
 }
 
@@ -96,7 +100,7 @@ export const evaluar = async (opciones: OpcionesEvaluacion): Promise<ResultadoEv
           modo: caso.modo, contexto, mensajes: caso.mensajes, esperado: caso.esperado,
           respuesta: llamada.respuesta, codigosCrudos: codigosCrudos(llamada.crudo),
         });
-      filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, fallos });
+      filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, detalle: llamada.detalle ?? [], fallos });
       resultado.costoUsd = Number((resultado.costoUsd + costoUsd).toFixed(6));
       resultado.uso = sumarUso(resultado.uso, llamada.uso);
       resultado.latencias.push(ms);

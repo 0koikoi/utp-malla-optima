@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { esHorarioPico, sumarUso, USO_VACIO } from '../../src/consumo.js';
 import { AIContextSchema, type AIContext, type AIRequest } from '../../src/contracts.js';
-import { ErrorProveedor, llamarDeepSeek, MODELO_POR_DEFECTO } from '../../src/deepseek.js';
+import { ErrorProveedor, llamarDeepSeek, MODELO_POR_DEFECTO, type IntentoCrudo } from '../../src/deepseek.js';
 import { TIMEOUT_MS } from '../../src/handler.js';
 import { CASOS, type Fixture } from './casos.js';
 import { codigoDeSalida, evaluar, type ResultadoLlamada } from './ejecutar.js';
@@ -52,30 +52,23 @@ export interface ConfigLlamada {
 
 /** La misma función que producción (llamarDeepSeek: prompt, temperatura, max_tokens y reintento). */
 export const crearLlamada = (config: ConfigLlamada) => async (peticion: AIRequest): Promise<ResultadoLlamada> => {
-  let crudo: string | null = null;
   let uso = USO_VACIO;
   let intentos = 0;
-  const fetchQueGuarda: typeof fetch = async (url, init) => {
-    const respuesta = await config.fetch(url, init);
-    try {
-      const datos = await respuesta.clone().json() as { choices?: { message?: { content?: string } }[] };
-      crudo = datos.choices?.[0]?.message?.content ?? null;
-    } catch {
-      crudo = null;
-    }
-    return respuesta;
-  };
+  const detalle: IntentoCrudo[] = [];
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), config.timeoutMs ?? TIMEOUT_MS);
   try {
     const respuesta = await llamarDeepSeek(peticion, {
-      apiKey: config.apiKey, modelo: config.modelo, fetch: fetchQueGuarda, signal: controlador.signal,
+      apiKey: config.apiKey, modelo: config.modelo, fetch: config.fetch, signal: controlador.signal,
       alUsar: (parcial) => { uso = sumarUso(uso, parcial); },
       alIntentar: () => { intentos += 1; },
+      alResponder: (intento) => { detalle.push(intento); },
     });
-    return { respuesta, error: null, crudo, uso, intentos };
+    const crudo = detalle.at(-1)?.contenido ?? null;
+    return { respuesta, error: null, crudo, uso, intentos, detalle };
   } catch (error) {
-    return { respuesta: null, error: error instanceof ErrorProveedor ? error.codigo : 'PROVEEDOR_CAIDO', crudo, uso, intentos };
+    const crudo = detalle.at(-1)?.contenido ?? null;
+    return { respuesta: null, error: error instanceof ErrorProveedor ? error.codigo : 'PROVEEDOR_CAIDO', crudo, uso, intentos, detalle };
   } finally {
     clearTimeout(temporizador);
   }
@@ -137,7 +130,9 @@ export const entornoReal = (): Entorno => {
     escribirReporte: (nombre, contenido) => {
       const carpeta = new URL('../docs/evaluaciones/', AI_PROXY);
       mkdirSync(carpeta, { recursive: true });
-      const archivo = new URL(nombre, carpeta);
+      // Dos corridas en el mismo minuto no se pisan: la segunda lleva un sufijo.
+      let archivo = new URL(nombre, carpeta);
+      for (let n = 2; existsSync(archivo); n += 1) archivo = new URL(nombre.replace(/\.md$/, `-${n}.md`), carpeta);
       writeFileSync(archivo, contenido);
       return fileURLToPath(archivo);
     },

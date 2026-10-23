@@ -20,7 +20,7 @@ export const crearFetchSimulado = (): typeof fetch => {
     // El prefijo (prompt del sistema) se cachea desde la segunda llamada.
     const enCache = llamadas++ === 0 ? 0 : Math.ceil(system.content.length / 4);
     return new Response(JSON.stringify({
-      choices: [{ message: { content: contenido } }],
+      choices: [{ finish_reason: 'stop', message: { content: contenido } }],
       usage: { prompt_tokens: prompt, prompt_cache_hit_tokens: enCache, prompt_cache_miss_tokens: prompt - enCache, completion_tokens: Math.ceil(contenido.length / 4) },
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }) as typeof fetch;

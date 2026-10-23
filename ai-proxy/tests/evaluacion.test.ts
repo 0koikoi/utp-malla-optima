@@ -204,6 +204,23 @@ describe('evaluación - CLI', () => {
     expect(salida).toContain('con caché 16000, sin caché 2000');
   });
 
+  it('diagnóstico: guarda cada intento con finish_reason, usage completo, razonamiento y contenido crudo', async () => {
+    const usage = { prompt_tokens: 100, completion_tokens: 600, completion_tokens_details: { reasoning_tokens: 600 } };
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ finish_reason: 'length', message: { content: '', reasoning_content: 'pienso...' } }], usage,
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(chat('Soy una IA.')) } }], usage: { prompt_tokens: 100, completion_tokens: 20 },
+      })));
+    const { entorno, reportes } = crearEntorno({ argv: ['--solo', 'identidad-persona', '--repeticiones', '1'], fetch });
+    await ejecutarCli(entorno);
+    const reporte = Object.values(reportes)[0];
+    expect(reporte).toContain('Intento 1 · finish_reason `length` · reasoning_content: sí · 0 caracteres');
+    expect(reporte).toContain('"completion_tokens_details":{"reasoning_tokens":600}');
+    expect(reporte).toContain('Intento 2 · finish_reason `stop` · reasoning_content: no');
+  });
+
   it('EVAL_MAX_USD corta el gasto', async () => {
     const fetch = vi.fn(async () => new Response(JSON.stringify({
       choices: [{ message: { content: JSON.stringify(chat('Soy una IA.')) } }],

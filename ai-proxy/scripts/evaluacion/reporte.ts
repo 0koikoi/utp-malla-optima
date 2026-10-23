@@ -1,5 +1,6 @@
 import type { AIRespuesta } from '../../src/contracts.js';
 import { PRECIOS_DEEPSEEK_FLASH } from '../../src/consumo.js';
+import type { IntentoCrudo } from '../../src/deepseek.js';
 import { SEVERIDADES } from './chequeos.js';
 import { fallosPorSeveridad, percentil, type ResultadoEvaluacion } from './ejecutar.js';
 
@@ -59,6 +60,21 @@ const respuestaLegible = (respuesta: AIRespuesta): string => 'texto' in respuest
     ].filter(Boolean).join('\n')),
   ].join('\n');
 
+/** Diagnóstico por intento: finish_reason, usage completo, si vino razonamiento y el contenido crudo. */
+const detalleIntentos = (detalle: IntentoCrudo[]): string[] => [
+  '<details><summary>Intentos</summary>',
+  '',
+  ...detalle.flatMap((intento, i) => [
+    `Intento ${i + 1} · finish_reason \`${intento.finishReason ?? '—'}\` · reasoning_content: ${intento.razonamiento ? 'sí' : 'no'} · ${intento.contenido.length} caracteres`,
+    '',
+    `usage: \`${JSON.stringify(intento.usage)}\``,
+    '',
+    bloque(intento.contenido || '(vacío)'),
+    '',
+  ]),
+  '</details>',
+];
+
 /** Reporte completo para revisar el tono a mano: todas las respuestas y los chequeos fallidos. */
 export const reporteMarkdown = (resultado: ResultadoEvaluacion, meta: MetaReporte): string => {
   const r = resumen(resultado);
@@ -97,6 +113,7 @@ export const reporteMarkdown = (resultado: ResultadoEvaluacion, meta: MetaReport
       lineas.push('', `**Repetición ${fila.numero}** · ${fila.ms} ms · ${fila.intentos} intento(s) · US$ ${fila.costoUsd.toFixed(6)}${fila.error ? ` · error ${fila.error}` : ''}`, '');
       lineas.push(bloque(fila.respuesta ? respuestaLegible(fila.respuesta) : (fila.crudo ?? '(sin respuesta)')));
       if (fila.fallos.length) lineas.push('', ...fila.fallos.map((fallo) => `- **${fallo.severidad}** \`${fallo.chequeo}\`: ${fallo.detalle}`));
+      if (fila.detalle.length) lineas.push('', ...detalleIntentos(fila.detalle));
     }
   }
   return `${lineas.join('\n')}\n`;

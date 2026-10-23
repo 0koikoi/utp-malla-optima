@@ -47,6 +47,16 @@ const errorPorStatus = (status: number): ErrorProveedor => {
   return new ErrorProveedor('PROVEEDOR_CAIDO', 502);
 };
 
+/** Lo que devolvió DeepSeek en un intento (solo para diagnóstico: la evaluación lo guarda, producción no). */
+export interface IntentoCrudo {
+  finishReason: string | null;
+  /** `usage` tal cual, incluido completion_tokens_details si viene. */
+  usage: unknown;
+  /** true si la respuesta trajo `reasoning_content` no vacío. */
+  razonamiento: boolean;
+  contenido: string;
+}
+
 export interface OpcionesLlamada {
   apiKey: string;
   modelo: string;
@@ -56,6 +66,8 @@ export interface OpcionesLlamada {
   alUsar?: (uso: UsoTokens) => void;
   /** Se llama antes de cada petición HTTP a DeepSeek. */
   alIntentar?: () => void;
+  /** Diagnóstico: se llama con cada respuesta 200 cruda. Producción no lo usa (llevaría contenido). */
+  alResponder?: (intento: IntentoCrudo) => void;
 }
 
 const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<AIRespuesta | null> => {
@@ -73,9 +85,16 @@ const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise
   }
   if (!respuesta.ok) throw errorPorStatus(respuesta.status);
   try {
-    const datos = await respuesta.json() as { choices?: { message?: { content?: string } }[]; usage?: unknown };
+    const datos = await respuesta.json() as {
+      choices?: { finish_reason?: string; message?: { content?: string; reasoning_content?: string } }[]; usage?: unknown;
+    };
     opciones.alUsar?.(leerUso(datos.usage));
-    const contenido = datos.choices?.[0]?.message?.content ?? '';
+    const eleccion = datos.choices?.[0];
+    const contenido = eleccion?.message?.content ?? '';
+    opciones.alResponder?.({
+      finishReason: eleccion?.finish_reason ?? null, usage: datos.usage ?? null,
+      razonamiento: Boolean(eleccion?.message?.reasoning_content), contenido,
+    });
     return parsearRespuesta(peticion.modo, JSON.parse(contenido), peticion.contexto);
   } catch {
     if (opciones.signal.aborted) throw new ErrorProveedor('PROVEEDOR_CAIDO', 504);
