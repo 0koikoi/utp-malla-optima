@@ -91,9 +91,9 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
     const cursosPendientesPeriodo = cursos.filter((curso) => curso.estado === 'PENDIENTE');
     if (cursosPendientesPeriodo.length === 0) return null;
 
-    const resumen = financialPlanning.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva);
+    const resumen = financialPlanning.calcular(cursosPendientesPeriodo, tarifario, disciplinaActiva, { cicloActual });
     return resumen.periodos[0]?.resumen.cuotaBase ?? null;
-  }, [cursos, tarifario, disciplinaActiva, financialPlanning]);
+  }, [cursos, tarifario, disciplinaActiva, financialPlanning, cicloActual]);
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
