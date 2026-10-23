@@ -9,5 +9,6 @@
   },
   "verano": {
     "multiplicadorHorasTarifarias": 2
-  }
+  },
+  "jaladoPermiteVerano": true
 }

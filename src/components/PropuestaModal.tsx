@@ -2,6 +2,7 @@ import { formatCredits } from '../utils/formatCredits';
 import { explicarMotivo, explicarPlan } from '../presentation/messages/planningMessages';
 import { useLayoutEffect, useRef } from 'react';
 import { AlertTriangle, Check, FileText, X } from 'lucide-react';
+import { pluralizar } from '../utils/pluralizar';
 import type { ResultadoPlanificacionAutomatica } from '../domain/services/automaticPlanningService';
 
 interface Props {
@@ -45,7 +46,7 @@ export function PropuestaModal({ propuesta, error, onClose, onApply }: Props) {
         <button ref={cerrarRef} type="button" className="strategy-proposal-close" onClick={onClose} aria-label="Cerrar propuesta"><X size={21} /></button>
       </header>
       <div className="strategy-proposal-body">
-        <p className="strategy-proposal-summary"><b>{propuesta.totalPlanificados}</b> cursos organizados en <b>{propuesta.ciclos.length}</b> ciclos.</p>
+        <p className="strategy-proposal-summary"><b>{propuesta.totalPlanificados}</b> {pluralizar(propuesta.totalPlanificados, 'curso organizado', 'cursos organizados')} en <b>{propuesta.ciclos.length}</b> {pluralizar(propuesta.ciclos.length, 'periodo', 'periodos')}.</p>
         <section className="strategy-proposal-explanation" aria-label="Explicación de la propuesta">
           {propuesta.explicacion.map((linea, index) => <p key={index}>{explicarPlan(linea)}</p>)}
         </section>

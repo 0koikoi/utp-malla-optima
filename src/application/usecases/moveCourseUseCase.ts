@@ -1,5 +1,5 @@
 import type { Curso, PeriodoAcademico, PeriodoIngreso } from '../../types/academic';
-import { cursoBloqueado } from '../../domain/rules/courseRules';
+import { cursoBloqueado, esJaladoSinReplanificar } from '../../domain/rules/courseRules';
 import {
   validarDestinoNoAnterior,
   validarLimiteCreditosVerano,
@@ -9,6 +9,10 @@ import {
 import { validarPrerequisitosParaPeriodo } from '../../domain/services/prerequisiteService';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
+import {
+  destinoJaladoPermitido, esRegresoAlOrigen, jaladosQueBloquean,
+  mensajeJaladoObligatorio, mensajeJaladosPendientes,
+} from '../../domain/rules/jaladoRules';
 
 export type MoveCourseFailureReason =
   | 'NOT_FOUND'
@@ -19,7 +23,9 @@ export type MoveCourseFailureReason =
   | 'SUMMER_CREDIT_LIMIT'
   | 'SUMMER_NOT_AVAILABLE'
   | 'REMOVED_CYCLE'
-  | 'SOURCE_PERIOD_LOCKED';
+  | 'SOURCE_PERIOD_LOCKED'
+  | 'JALADO_DESTINO'
+  | 'JALADOS_PENDIENTES';
 
 export function moveCourseUseCase(
   cursos: Curso[],
@@ -27,7 +33,7 @@ export function moveCourseUseCase(
   periodo: PeriodoAcademico,
   contexto: {
     cicloActual?: number | null; periodoIngreso?: PeriodoIngreso | null; ciclosExcluidos?: number[];
-    horasSinRecargo?: number | null;
+    horasSinRecargo?: number | null; jaladoPermiteVerano?: boolean;
   } = {}
 ) {
   const curso = cursos.find((item) => item.codigo === codigo);
@@ -39,7 +45,21 @@ export function moveCourseUseCase(
     return { ok: false as const, reason: 'LOCKED' as MoveCourseFailureReason };
   }
 
-  if (contexto.cicloActual && curso.ubicacion === 'periodo' &&
+  const moverA = (destino: PeriodoAcademico) => cursos.map((item) => item.codigo === codigo
+    ? { ...item, ciclo: destino.cicloReferencia, tipoPeriodo: destino.tipo, ubicacion: 'periodo' as const }
+    : item);
+
+  // Regla UTP: un jalado solo va a su ventana de recuperación o vuelve a su ciclo original.
+  if (!destinoJaladoPermitido(curso, periodo, cursos, contexto)) {
+    return { ok: false as const, reason: 'JALADO_DESTINO' as MoveCourseFailureReason,
+      mensaje: mensajeJaladoObligatorio(curso, cursos, contexto) };
+  }
+  if (esRegresoAlOrigen(curso, periodo, cursos, contexto)) {
+    return { ok: true as const, warning: null, surcharge: null, cursos: moverA(periodo) };
+  }
+
+  // Un jalado sale de su ciclo bloqueado hacia un periodo futuro.
+  if (contexto.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, contexto.cicloActual) &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), contexto.cicloActual)) {
     return { ok: false as const, reason: 'SOURCE_PERIOD_LOCKED' as MoveCourseFailureReason };
   }
@@ -58,6 +78,13 @@ export function moveCourseUseCase(
         : 'PAST_PERIOD') as MoveCourseFailureReason,
       periodoActual: periodoValido.periodoActual,
     };
+  }
+
+  const bloqueantes = jaladosQueBloquean(curso, periodo, cursos, contexto);
+  if (bloqueantes.length) {
+    return { ok: false as const, reason: 'JALADOS_PENDIENTES' as MoveCourseFailureReason,
+      faltantes: bloqueantes.map(({ codigo: cod, nombre }) => ({ codigo: cod, nombre })),
+      mensaje: mensajeJaladosPendientes(bloqueantes, cursos, contexto) };
   }
 
   const validation = validarPrerequisitosParaPeriodo(curso, cursos, periodo, contexto);
@@ -103,15 +130,6 @@ export function moveCourseUseCase(
       total: recargo.total,
       limite: recargo.limite,
     } : null,
-    cursos: cursos.map((item) =>
-      item.codigo === codigo
-        ? {
-            ...item,
-            ciclo: periodo.cicloReferencia,
-            tipoPeriodo: periodo.tipo,
-            ubicacion: 'periodo' as const,
-          }
-        : item
-    ),
+    cursos: moverA(periodo),
   };
 }

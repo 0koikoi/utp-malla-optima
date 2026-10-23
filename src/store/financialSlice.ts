@@ -2,10 +2,16 @@ import type { AcademicRepositories } from '../application/ports/AcademicReposito
 import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
 import type { AcademicSlice, AcademicStore } from './types';
 
-type FinancialSlice = Pick<AcademicStore, 'tarifario' | 'setTarifario'>;
+type FinancialSlice = Pick<AcademicStore,
+  'tarifario' | 'setTarifario' | 'metodoPago' | 'pagoUnicoPorPeriodo' | 'setMetodoPago' | 'setPagoUnico'>;
 
 export const createFinancialSlice = (repos: AcademicRepositories): AcademicSlice<FinancialSlice> => (set, get) => ({
   tarifario: null,
+  metodoPago: 'sin_descuento',
+  pagoUnicoPorPeriodo: {},
+  setMetodoPago: (metodoPago) => set({ metodoPago }),
+  setPagoUnico: (periodoId, activo) =>
+    set((state) => ({ pagoUnicoPorPeriodo: { ...state.pagoUnicoPorPeriodo, [periodoId]: activo } })),
   setTarifario: async (tarifario) => {
     const normalizado = migrateLegacyFinancialRulesReference(tarifario);
     const disciplinas = Object.keys(normalizado.disciplinas);

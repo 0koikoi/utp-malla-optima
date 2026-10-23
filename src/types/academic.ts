@@ -28,6 +28,14 @@ export interface Curso {
   prerrequisitos: string[];
   esLaboratorio?: boolean;
   estado: EstadoCurso;
+  /**
+   * Curso desaprobado. Su estado es PENDIENTE: mientras siga en el ciclo donde
+   * se jaló (un periodo bloqueado) no cumple prerrequisitos ni se cotiza; al
+   * replanificarlo en un periodo futuro se comporta como cualquier pendiente.
+   */
+  jalado?: boolean;
+  /** Ciclo donde se jaló. Si es mayor que el ciclo actual (adelantado), su lugar original es el banco. */
+  cicloJalado?: number;
 }
 
 export interface CursoReferencia {
@@ -43,6 +51,9 @@ export type TipoNotificacionMovimiento =
   | 'LIMITE_CREDITOS_VERANO'
   | 'LIMITE_HORAS'
   | 'IMPACTO_DESCENDIENTE'
+  | 'JALADO'
+  | 'JALADO_OBLIGATORIO'
+  | 'DATOS_DESACTUALIZADOS'
   | 'ERROR_PERSISTENCIA';
 
 export interface NotificacionMovimiento {
@@ -53,4 +64,6 @@ export interface NotificacionMovimiento {
   periodoDestino?: string;
   limite?: number;
   valorActual?: number;
+  /** Código del curso recién marcado como jalado; habilita la acción Deshacer. */
+  deshacerJalado?: string;
 }

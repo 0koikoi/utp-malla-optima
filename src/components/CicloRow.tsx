@@ -18,6 +18,10 @@ import {
   obtenerHorasSinRecargo,
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
+import { avisosCargaFila, resumenCicloPasado, textoCreditos } from '../presentation/selectors/plannerCardRules';
+import { pluralizar } from '../utils/pluralizar';
+import { useShallow } from 'zustand/react/shallow';
+import { esRegresoAlOrigen, gruposPorVentana, jaladosFaltantesEn } from '../domain/rules/jaladoRules';
 
 interface Props {
   numCiclo: number;
@@ -38,6 +42,23 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const disciplinaActiva = useAcademicStore((state) => state.disciplinaActiva);
   const cicloActual = useAcademicStore((state) => state.cicloActual);
   const eliminarCiclo = useAcademicStore((state) => state.eliminarCiclo);
+  const agregarJaladosARecuperacion = useAcademicStore((state) => state.agregarJaladosARecuperacion);
+  // Regla UTP: en cada fila de la ventana de recuperación se avisa qué jalados faltan.
+  // Pares [nombres, ventana] aplanados para que useShallow compare cadenas.
+  const jaladosPendientes = useAcademicStore(useShallow((state) => {
+    const fila = crearPeriodoAcademico(tipoPeriodo, numCiclo);
+    return gruposPorVentana(jaladosFaltantesEn(fila, state.cursos, state), state.cursos, state)
+      .flatMap(({ nombres, ventana }) => [nombres, ventana]);
+  }));
+  const totalJaladosPendientes = useAcademicStore((state) =>
+    jaladosFaltantesEn(crearPeriodoAcademico(tipoPeriodo, numCiclo), state.cursos, state).length);
+  // Un jalado en movimiento (modo táctil) puede volver a su ciclo original aunque esté bloqueado.
+  const jaladoVuelveAqui = useAcademicStore((state) => {
+    const enMovimiento = state.cursos.find((curso) => curso.codigo === state.cursoAMover);
+    return Boolean(enMovimiento && esRegresoAlOrigen(enMovimiento,
+      crearPeriodoAcademico(tipoPeriodo, numCiclo), state.cursos, state));
+  });
+  const [agregandoJalados, setAgregandoJalados] = useState(false);
   const financialPlanning = useFinancialPlanning();
   const periodo = useMemo(() => crearPeriodoAcademico(tipoPeriodo, numCiclo), [tipoPeriodo, numCiclo]);
   const esPeriodoActual = cicloActual
@@ -77,9 +98,13 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   );
   const totalCreditos = cursosParaCarga.reduce((acc, curso) => acc + curso.creditos, 0);
   const totalHoras = calcularHorasEfectivas(cursosParaCarga, tipoPeriodo);
-  const excesoHoras = totalHoras > LIMITE_HORAS_PERIODO;
+  // Los ciclos pasados solo informan lo llevado: sin cotización ni avisos de carga.
+  const resumenPasado = esPeriodoPasado && !esVerano ? resumenCicloPasado(cursos, cicloActual) : null;
   const horasSinRecargo = obtenerHorasSinRecargo(tarifario, disciplinaActiva);
-  const conRecargo = horasSinRecargo !== null && totalHoras > horasSinRecargo;
+  const { excesoHoras, recargo: conRecargo } = avisosCargaFila({
+    pasado: Boolean(resumenPasado), bloqueado: esPeriodoBloqueado, totalHoras,
+    horasRecomendadas: LIMITE_HORAS_PERIODO, horasSinRecargo,
+  });
   const cursosLlevados = cursos.filter(
     (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
   ).length;
@@ -98,7 +123,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsOver(false);
-    if (esPeriodoBloqueado) return;
+    if (!habilitado) return;
+    // En periodos bloqueados el caso de uso solo acepta el regreso de un jalado a su ciclo.
     const codigo = event.dataTransfer.getData('text/plain');
     if (codigo) void moverCursoAPeriodo(codigo, periodo);
   };
@@ -119,16 +145,20 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       >
         {esVerano ? <Sun size={17} className="summer-icon" /> : <span className="tier-num">{numCiclo}</span>}
         <span className="tier-name">{esVerano ? `Verano ${numCiclo}` : `Ciclo ${numCiclo}`}</span>
-        <div className="tier-stats">
+        {resumenPasado ? <div className="tier-stats">
+          <span className="stat-chip stat-horas">{resumenPasado.horas}h sem.</span>
+          <span className="stat-chip">{textoCreditos(resumenPasado.creditos, 'llevado', 'llevados')}</span>
+          {resumenPasado.creditosJalados > 0 && <span className="stat-chip stat-jalados">{textoCreditos(resumenPasado.creditosJalados, 'jalado', 'jalados')}</span>}
+        </div> : <div className="tier-stats">
           <span className={`stat-chip stat-horas ${excesoHoras ? 'stat-hours-warning' : ''}`}>{totalHoras}h {esVerano ? 'ef.' : 'sem.'}</span>
           <span className="stat-chip">{formatCredits(totalCreditos)} cr</span>
           {pensionBasePeriodo !== null && (
             <span className="stat-chip stat-price">S/ {pensionBasePeriodo.toFixed(2)}</span>
           )}
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
-        </div>
+        </div>}
         {excesoHoras && <span className="tier-hours-warning" title={`La carga supera las ${LIMITE_HORAS_PERIODO} horas recomendadas; se permite planificar.`}><AlertTriangle size={11} /> Más de {LIMITE_HORAS_PERIODO} h</span>}
-        {conRecargo && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
+        {conRecargo && horasSinRecargo !== null && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
         {!habilitado ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> verano no habilitado</span>
         ) : esPeriodoPasado ? (
@@ -146,15 +176,25 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       <div
         className="tier-dropzone"
         onDragOver={(event) => {
-          if (esPeriodoBloqueado) return;
+          if (!habilitado) return;
           event.preventDefault();
-          setIsOver(true);
+          if (!esPeriodoBloqueado) setIsOver(true);
         }}
         onDragLeave={() => setIsOver(false)}
         onDrop={handleDrop}
         data-periodo-bloqueado={esPeriodoBloqueado}
       >
-        {cursoAMover && !esPeriodoBloqueado && (
+        {jaladosPendientes.length > 0 && (
+          <div className="jalado-recovery-banner" role="alert">
+            <p className="jalado-recovery-text"><AlertTriangle size={13} /> {jaladosPendientes.map((texto, indice) => indice % 2 === 0
+              ? <span key={indice}>Debes llevar primero <b>{texto}</b> {jaladosPendientes[indice + 1]}. </span> : null)}</p>
+            <button type="button" disabled={agregandoJalados} onClick={() => {
+              setAgregandoJalados(true);
+              void agregarJaladosARecuperacion(periodo).finally(() => setAgregandoJalados(false));
+            }}>{pluralizar(totalJaladosPendientes, 'Agregar jalado', 'Agregar jalados')} a este {esVerano ? 'verano' : 'ciclo'}</button>
+          </div>
+        )}
+        {cursoAMover && (!esPeriodoBloqueado || jaladoVuelveAqui) && (
           <button
             type="button"
             className="tap-move-target"

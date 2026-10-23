@@ -1,6 +1,7 @@
 import type { Curso, PeriodoAcademico, PeriodoIngreso } from '../../types/academic';
 import { crearPeriodoRegular, obtenerPeriodoCurso } from '../rules/academicPeriodRules';
 import { permiteVeranoDespuesDe, periodoBloqueadoPorCicloActual } from '../rules/academicContextRules';
+import { esJaladoSinReplanificar } from '../rules/courseRules';
 
 /** Conserva veranos manuales válidos y la secuencia que los hace posibles. */
 export const obtenerAsignacionesConservadas = (
@@ -16,7 +17,7 @@ export const obtenerAsignacionesConservadas = (
     if (!curso) return true;
     if (camino.has(codigo)) return false;
     if (curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO') return true;
-    if (curso.ubicacion !== 'periodo') return false;
+    if (curso.ubicacion !== 'periodo' || esJaladoSinReplanificar(curso, cicloActual)) return false;
     const periodo = obtenerPeriodoCurso(curso);
     if (periodo.orden >= destino.orden) return false;
     if (curso.estado === 'EN_CURSO') return true;
@@ -41,7 +42,9 @@ export const obtenerAsignacionesConservadas = (
         validoAntesDe(curso.codigo, crearPeriodoRegular(curso.ciclo + 1))) conservarSecuencia(curso);
   }
   for (const curso of cursos) {
+    // Un jalado en su ciclo original no es un bloque cerrado: se vuelve a planificar.
     if (curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' && cicloActual > 0 &&
+        !esJaladoSinReplanificar(curso, cicloActual) &&
         periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual)) conservados.add(curso.codigo);
   }
   for (const curso of cursos) {
