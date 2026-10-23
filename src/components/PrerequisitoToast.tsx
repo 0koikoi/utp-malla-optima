@@ -3,18 +3,20 @@ import { AlertTriangle, Clock3, Gauge, LockKeyhole, X } from 'lucide-react';
 import { useAcademicStore } from '../store/useAcademicStore';
 
 export function PrerequisitoToast() {
-  const { notificacionMovimiento, limpiarNotificacionMovimiento } = useAcademicStore();
+  const { notificacionMovimiento, limpiarNotificacionMovimiento, desmarcarJalado } = useAcademicStore();
 
   useEffect(() => {
     if (!notificacionMovimiento) return;
-    const timer = window.setTimeout(limpiarNotificacionMovimiento, 5500);
+    // Se deja más tiempo cuando hay una acción Deshacer disponible.
+    const timer = window.setTimeout(limpiarNotificacionMovimiento,
+      notificacionMovimiento.deshacerJalado ? 10000 : 5500);
     return () => window.clearTimeout(timer);
   }, [notificacionMovimiento, limpiarNotificacionMovimiento]);
 
   if (!notificacionMovimiento) return null;
 
   const { tipo } = notificacionMovimiento;
-  const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE';
+  const esAdvertencia = tipo === 'LIMITE_HORAS' || tipo === 'IMPACTO_DESCENDIENTE' || tipo === 'JALADO';
   const faltantes = notificacionMovimiento.faltantes ?? [];
   const titulo =
     tipo === 'ERROR_PERSISTENCIA'
@@ -23,6 +25,8 @@ export function PrerequisitoToast() {
       ? 'Curso bloqueado'
       : tipo === 'IMPACTO_DESCENDIENTE'
         ? 'Impacto en cursos posteriores'
+      : tipo === 'JALADO'
+        ? 'Curso marcado como jalado'
       : tipo === 'PRERREQUISITOS'
         ? 'Prerrequisitos pendientes'
         : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'
@@ -62,6 +66,11 @@ export function PrerequisitoToast() {
       ) : tipo === 'IMPACTO_DESCENDIENTE' ? (
         <><p><b>{notificacionMovimiento.cursoNombre}</b>: {notificacionMovimiento.mensaje}</p>
           <ul>{faltantes.map((curso) => <li key={curso.codigo}><span>{curso.codigo}</span><strong>{curso.nombre}</strong></li>)}</ul></>
+      ) : tipo === 'JALADO' ? (
+        <><p><b>{notificacionMovimiento.cursoNombre}</b> {notificacionMovimiento.mensaje}</p>
+          {faltantes.length > 0 && <ul>{faltantes.map((curso) => <li key={curso.codigo}><span>{curso.codigo}</span><strong>{curso.nombre}</strong></li>)}</ul>}
+          {notificacionMovimiento.deshacerJalado && <button type="button" className="planner-toast-undo"
+            onClick={() => void desmarcarJalado(notificacionMovimiento.deshacerJalado!)}>Deshacer</button>}</>
       ) : tipo === 'PRERREQUISITOS' ? (
         <>
           <p>

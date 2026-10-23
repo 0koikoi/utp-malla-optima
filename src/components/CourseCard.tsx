@@ -5,11 +5,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { isCursoDesbloqueado } from '../domain/services/prerequisiteService';
+import { esPlanificadoInvalido, isCursoDesbloqueado } from '../domain/services/prerequisiteService';
+import { esJaladoSinReplanificar } from '../domain/rules/courseRules';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
 import { etiquetaPrerrequisito, puedeRetirarCursoRapido } from '../presentation/selectors/plannerCardRules';
-import { ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CircleCheck, Clock3, Info, LockKeyhole, RotateCcw, X } from 'lucide-react';
+import { JaladoModal } from './JaladoModal';
 
 interface Props {
   curso: Curso;
@@ -20,6 +22,7 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const estaSeleccionado = useAcademicStore((state) =>
     state.cursosSeleccionadosParaMatricula.includes(curso.codigo));
   const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos, state));
+  const invalido = useAcademicStore((state) => esPlanificadoInvalido(curso, state.cursos, state));
   const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) =>
     etiquetaPrerrequisito(codigo, state.cursos))));
   const habilitaA = useAcademicStore(useShallow((state) => state.cursos
@@ -33,9 +36,11 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
 
   const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
   const [retirando, setRetirando] = useState(false);
+  const [confirmarJalado, setConfirmarJalado] = useState(false);
   const esAprobado = curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO';
+  // Un jalado en su ciclo original es la excepción: se puede arrastrar a un periodo futuro.
   const esFijoMovimiento = esAprobado || curso.estado === 'EN_CURSO' ||
-    Boolean(cicloActual && curso.ubicacion === 'periodo' &&
+    Boolean(cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, cicloActual) &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual));
   const permiteRetiroRapido = puedeRetirarCursoRapido(curso, cicloActual);
 
@@ -81,7 +86,9 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
     curso.tipo === 'OBLIGATORIO' ? 'obligatorio' : 'electivo',
     esAprobado ? 'curso-bloqueado' : '',
     curso.estado === 'EN_CURSO' ? 'en-curso' : '',
-    curso.estado === 'PENDIENTE' && !desbloqueado ? 'con-prerrequisitos' : '',
+    curso.estado === 'PENDIENTE' && !desbloqueado && !invalido ? 'con-prerrequisitos' : '',
+    curso.jalado ? 'curso-jalado' : '',
+    invalido ? 'curso-invalido' : '',
     estaSeleccionado ? 'seleccionado-presupuesto' : '',
     esSeleccionMovil ? 'seleccionado-mover' : '',
     curso.tipoPeriodo === 'VERANO' && curso.ubicacion === 'periodo' ? 'curso-verano' : '',
@@ -156,9 +163,25 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
           </div>
         )}
         {curso.estado === 'EN_CURSO' && (
-          <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
+          <div className="curso-estado-row">
+            <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
+            <button type="button" className="curso-jalar-btn" draggable={false}
+              onClick={(event) => { event.stopPropagation(); setConfirmarJalado(true); }}
+              title={`Marcar ${curso.nombre} como jalado`}>
+              <RotateCcw size={10} aria-hidden="true" /> Marcar como jalado
+            </button>
+          </div>
+        )}
+        {curso.jalado && (
+          <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /> Jalado</div>
+        )}
+        {invalido && (
+          <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">
+            <AlertTriangle size={11} /> Prerrequisito sin cumplir
+          </div>
         )}
       </div>
+      {confirmarJalado && <JaladoModal curso={curso} onClose={() => setConfirmarJalado(false)} />}
 
       {tooltip &&
         createPortal(
