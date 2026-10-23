@@ -24,9 +24,9 @@ export const explicarPlan = (explicacion: ExplicacionPlan): string => {
     case 'JALADOS_PRIMERO':
       return `Primero se ${pluralizar(explicacion.total, 'colocó tu curso jalado', `colocaron tus ${explicacion.total} cursos jalados`)} en el ${explicacion.periodos.join(' y en el ')}, el primer periodo de su ventana de recuperación, como exige la UTP; el resto se organiza en los ciclos regulares.`;
     case 'CONSERVADOS':
-      return `Se conservaron ${explicacion.total} pendientes con asignaciones cerradas o vinculadas a veranos manuales válidos. Sus prerrequisitos y cargas se consideran al planificar.`;
+      return `${pluralizar(explicacion.total, 'Se conservó 1 pendiente', `Se conservaron ${explicacion.total} pendientes`)} con asignaciones cerradas o vinculadas a veranos manuales válidos. Sus prerrequisitos y cargas se consideran al planificar.`;
     case 'PENDIENTES':
-      return `${explicacion.total} cursos permanecen en el banco. Revisa los motivos indicados para cada curso.`;
+      return `${pluralizar(explicacion.total, '1 curso permanece', `${explicacion.total} cursos permanecen`)} en el banco. Revisa los motivos indicados para cada curso.`;
     case 'COMPLETADOS':
       return 'Se planificaron todos los obligatorios que podían reorganizarse y el electivo seleccionado, cuando era necesario.';
     case 'ADVERTENCIAS_HORAS':

@@ -74,6 +74,13 @@ describe('Textos de jalados con 1 y con 2', () => {
       .toContain('Se organizaron 12 cursos pendientes desde el ciclo 8 hasta el 10, utilizando solo ciclos regulares (el verano se usa únicamente para tus 2 cursos jalados).');
   });
 
+  it('otros textos de la propuesta concuerdan con la cantidad', () => {
+    expect(explicarPlan({ tipo: 'PENDIENTES', total: 1 })).toMatch(/^1 curso permanece en el banco/);
+    expect(explicarPlan({ tipo: 'PENDIENTES', total: 3 })).toMatch(/^3 cursos permanecen en el banco/);
+    expect(explicarPlan({ tipo: 'CONSERVADOS', total: 1 })).toMatch(/^Se conservó 1 pendiente con/);
+    expect(explicarPlan({ tipo: 'CONSERVADOS', total: 2 })).toMatch(/^Se conservaron 2 pendientes con/);
+  });
+
   it('toast al marcar como jalado', () => {
     expect(notificacionJalado(A, [B], 'en el Ciclo 8').mensaje)
       .toBe('quedó como jalado. Deberás llevarlo en el Ciclo 8. Este curso planificado ya no cumple sus prerrequisitos:');
