@@ -30,6 +30,24 @@ export const preguntasPorFoco = (foco: FocoUI | null): string[] => {
   return ['¿Cómo ves mi plan?', 'Mi ruta hasta egresar', '¿Me alcanza mi presupuesto?'];
 };
 
+/** Texto comparable de una pregunta: sin tildes, mayúsculas, signos ni espacios repetidos. */
+export const normalizarPregunta = (texto: string): string => texto.toLowerCase().normalize('NFD')
+  .replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+
+/** Quita las repetidas (dentro de la lista y respecto de `excluir`) comparando el texto normalizado. */
+export const sinRepetidas = (preguntas: string[], excluir: string[] = []): string[] => {
+  const vistas = new Set(excluir.map(normalizarPregunta));
+  return preguntas.filter((pregunta) => {
+    const clave = normalizarPregunta(pregunta);
+    if (!clave || vistas.has(clave)) return false;
+    vistas.add(clave);
+    return true;
+  });
+};
+
+const claveFoco = (foco: FocoUI | null) => !foco ? '' : foco.tipo === 'plan' ? 'plan' : `${foco.tipo}:${foco.id}`;
+export const mismoFoco = (a: FocoUI | null, b: FocoUI | null) => claveFoco(a) === claveFoco(b);
+
 export interface OpcionesAdjuntar {
   periodos: { id: string; etiqueta: string; cursos: number }[];
   cursos: { codigo: string; nombre: string }[];

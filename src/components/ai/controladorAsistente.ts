@@ -3,7 +3,7 @@ import {
   type AIAnalisisResponse, type AIContext, type AIErrorCodigo, type AIFoco, type AIMensaje, type AIRequest,
 } from '../../application/ai/contracts';
 import type { AIClient } from '../../infrastructure/ai/HttpAIClient';
-import { focoParaEnviar, type FocoUI } from './asistenteLogica';
+import { focoParaEnviar, mismoFoco, type FocoUI } from './asistenteLogica';
 
 export interface Solicitud {
   modo: AIRequest['modo'];
@@ -24,6 +24,8 @@ export interface EstadoAsistente {
   enviando: boolean;
   privacidadAceptada: boolean;
   foco: FocoUI | null;
+  /** Ya se envió una pregunta con el foco actual: sus 3 sugerencias se ocultan y queda solo el chip. */
+  focoEnviado: boolean;
   panel: PanelEntrada;
   presupuesto: string;
 }
@@ -39,7 +41,7 @@ export interface DependenciasAsistente {
 export const TEXTO_ANALISIS = 'Analizar mi plan';
 
 const estadoInicial = (privacidadAceptada: boolean): EstadoAsistente => ({
-  mensajes: [], enviando: false, privacidadAceptada, foco: null, panel: null, presupuesto: '',
+  mensajes: [], enviando: false, privacidadAceptada, foco: null, focoEnviado: false, panel: null, presupuesto: '',
 });
 
 /** Texto de un mensaje tal como se envía en el historial (el análisis se resume). */
@@ -86,7 +88,7 @@ export const crearControladorAsistente = (dependencias: DependenciasAsistente) =
     if (!texto) return;
     const pregunta: MensajeChat = { id: siguienteId++, rol: 'user', texto, foco: solicitud.foco };
     const mensajes = [...estado.mensajes, pregunta];
-    actualizar({ mensajes, enviando: true, panel: null });
+    actualizar({ mensajes, enviando: true, panel: null, focoEnviado: estado.focoEnviado || Boolean(solicitud.foco && mismoFoco(solicitud.foco, estado.foco)) });
 
     const foco = focoParaEnviar(solicitud.foco);
     const peticion: AIRequest = {
@@ -136,7 +138,8 @@ export const crearControladorAsistente = (dependencias: DependenciasAsistente) =
       generacion += 1;
       actualizar({ ...estadoInicial(estado.privacidadAceptada), presupuesto: estado.presupuesto });
     },
-    setFoco: (foco: FocoUI | null) => actualizar({ foco, panel: null }),
+    /** Un foco distinto vuelve a mostrar sus sugerencias; elegir el mismo no las repone. */
+    setFoco: (foco: FocoUI | null) => actualizar({ foco, panel: null, focoEnviado: mismoFoco(foco, estado.foco) && estado.focoEnviado }),
     setPanel: (panel: PanelEntrada) => actualizar({ panel }),
     alternarPanel: (panel: Exclude<PanelEntrada, null>) => actualizar({ panel: estado.panel === panel ? null : panel }),
     setPresupuesto: (presupuesto: string) => actualizar({ presupuesto }),

@@ -43,7 +43,7 @@ const acciones: AccionesPanel = {
   onAlternarPanel: sinAccion, onCerrarPanel: sinAccion, onElegirFoco: sinAccion, onQuitarFoco: sinAccion,
 };
 const estadoBase = (cambios: Partial<EstadoAsistente> = {}): EstadoAsistente => ({
-  mensajes: [], enviando: false, privacidadAceptada: true, foco: null, panel: null, presupuesto: '', ...cambios,
+  mensajes: [], enviando: false, privacidadAceptada: true, foco: null, focoEnviado: false, panel: null, presupuesto: '', ...cambios,
 });
 const renderPanel = (estado: EstadoAsistente, extra: { enLinea?: boolean; tooltip?: boolean } = {}) => renderToStaticMarkup(
   <AsistentePanel {...acciones} estado={estado} enLinea={extra.enLinea ?? true} nombres={nombres} opciones={opciones}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type Ref } from 'react';
 import { BookOpen, CalendarRange, ChevronLeft, LayoutGrid, Paperclip, Search, SendHorizontal, Smile, WifiOff, X } from 'lucide-react';
 import { MAX_TEXTO_MENSAJE } from '../../application/ai/contracts';
 import {
-  FOCO_PLAN, PREGUNTAS_RAPIDAS, filtrarCursos, preguntasPorFoco, type FocoUI, type OpcionesAdjuntar,
+  FOCO_PLAN, PREGUNTAS_RAPIDAS, filtrarCursos, type FocoUI, type OpcionesAdjuntar,
 } from './asistenteLogica';
 import type { PanelEntrada } from './controladorAsistente';
 
@@ -75,6 +75,8 @@ export function PanelAdjuntar({ opciones, onElegir, vistaInicial = 'menu' }: Pan
 interface EntradaProps {
   panel: PanelEntrada;
   foco: FocoUI | null;
+  /** Sugerencias del foco que se muestran bajo el chip (vacías tras el primer envío con ese foco). */
+  sugerenciasFoco: string[];
   enLinea: boolean;
   enviando: boolean;
   bloqueado: boolean;
@@ -123,9 +125,9 @@ export function AsistenteEntrada(props: EntradaProps) {
       <span className="ia-foco-chip">📎 {foco.etiqueta}
         <button type="button" onClick={props.onQuitarFoco} aria-label={`Quitar ${foco.etiqueta}`}><X size={14} aria-hidden="true" /></button>
       </span>
-      <div className="ia-chips" role="group" aria-label="Preguntas sobre el foco">
-        {preguntasPorFoco(foco).map((pregunta) => <button key={pregunta} type="button" className="ia-chip" disabled={deshabilitado || enviando} onClick={() => enviar(pregunta)}>{pregunta}</button>)}
-      </div>
+      {props.sugerenciasFoco.length > 0 && <div className="ia-chips" role="group" aria-label="Preguntas sobre el foco">
+        {props.sugerenciasFoco.map((pregunta) => <button key={pregunta} type="button" className="ia-chip" disabled={deshabilitado || enviando} onClick={() => enviar(pregunta)}>{pregunta}</button>)}
+      </div>}
     </div>}
     <form className="ia-barra" onSubmit={alEnviar}>
       <button type="button" className={`ia-icono-btn ${panel === 'adjuntar' ? 'activo' : ''}`} onClick={() => props.onAlternarPanel('adjuntar')}

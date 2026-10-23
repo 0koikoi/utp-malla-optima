@@ -3,7 +3,7 @@ import {
   AlertTriangle, Bot, CircleCheck, GitBranch, Gauge, OctagonAlert, RefreshCw, Route, Target, Wallet,
 } from 'lucide-react';
 import type { AISeccion, Nivel } from '../../application/ai/contracts';
-import { partirPorCodigos } from './asistenteLogica';
+import { partirPorCodigos, sinRepetidas } from './asistenteLogica';
 import type { MensajeChat } from './controladorAsistente';
 
 const ICONO_SECCION: Record<AISeccion['tipo'], ReactNode> = {
@@ -42,10 +42,18 @@ function CursosResaltados({ codigos, nombres }: CursosProps) {
   </ul>;
 }
 
-function Chips({ preguntas, onElegir, deshabilitado }: { preguntas: string[]; onElegir: (texto: string) => void; deshabilitado: boolean }) {
-  if (!preguntas.length) return null;
+interface ChipsProps {
+  preguntas: string[];
+  excluir: string[];
+  onElegir: (texto: string) => void;
+  deshabilitado: boolean;
+}
+
+function Chips({ preguntas, excluir, onElegir, deshabilitado }: ChipsProps) {
+  const visibles = sinRepetidas(preguntas, excluir);
+  if (!visibles.length) return null;
   return <div className="ia-chips" role="group" aria-label="Preguntas sugeridas">
-    {preguntas.map((pregunta) => <button key={pregunta} type="button" className="ia-chip" disabled={deshabilitado} onClick={() => onElegir(pregunta)}>{pregunta}</button>)}
+    {visibles.map((pregunta) => <button key={pregunta} type="button" className="ia-chip" disabled={deshabilitado} onClick={() => onElegir(pregunta)}>{pregunta}</button>)}
   </div>;
 }
 
@@ -68,11 +76,13 @@ interface MensajesProps {
   nombres: Map<string, string>;
   enviando: boolean;
   deshabilitado: boolean;
+  /** Preguntas ya visibles en otra parte (las del foco): no se repiten como chips de la respuesta. */
+  excluirPreguntas?: string[];
   onPreguntar: (texto: string) => void;
   onReintentar: (id: number) => void;
 }
 
-export function AsistenteMensajes({ mensajes, nombres, enviando, deshabilitado, onPreguntar, onReintentar }: MensajesProps) {
+export function AsistenteMensajes({ mensajes, nombres, enviando, deshabilitado, excluirPreguntas = [], onPreguntar, onReintentar }: MensajesProps) {
   const ultimo = mensajes.at(-1);
   return <>
     {mensajes.map((mensaje) => {
@@ -101,7 +111,7 @@ export function AsistenteMensajes({ mensajes, nombres, enviando, deshabilitado, 
             <div className="ia-burbuja ia-burbuja-bot"><TextoPlano texto={mensaje.analisis.resumen} /></div>
             {mensaje.analisis.secciones.map((seccion, indice) => <TarjetaSeccion key={`${seccion.tipo}-${indice}`} seccion={seccion} nombres={nombres} />)}
             <p className="ia-nota">Costos referenciales (tarifario 2026): verifícalos en el portal de la UTP antes de pagar.</p>
-            {esUltimo && <Chips preguntas={mensaje.analisis.preguntasSugeridas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
+            {esUltimo && <Chips preguntas={mensaje.analisis.preguntasSugeridas} excluir={excluirPreguntas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
           </div>
         </div>;
       }
@@ -111,7 +121,7 @@ export function AsistenteMensajes({ mensajes, nombres, enviando, deshabilitado, 
             <p><TextoPlano texto={mensaje.texto} codigos={mensaje.cursos} /></p>
             <CursosResaltados codigos={mensaje.cursos} nombres={nombres} />
           </div>
-          {esUltimo && <Chips preguntas={mensaje.preguntas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
+          {esUltimo && <Chips preguntas={mensaje.preguntas} excluir={excluirPreguntas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
         </div>
       </div>;
     })}

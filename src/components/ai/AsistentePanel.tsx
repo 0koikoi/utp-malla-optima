@@ -2,7 +2,7 @@ import type { KeyboardEvent, Ref } from 'react';
 import { Bot, RotateCcw, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { AsistenteEntrada } from './AsistenteEntrada';
 import { AsistenteMensajes } from './AsistenteMensajes';
-import type { FocoUI, OpcionesAdjuntar } from './asistenteLogica';
+import { preguntasPorFoco, type FocoUI, type OpcionesAdjuntar } from './asistenteLogica';
 import type { EstadoAsistente, PanelEntrada } from './controladorAsistente';
 
 export const TEXTO_PRIVACIDAD = 'Enviaremos tu plan de forma anónima a un servicio de IA externo (DeepSeek) para analizarlo. No enviamos tu nombre ni tu código.';
@@ -74,6 +74,7 @@ function Bienvenida({ presupuesto, deshabilitado, onPresupuesto, onAnalizar }: B
 export function AsistentePanel({ panelRef, inputRef, mensajesRef, onKeyDown, ...props }: PanelProps) {
   const { estado, enLinea, nombres, opciones, esMock } = props;
   const pidePrivacidad = !estado.privacidadAceptada;
+  const sugerenciasFoco = estado.foco && !estado.focoEnviado ? preguntasPorFoco(estado.foco) : [];
 
   return <div className="ia-panel" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="ia-titulo" onKeyDown={onKeyDown}>
     <header className="ia-cabecera">
@@ -100,9 +101,9 @@ export function AsistentePanel({ panelRef, inputRef, mensajesRef, onKeyDown, ...
           <Bienvenida presupuesto={estado.presupuesto} deshabilitado={!enLinea || estado.enviando}
             onPresupuesto={props.onPresupuesto} onAnalizar={props.onAnalizar} />
           <AsistenteMensajes mensajes={estado.mensajes} nombres={nombres} enviando={estado.enviando}
-            deshabilitado={!enLinea || estado.enviando} onPreguntar={props.onPreguntar} onReintentar={props.onReintentar} />
+            deshabilitado={!enLinea || estado.enviando} excluirPreguntas={sugerenciasFoco} onPreguntar={props.onPreguntar} onReintentar={props.onReintentar} />
         </div>
-        <AsistenteEntrada panel={estado.panel} foco={estado.foco} enLinea={enLinea} enviando={estado.enviando} bloqueado={pidePrivacidad}
+        <AsistenteEntrada panel={estado.panel} foco={estado.foco} sugerenciasFoco={sugerenciasFoco} enLinea={enLinea} enviando={estado.enviando} bloqueado={pidePrivacidad}
           opciones={opciones} mostrarTooltipRapidas={props.mostrarTooltipRapidas} inputRef={inputRef}
           onAlternarPanel={props.onAlternarPanel} onCerrarPanel={props.onCerrarPanel} onElegirFoco={props.onElegirFoco}
           onQuitarFoco={props.onQuitarFoco} onEnviar={props.onPreguntar} />
