@@ -27,6 +27,8 @@ export function PrerequisitoToast() {
         ? 'Impacto en cursos posteriores'
       : tipo === 'JALADO'
         ? 'Curso marcado como jalado'
+      : tipo === 'JALADO_OBLIGATORIO'
+        ? 'Curso jalado obligatorio'
       : tipo === 'PRERREQUISITOS'
         ? 'Prerrequisitos pendientes'
         : tipo === 'PERIODO_ANTERIOR' || tipo === 'PERIODO_ACTUAL'

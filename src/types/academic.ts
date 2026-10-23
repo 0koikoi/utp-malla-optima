@@ -34,6 +34,8 @@ export interface Curso {
    * replanificarlo en un periodo futuro se comporta como cualquier pendiente.
    */
   jalado?: boolean;
+  /** Ciclo donde se jaló. Si es mayor que el ciclo actual (adelantado), su lugar original es el banco. */
+  cicloJalado?: number;
 }
 
 export interface CursoReferencia {
@@ -50,6 +52,7 @@ export type TipoNotificacionMovimiento =
   | 'LIMITE_HORAS'
   | 'IMPACTO_DESCENDIENTE'
   | 'JALADO'
+  | 'JALADO_OBLIGATORIO'
   | 'ERROR_PERSISTENCIA';
 
 export interface NotificacionMovimiento {

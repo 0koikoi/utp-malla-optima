@@ -505,3 +505,8 @@
 @media (max-width: 640px) { .removable-cycle .tier-label { padding-top: 6px; padding-left: 38px; } }
 
 .stat-chip.stat-jalados { color: var(--rose-primary); border-color: var(--rose-border); }
+.jalado-recovery-banner { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--rose-border); border-radius: 6px; background: var(--rose-subtle); color: var(--rose-primary); font-size: 0.72rem; }
+.jalado-recovery-banner span { display: inline-flex; align-items: center; gap: 5px; }
+.jalado-recovery-banner button { padding: 5px 10px; border: none; border-radius: 5px; background: var(--rose-primary); color: #fff; font-size: 0.7rem; font-weight: 750; cursor: pointer; }
+.jalado-recovery-banner button:disabled { opacity: .6; cursor: wait; }
+[data-theme="dark"] .jalado-recovery-banner { background: rgba(239, 68, 68, 0.12); }

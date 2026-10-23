@@ -56,7 +56,8 @@ describe('marcarComoJalado / desmarcarJalado con el 8vo en ciclo-8', () => {
     // I62N sigue en ciclo-8: no se mueve, solo queda inválido.
     expect(curso('100000I62N')).toMatchObject({ ciclo: 8, ubicacion: 'periodo' });
     expect(invalido('100000I62N')).toBe(true);
-    expect(invalido('100000S73T')).toBe(false);
+    // Regla UTP: mientras S61T no esté en ciclo-8, todo lo planificado allí queda marcado.
+    expect(invalido('100000S73T')).toBe(true);
     expect(cotizar(ctx).periodos.map((periodo) => periodo.id)).toEqual(['ciclo-8']);
     expect(cotizar(ctx).totalGeneral).toBe(5055.15);
   });

@@ -34,6 +34,8 @@ export interface AcademicStore {
   moverCursoACiclo: (codigo: string, nuevoCiclo: number) => Promise<boolean>;
   moverCursoAVerano: (codigo: string, despuesDelCiclo: number) => Promise<boolean>;
   moverCursoABanco: (codigo: string) => Promise<boolean>;
+  /** Mueve al periodo de recuperación todos los jalados que aún no están allí. */
+  agregarJaladosARecuperacion: () => Promise<boolean>;
   reiniciarPlanificacion: () => Promise<void>;
   generarPlanificacionOptima: () => Promise<ResultadoPlanificacionAutomatica>;
   previsualizarPlanificacionOptima: () => ResultadoPlanificacionAutomatica;

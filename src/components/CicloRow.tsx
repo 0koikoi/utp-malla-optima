@@ -19,6 +19,8 @@ import {
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
 import { avisosCargaFila, resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
+import { useShallow } from 'zustand/react/shallow';
+import { esRegresoAlOrigen, jaladosFaltantes, periodoRecuperacion } from '../domain/rules/jaladoRules';
 
 interface Props {
   numCiclo: number;
@@ -39,6 +41,18 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const disciplinaActiva = useAcademicStore((state) => state.disciplinaActiva);
   const cicloActual = useAcademicStore((state) => state.cicloActual);
   const eliminarCiclo = useAcademicStore((state) => state.eliminarCiclo);
+  const agregarJaladosARecuperacion = useAcademicStore((state) => state.agregarJaladosARecuperacion);
+  // Regla UTP: en la fila del periodo de recuperación se avisa qué jalados faltan.
+  const jaladosPendientes = useAcademicStore(useShallow((state) =>
+    periodoRecuperacion(state.cursos, state)?.id === `${tipoPeriodo === 'VERANO' ? 'verano' : 'ciclo'}-${numCiclo}`
+      ? jaladosFaltantes(state.cursos, state).map((curso) => curso.nombre) : []));
+  // Un jalado en movimiento (modo táctil) puede volver a su ciclo original aunque esté bloqueado.
+  const jaladoVuelveAqui = useAcademicStore((state) => {
+    const enMovimiento = state.cursos.find((curso) => curso.codigo === state.cursoAMover);
+    return Boolean(enMovimiento && esRegresoAlOrigen(enMovimiento,
+      crearPeriodoAcademico(tipoPeriodo, numCiclo), state.cursos, state));
+  });
+  const [agregandoJalados, setAgregandoJalados] = useState(false);
   const financialPlanning = useFinancialPlanning();
   const periodo = useMemo(() => crearPeriodoAcademico(tipoPeriodo, numCiclo), [tipoPeriodo, numCiclo]);
   const esPeriodoActual = cicloActual
@@ -103,7 +117,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsOver(false);
-    if (esPeriodoBloqueado) return;
+    if (!habilitado) return;
+    // En periodos bloqueados el caso de uso solo acepta el regreso de un jalado a su ciclo.
     const codigo = event.dataTransfer.getData('text/plain');
     if (codigo) void moverCursoAPeriodo(codigo, periodo);
   };
@@ -155,15 +170,24 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       <div
         className="tier-dropzone"
         onDragOver={(event) => {
-          if (esPeriodoBloqueado) return;
+          if (!habilitado) return;
           event.preventDefault();
-          setIsOver(true);
+          if (!esPeriodoBloqueado) setIsOver(true);
         }}
         onDragLeave={() => setIsOver(false)}
         onDrop={handleDrop}
         data-periodo-bloqueado={esPeriodoBloqueado}
       >
-        {cursoAMover && !esPeriodoBloqueado && (
+        {jaladosPendientes.length > 0 && (
+          <div className="jalado-recovery-banner" role="alert">
+            <span><AlertTriangle size={13} /> Debes llevar primero: <b>{jaladosPendientes.join(', ')}</b></span>
+            <button type="button" disabled={agregandoJalados} onClick={() => {
+              setAgregandoJalados(true);
+              void agregarJaladosARecuperacion().finally(() => setAgregandoJalados(false));
+            }}>Agregar jalados a este ciclo</button>
+          </div>
+        )}
+        {cursoAMover && (!esPeriodoBloqueado || jaladoVuelveAqui) && (
           <button
             type="button"
             className="tap-move-target"

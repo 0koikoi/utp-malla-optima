@@ -48,7 +48,8 @@ describe('Plan_de_Estudio_desaprobado.xlsx - I60N jalado', () => {
     for (const codigo of DEPENDIENTES) {
       expect(validoEn(codigo, 8), codigo).toBe(false);
       expect(await store.getState().moverCursoAPeriodo(codigo, crearPeriodoRegular(8)), codigo).toBe(false);
-      expect(store.getState().notificacionMovimiento?.tipo).toBe('PRERREQUISITOS');
+      // Regla UTP: antes que el prerrequisito, falta llevar el jalado en ciclo-8.
+      expect(store.getState().notificacionMovimiento?.tipo).toBe('JALADO_OBLIGATORIO');
     }
   });
 

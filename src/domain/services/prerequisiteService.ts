@@ -5,12 +5,14 @@ import {
 } from '../rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, permiteVeranoDespuesDe } from '../rules/academicContextRules';
 import { esJaladoSinReplanificar } from '../rules/courseRules';
+import { faltaJaladoParaPlanificado } from '../rules/jaladoRules';
 
 const ESTADOS_CUMPLIDOS = new Set(['APROBADO', 'CONVALIDADO']);
 
 export interface ContextoPrerrequisitos {
   cicloActual?: number | null;
   periodoIngreso?: PeriodoIngreso | null;
+  jaladoPermiteVerano?: boolean;
 }
 
 /** Ciclo actual explícito o, si no se configuró, el ciclo que concentra los cursos EN_CURSO. */
@@ -97,14 +99,24 @@ export const validarPrerequisitosParaPeriodo = (
  * su propio periodo (p. ej. tras marcar un prerrequisito como jalado). No se
  * mueve: solo se marca en la tarjeta.
  */
+export const motivoPlanificadoInvalido = (
+  curso: Curso,
+  todosLosCursos: Curso[],
+  contexto: ContextoPrerrequisitos = {}
+): 'JALADO_PENDIENTE' | 'PRERREQUISITOS' | null => {
+  if (curso.estado !== 'PENDIENTE' || curso.ubicacion !== 'periodo' ||
+      esJaladoSinReplanificar(curso, resolverCicloActual(todosLosCursos, contexto))) return null;
+  // Regla UTP: desde el periodo de recuperación, falta llevar un curso jalado.
+  if (faltaJaladoParaPlanificado(curso, todosLosCursos, contexto)) return 'JALADO_PENDIENTE';
+  return validarPrerequisitosParaPeriodo(curso, todosLosCursos, obtenerPeriodoCurso(curso), contexto).valido
+    ? null : 'PRERREQUISITOS';
+};
+
 export const esPlanificadoInvalido = (
   curso: Curso,
   todosLosCursos: Curso[],
   contexto: ContextoPrerrequisitos = {}
-): boolean =>
-  curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
-  !esJaladoSinReplanificar(curso, resolverCicloActual(todosLosCursos, contexto)) &&
-  !validarPrerequisitosParaPeriodo(curso, todosLosCursos, obtenerPeriodoCurso(curso), contexto).valido;
+): boolean => motivoPlanificadoInvalido(curso, todosLosCursos, contexto) !== null;
 
 /** Cursos planificados que pierden una secuencia válida tras cambiar otra asignación. */
 export const detectarNuevosConflictosDescendientes = (

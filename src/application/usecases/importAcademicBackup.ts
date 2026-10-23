@@ -38,6 +38,7 @@ const BackupCourseSchema = z.object({
   disciplina: z.string().optional(),
   esLaboratorio: z.boolean().optional(),
   jalado: z.boolean().optional(),
+  cicloJalado: z.number().int().min(1).max(MAXIMO_CICLOS).optional(),
 });
 
 const TarifasDetalleSchema = z.object({

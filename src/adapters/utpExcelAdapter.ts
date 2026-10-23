@@ -349,7 +349,7 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       prerrequisitos: normalizarPrerrequisitos(fila[columnas.prerrequisitos]),
       esLaboratorio: /LABORATORIO|TALLER|CURSO INTEGRADOR/i.test(nombreRaw),
       estado,
-      ...(jalado ? { jalado: true } : {}),
+      ...(jalado ? { jalado: true, cicloJalado: cicloCurso } : {}),
     });
   }
 

@@ -6,14 +6,18 @@ import { cursoBloqueado, esJaladoSinReplanificar, ordenarCursos } from '../domai
 import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import {
-  notificacionDesdeResultado, notificacionErrorPersistencia, notificacionJalado,
+  destinoJaladoPermitido, esRegresoAlOrigen, jaladosFaltantes, mensajeJaladoObligatorio,
+  periodoRecuperacion, planificadosSinJalado,
+} from '../domain/rules/jaladoRules';
+import {
+  notificacionDesdeResultado, notificacionErrorPersistencia, notificacionJalado, notificacionJaladoRetirado,
   notificacionPeriodoBloqueado, notificacionPorConflictos,
 } from '../presentation/messages/movementMessages';
 import type { AcademicSlice, AcademicStore } from './types';
 
 type CourseActionsSlice = Pick<AcademicStore,
   'marcarComoJalado' | 'desmarcarJalado' | 'moverCursoAPeriodo' | 'moverCursoACiclo' |
-  'moverCursoAVerano' | 'moverCursoABanco' | 'reiniciarPlanificacion'>;
+  'moverCursoAVerano' | 'moverCursoABanco' | 'agregarJaladosARecuperacion' | 'reiniciarPlanificacion'>;
 
 export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicSlice<CourseActionsSlice> => (set, get) => ({
   marcarComoJalado: async (codigo) => {
@@ -21,15 +25,16 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const cursoActual = state.cursos.find((curso) => curso.codigo === codigo);
     if (!cursoActual || cursoActual.estado !== 'EN_CURSO') return null;
     // Queda en su ciclo, desbloqueado para moverse; no se mueve ningún otro curso.
-    const cambios = { estado: 'PENDIENTE' as const, jalado: true, ubicacion: 'periodo' as const,
-      ciclo: cursoActual.ciclo, tipoPeriodo: cursoActual.tipoPeriodo };
+    const cambios = { estado: 'PENDIENTE' as const, jalado: true, cicloJalado: cursoActual.ciclo,
+      ubicacion: 'periodo' as const, ciclo: cursoActual.ciclo, tipoPeriodo: cursoActual.tipoPeriodo };
     const cursosActualizados = ordenarCursos(state.cursos.map((curso) =>
       curso.codigo === codigo ? { ...curso, ...cambios } : curso));
     const invalidos = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     try {
       await repos.courses.update(codigo, cambios);
       set({ cursos: cursosActualizados, cursoAMover: null,
-        notificacionMovimiento: notificacionJalado(cursoActual, invalidos) });
+        notificacionMovimiento: notificacionJalado(cursoActual, invalidos,
+          periodoRecuperacion(cursosActualizados, state)?.cicloReferencia ?? null) });
       return invalidos;
     } catch {
       set({ notificacionMovimiento: notificacionErrorPersistencia(cursoActual.nombre) });
@@ -41,12 +46,14 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const state = get();
     const cursoActual = state.cursos.find((curso) => curso.codigo === codigo);
     if (!cursoActual?.jalado) return false;
-    const enCurso = { ...cursoActual, estado: 'EN_CURSO' as const, jalado: undefined, ubicacion: 'periodo' as const };
+    const enCurso = { ...cursoActual, estado: 'EN_CURSO' as const, jalado: undefined, cicloJalado: undefined,
+      ubicacion: 'periodo' as const };
     const restaurado = state.cicloActual
       ? ubicarAvanceEnCicloActual([enCurso], state.cicloActual, state.periodoIngreso)[0] : enCurso;
     const cursosActualizados = ordenarCursos(state.cursos.map((curso) => curso.codigo === codigo ? restaurado : curso));
     try {
-      await repos.courses.update(codigo, { estado: 'EN_CURSO', jalado: undefined, ubicacion: restaurado.ubicacion,
+      await repos.courses.update(codigo, { estado: 'EN_CURSO', jalado: undefined, cicloJalado: undefined,
+        ubicacion: restaurado.ubicacion,
         ciclo: restaurado.ciclo, tipoPeriodo: restaurado.tipoPeriodo });
       set({ cursos: cursosActualizados, cursoAMover: null, notificacionMovimiento: null });
       return true;
@@ -73,13 +80,18 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
     const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
+    // Sacar un jalado de su periodo de recuperación invalida lo planificado desde allí.
+    const avisoJalado = esRegresoAlOrigen(curso, periodo, state.cursos, state)
+      ? notificacionJaladoRetirado(curso.nombre, planificadosSinJalado(cursosActualizados, state),
+        periodoRecuperacion(cursosActualizados, state)?.cicloReferencia ?? null)
+      : null;
     try {
       await repos.courses.update(codigo, {
         ciclo: actualizado.ciclo, tipoPeriodo: actualizado.tipoPeriodo,
         ubicacion: actualizado.ubicacion,
       });
       set({ cursos: cursosActualizados, cursoAMover: null,
-        notificacionMovimiento: notificacionPorConflictos(curso.nombre, afectados, 'mover', avisoHoras) });
+        notificacionMovimiento: avisoJalado ?? notificacionPorConflictos(curso.nombre, afectados, 'mover', avisoHoras) });
       return true;
     } catch {
       set({ notificacionMovimiento: notificacionErrorPersistencia(curso.nombre) });
@@ -99,6 +111,11 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     if (!curso) return false;
     if (cursoBloqueado(curso)) {
       set({ notificacionMovimiento: { tipo: 'INMOVIBLE', cursoNombre: curso.nombre } });
+      return false;
+    }
+    if (!destinoJaladoPermitido(curso, 'banco', state.cursos, state)) {
+      set({ notificacionMovimiento: { tipo: 'JALADO_OBLIGATORIO', cursoNombre: curso.nombre,
+        mensaje: mensajeJaladoObligatorio(state.cursos, state) } });
       return false;
     }
     if (state.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, state.cicloActual) &&
@@ -121,6 +138,17 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       set({ notificacionMovimiento: notificacionErrorPersistencia(curso.nombre) });
       return false;
     }
+  },
+
+  agregarJaladosARecuperacion: async () => {
+    const state = get();
+    const destino = periodoRecuperacion(state.cursos, state);
+    if (!destino) return false;
+    let todos = true;
+    for (const jalado of jaladosFaltantes(state.cursos, state)) {
+      todos = await get().moverCursoAPeriodo(jalado.codigo, destino) && todos;
+    }
+    return todos;
   },
 
   reiniciarPlanificacion: async () => {

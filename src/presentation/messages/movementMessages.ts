@@ -36,6 +36,11 @@ export const notificacionDesdeResultado = (
     case 'CURRENT_PERIOD':
       return { tipo: 'PERIODO_ACTUAL', cursoNombre: curso.nombre, periodoDestino: periodo.etiqueta,
         mensaje: `No se pueden agregar cursos a ${periodo.etiqueta} porque ese es el periodo que ya estás cursando. Puedes planificarlos desde el verano posterior.` };
+    case 'JALADO_DESTINO':
+    case 'JALADOS_PENDIENTES':
+      return { tipo: 'JALADO_OBLIGATORIO', cursoNombre: curso.nombre, periodoDestino: periodo.etiqueta,
+        faltantes: 'faltantes' in resultado ? resultado.faltantes : undefined,
+        mensaje: 'mensaje' in resultado ? resultado.mensaje : undefined };
     case 'PREREQUISITES':
       return { tipo: 'PRERREQUISITOS', cursoNombre: curso.nombre, faltantes: resultado.faltantes, periodoDestino: periodo.etiqueta };
     case 'SUMMER_CREDIT_LIMIT':
@@ -65,12 +70,24 @@ export const notificacionPorConflictos = (
   };
 };
 
-export const notificacionJalado = (curso: CursoReferencia, invalidos: CursoReferencia[]): NotificacionMovimiento => ({
-  tipo: 'JALADO', cursoNombre: curso.nombre, faltantes: invalidos, deshacerJalado: curso.codigo,
-  mensaje: invalidos.length
-    ? 'quedó como jalado. Estos cursos planificados ya no cumplen sus prerrequisitos; muévelos cuando lo replanifiques:'
-    : 'quedó como jalado. Puedes arrastrarlo a un periodo futuro para volver a llevarlo.',
-});
+export const notificacionJalado = (
+  curso: CursoReferencia, invalidos: CursoReferencia[], cicloRecuperacion: number | null
+): NotificacionMovimiento => {
+  const recuperacion = cicloRecuperacion ? ` Deberás llevarlo en el Ciclo ${cicloRecuperacion}.` : '';
+  return {
+    tipo: 'JALADO', cursoNombre: curso.nombre, faltantes: invalidos, deshacerJalado: curso.codigo,
+    mensaje: invalidos.length
+      ? `quedó como jalado.${recuperacion} Estos cursos planificados ya no cumplen sus prerrequisitos:`
+      : `quedó como jalado.${recuperacion}`,
+  };
+};
+
+export const notificacionJaladoRetirado = (
+  cursoNombre: string, afectados: CursoReferencia[], cicloRecuperacion: number | null
+): NotificacionMovimiento | null => afectados.length ? {
+  tipo: 'IMPACTO_DESCENDIENTE', cursoNombre, faltantes: afectados,
+  mensaje: `volvió a su ciclo original. Estos cursos quedan marcados (falta llevar curso jalado) hasta que lo agregues al Ciclo ${cicloRecuperacion ?? '?'}:`,
+} : null;
 
 export const notificacionPlanAplicado = (
   advertencias: { periodo: PeriodoAcademico; total: number; limite: number }[]

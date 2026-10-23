@@ -41,11 +41,19 @@ describe('CourseCard - jalados', () => {
     expect(html).toMatch(/^<div draggable="false"/);
   });
 
-  it('un planificado cuyo prerrequisito quedó jalado se marca como inválido', () => {
+  it('un planificado desde el periodo de recuperación sin el jalado allí: "Falta llevar curso jalado"', () => {
     const jalado = curso('J', { jalado: true });
     const dependiente = curso('D', { ciclo: 8, cicloOrigen: 8, prerrequisitos: ['J'] });
     const html = renderizar(dependiente, [jalado, dependiente]);
     expect(html).toContain('curso-invalido');
+    expect(html).toContain('Falta llevar curso jalado');
+  });
+
+  it('con el jalado en su periodo de recuperación, el dependiente del mismo ciclo: "Prerrequisito sin cumplir"', () => {
+    const jalado = curso('J', { jalado: true, ciclo: 8 });
+    const dependiente = curso('D', { ciclo: 8, cicloOrigen: 8, prerrequisitos: ['J'] });
+    const html = renderizar(dependiente, [jalado, dependiente]);
     expect(html).toContain('Prerrequisito sin cumplir');
+    expect(html).not.toContain('Falta llevar curso jalado');
   });
 });

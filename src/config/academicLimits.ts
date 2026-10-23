@@ -10,4 +10,7 @@ export const ACADEMIC_LIMITS = {
   factorHorasVerano: academic.verano.multiplicadorHorasTarifarias,
 };
 
+/** Regla UTP: si el verano del ciclo actual sirve para recuperar jalados (false por defecto). */
+export const JALADO_PERMITE_VERANO = academic.jaladoPermiteVerano ?? false;
+
 export type AcademicLimits = typeof ACADEMIC_LIMITS;

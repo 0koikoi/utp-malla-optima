@@ -8,14 +8,15 @@ export const cursoBloqueado = (curso: Curso) =>
   curso.estado === 'EN_CURSO';
 
 /**
- * Un jalado sigue en su ciclo de origen mientras esté en un periodo bloqueado
- * (nunca se puede mover hacia uno). Sin ciclo actual conocido se usa su ciclo de malla.
+ * Un jalado sigue sin replanificar mientras esté en su lugar original: un
+ * periodo bloqueado (su ciclo) o el banco (si era adelantado). Sin ciclo
+ * actual conocido se usa su ciclo de malla.
  */
 export const esJaladoSinReplanificar = (curso: Curso, cicloActual?: number | null): boolean =>
-  Boolean(curso.jalado) && curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
+  Boolean(curso.jalado) && curso.estado === 'PENDIENTE' && (curso.ubicacion === 'banco' ||
   (cicloActual
     ? periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual)
-    : curso.tipoPeriodo === 'REGULAR' && curso.ciclo === curso.cicloOrigen);
+    : curso.tipoPeriodo === 'REGULAR' && curso.ciclo === curso.cicloOrigen));
 
 export const normalizarCurso = (curso: Curso): Curso => {
   const cicloOrigen = curso.cicloOrigen || curso.ciclo || 1;

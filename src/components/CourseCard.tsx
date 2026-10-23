@@ -5,7 +5,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
-import { esPlanificadoInvalido, isCursoDesbloqueado } from '../domain/services/prerequisiteService';
+import { isCursoDesbloqueado, motivoPlanificadoInvalido } from '../domain/services/prerequisiteService';
+import { ubicacionOriginalJalado } from '../domain/rules/jaladoRules';
 import { esJaladoSinReplanificar } from '../domain/rules/courseRules';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
@@ -22,7 +23,9 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const estaSeleccionado = useAcademicStore((state) =>
     state.cursosSeleccionadosParaMatricula.includes(curso.codigo));
   const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos, state));
-  const invalido = useAcademicStore((state) => esPlanificadoInvalido(curso, state.cursos, state));
+  const motivoInvalido = useAcademicStore((state) => motivoPlanificadoInvalido(curso, state.cursos, state));
+  const invalido = motivoInvalido !== null;
+  const moverCursoAPeriodo = useAcademicStore((state) => state.moverCursoAPeriodo);
   const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) =>
     etiquetaPrerrequisito(codigo, state.cursos))));
   const habilitaA = useAcademicStore(useShallow((state) => state.cursos
@@ -48,7 +51,9 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
     if (retirando) return;
     setRetirando(true);
     try {
-      await moverCursoABanco(curso.codigo);
+      // Un jalado no va al banco: vuelve a su lugar original.
+      const original = curso.jalado && cicloActual ? ubicacionOriginalJalado(curso, cicloActual) : 'banco';
+      await (original === 'banco' ? moverCursoABanco(curso.codigo) : moverCursoAPeriodo(curso.codigo, original));
     } finally {
       setRetirando(false);
     }
@@ -115,8 +120,8 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
           onPointerDown={(event) => event.stopPropagation()}
           onDragStart={(event) => { event.preventDefault(); event.stopPropagation(); }}
           onClick={(event) => { event.stopPropagation(); void retirarAlBanco(); }}
-          aria-label={`Retirar ${curso.nombre} al banco de pendientes`}
-          title="Retirar al banco de pendientes"
+          aria-label={curso.jalado ? `Devolver ${curso.nombre} a su ciclo original` : `Retirar ${curso.nombre} al banco de pendientes`}
+          title={curso.jalado ? 'Devolver a su ciclo original' : 'Retirar al banco de pendientes'}
         ><X size={14} aria-hidden="true" /></button>}
         <div className="curso-card-head">
           <span className="curso-codigo">{curso.codigo}</span>
@@ -176,9 +181,13 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
           <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /> Jalado</div>
         )}
         {invalido && (
-          <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">
-            <AlertTriangle size={11} /> Prerrequisito sin cumplir
-          </div>
+          motivoInvalido === 'JALADO_PENDIENTE'
+            ? <div className="curso-estado-chip invalido-chip" title="Primero debes llevar tus cursos jalados en el periodo de recuperación.">
+              <AlertTriangle size={11} /> Falta llevar curso jalado
+            </div>
+            : <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">
+              <AlertTriangle size={11} /> Prerrequisito sin cumplir
+            </div>
         )}
       </div>
       {confirmarJalado && <JaladoModal curso={curso} onClose={() => setConfirmarJalado(false)} />}

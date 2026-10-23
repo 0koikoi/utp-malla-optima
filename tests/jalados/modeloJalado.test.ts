@@ -48,10 +48,12 @@ describe('Modelo de curso jalado', () => {
     expect(calcular([{ ...JALADO, ciclo: 8 }], 7)).toEqual(['ciclo-8']);
   });
 
-  it('se puede mover desde su ciclo bloqueado a un periodo futuro, pero no a uno bloqueado', () => {
+  it('se puede mover desde su ciclo bloqueado a su periodo de recuperación, pero no a uno bloqueado', () => {
     const cursos = [JALADO, PENDIENTE_EN_6];
     expect(moveCourseUseCase(cursos, 'J', crearPeriodoRegular(8), CONTEXTO).ok).toBe(true);
-    expect(moveCourseUseCase(cursos, 'J', crearPeriodoVerano(8), { ...CONTEXTO, periodoIngreso: 'marzo' }).ok).toBe(true);
+    // Regla UTP: un jalado solo va a su periodo de recuperación (ciclo-8).
+    const verano = moveCourseUseCase(cursos, 'J', crearPeriodoVerano(8), { ...CONTEXTO, periodoIngreso: 'marzo' });
+    expect(!verano.ok && verano.reason).toBe('JALADO_DESTINO');
     expect(moveCourseUseCase(cursos, 'J', crearPeriodoRegular(7), CONTEXTO).ok).toBe(false);
     const pendiente = moveCourseUseCase(cursos, 'P', crearPeriodoRegular(8), CONTEXTO);
     expect(!pendiente.ok && pendiente.reason).toBe('SOURCE_PERIOD_LOCKED');
