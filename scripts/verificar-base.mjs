@@ -1,5 +1,6 @@
-// Compila la web con la base de GitHub Pages (sin VITE_BASE) y con VITE_BASE=/ (demo en Vercel)
-// y comprueba que index.html, el manifest de la PWA y el service worker usen la misma base.
+// Compila la web con la base por defecto (sin VITE_BASE: "/", la de Vercel) y con una subruta opcional
+// (VITE_BASE=/utp-malla-optima/) y comprueba que index.html, el manifest de la PWA y el service worker
+// usen la misma base, y que el service worker no cachee las respuestas del proxy.
 // Uso: pnpm verify:base
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -7,8 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const CASOS = [
-  { nombre: 'GitHub Pages (sin VITE_BASE)', env: {}, base: '/utp-malla-optima/' },
-  { nombre: 'Vercel (VITE_BASE=/)', env: { VITE_BASE: '/' }, base: '/' },
+  { nombre: 'Vercel (sin VITE_BASE)', env: {}, base: '/' },
+  { nombre: 'Subruta opcional (VITE_BASE=/utp-malla-optima/)', env: { VITE_BASE: '/utp-malla-optima/' }, base: '/utp-malla-optima/' },
 ];
 
 const fallas = [];
@@ -37,6 +38,9 @@ for (const caso of CASOS) {
     comprobar(caso, registro.includes(`register('${caso.base}sw.js', { scope: '${caso.base}' })`), 'registerSW.js registra el service worker en la base');
     comprobar(caso, caso.base === '/' ? !sw.includes('/utp-malla-optima/') : true, 'sw.js no apunta a otra base');
     comprobar(caso, /createHandlerBoundToURL\("index\.html"\)/.test(sw), 'sw.js usa index.html relativo como fallback de navegación');
+    // Solo precache del build y la ruta de navegación: ninguna regla de runtime que pueda cachear al proxy.
+    comprobar(caso, (sw.match(/registerRoute\(/g) ?? []).length === 1, 'sw.js solo registra la ruta de navegación');
+    comprobar(caso, !/api\/asistente|vercel\.app|deepseek/i.test(sw), 'sw.js no menciona el proxy ni DeepSeek');
   } finally {
     rmSync(salida, { recursive: true, force: true });
   }

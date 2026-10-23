@@ -87,6 +87,11 @@ describe('MockAIClient y crearAIClient', () => {
     expect(crearAIClient({ VITE_AI_ENDPOINT: '', DEV: false })).toBeInstanceOf(HttpAIClient);
   });
 
+  it('VITE_AI_MOCK=true (previews de Vercel) usa el mock aunque haya endpoint: nunca llama al proxy real', () => {
+    expect(crearAIClient({ VITE_AI_ENDPOINT: ENDPOINT, VITE_AI_MOCK: 'true', DEV: false })).toBeInstanceOf(MockAIClient);
+    expect(crearAIClient({ VITE_AI_ENDPOINT: ENDPOINT, VITE_AI_MOCK: 'false', DEV: false })).toBeInstanceOf(HttpAIClient);
+  });
+
   it('en producción sin endpoint responde PROVEEDOR_CAIDO', async () => {
     expect(await crearAIClient({ VITE_AI_ENDPOINT: '', DEV: false }).enviar(peticion)).toMatchObject({ ok: false, error: 'PROVEEDOR_CAIDO' });
   });

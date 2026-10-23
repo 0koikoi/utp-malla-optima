@@ -6,7 +6,7 @@ Botón flotante (abajo a la derecha) que analiza el plan y responde preguntas so
 jalados, ruta y electivos. Arquitectura:
 
 ```
-GitHub Pages (este frontend) ──▶ proxy en Vercel (ai-proxy/) ──▶ API de DeepSeek
+Web en Vercel (este frontend) ──▶ proxy en Vercel (ai-proxy/) ──▶ API de DeepSeek
 ```
 
 - `src/application/ai/buildAIContext.ts` calcula TODO lo numérico y lógico (créditos, 4 escenarios de
@@ -15,35 +15,60 @@ GitHub Pages (este frontend) ──▶ proxy en Vercel (ai-proxy/) ──▶ API
 - `src/application/ai/contracts.ts` (Zod) define petición y respuestas; los códigos de curso que no
   existan en el contexto se descartan. `ai-proxy/src/contracts.ts` es una copia verificada por test.
 - La API key y el prompt del sistema viven solo en `ai-proxy/` (ver `ai-proxy/README.md`).
-- `VITE_AI_ENDPOINT`: URL del proxy. Vacía en `pnpm dev` → mock local sin red. En el deploy se toma de
-  la variable de Actions `vars.VITE_AI_ENDPOINT` (Settings → Secrets and variables → Actions → Variables).
-- Sin clave de DeepSeek el proxy responde en modo mock con los datos reales del contexto.
+- `VITE_AI_ENDPOINT`: URL del proxy. Vacía en `pnpm dev` → mock local sin red.
+- El proxy tiene control de gasto: interruptor `AI_PAUSADO`, límites por IP y por día, y las previews
+  siempre en mock.
 
-## Demo en Vercel
+## Despliegue (solo Vercel)
 
-La demo usa **dos proyectos de Vercel** creados desde este mismo repo:
+La web y el proxy son **dos proyectos de Vercel** conectados a este repo de GitHub, con **rama de
+producción `main`**. Cada push a `main` despliega a producción y cada PR crea una preview.
 
 | Proyecto | Root Directory | Framework | Build | Output |
 | --- | --- | --- | --- | --- |
+| Web | raíz del repo (`./`) | Vite | `pnpm build` | `dist` |
 | Proxy del asistente | `ai-proxy` | Other (función `api/asistente.ts`) | (ninguno) | (ninguno) |
-| Web (demo) | raíz del repo (`./`) | Vite | `pnpm build` | `dist` |
 
-Variables de la **web** (Settings → Environment Variables):
+Cada proyecto se construye solo cuando cambian sus archivos (`ignoreCommand`):
+`vercel.json` ignora `ai-proxy/` y `docs/`; `ai-proxy/vercel.json` mira solo `ai-proxy/`.
 
-- `VITE_BASE=/`: la demo se sirve en la raíz del dominio. Sin esta variable el build usa
-  `/utp-malla-optima/`, la base de GitHub Pages (que no cambia).
-- `VITE_AI_ENDPOINT=https://<proyecto-proxy>.vercel.app/api/asistente`: URL pública del proxy.
+La web se sirve en la raíz del dominio (base `/`). `VITE_BASE` es opcional, solo para servirla en una
+subruta. El manifest de la PWA (`start_url`, `scope`) y el service worker toman esa base, y el service
+worker no cachea las respuestas del proxy (solo precache del build). `pnpm verify:base` lo comprueba.
 
-Las variables `VITE_*` se leen **al compilar**: después de cambiarlas hay que volver a desplegar.
+### Variables por entorno
 
-Variables del **proxy**: ver `ai-proxy/README.md`. El dominio de la demo
-(`https://<proyecto-web>.vercel.app`) debe agregarse a `ALLOWED_ORIGINS` del proxy, junto al de
-GitHub Pages, separados por coma; si no, el navegador bloquea las llamadas por CORS.
+Se definen en **Settings → Environment Variables** de cada proyecto. Las `VITE_*` se leen **al compilar**:
+después de cambiarlas hay que volver a desplegar.
 
-Comprobación local de las dos bases: `pnpm verify:base` compila con y sin `VITE_BASE=/` y revisa
-`index.html`, el manifest de la PWA (`start_url`, `scope`) y el service worker. En Windows con Git
-Bash, `VITE_BASE=/ pnpm build` no sirve para probar a mano: MSYS convierte `/` en una ruta de Windows;
-usa PowerShell (`$env:VITE_BASE='/'; pnpm build`) o `pnpm verify:base`.
+**Web**
+
+| Variable | Production | Preview |
+| --- | --- | --- |
+| `VITE_AI_ENDPOINT` | `https://<proyecto-proxy>.vercel.app/api/asistente` | (vacía o la misma; no se usa con `VITE_AI_MOCK`) |
+| `VITE_AI_MOCK` | (sin definir) | `true`: el asistente usa el mock local y nunca llama al proxy real |
+| `VITE_BASE` | (sin definir: `/`) | (sin definir: `/`) |
+
+**Proxy** (detalle en [`ai-proxy/README.md`](ai-proxy/README.md))
+
+| Variable | Production | Preview |
+| --- | --- | --- |
+| `DEEPSEEK_API_KEY` | la clave (secreta) | no hace falta: fuera de producción el proxy siempre responde en mock |
+| `ALLOWED_ORIGINS` | `https://<proyecto-web>.vercel.app` (y el dominio propio, si hay) | `http://localhost:5173,http://127.0.0.1:5173` |
+| `AI_SALT` | texto aleatorio largo (secreto) | opcional |
+| `AI_LIMITE_IP_HORA` | `15` (por defecto) | opcional |
+| `AI_LIMITE_DIARIO` | `200` (por defecto) | opcional |
+| `AI_PAUSADO` | `true` solo para pausar el gasto | opcional |
+| `AI_MOCK` | (sin definir; `true` fuerza el mock) | no hace falta |
+| `DEEPSEEK_MODEL` | opcional (`deepseek-flash`) | — |
+| `DEEPSEEK_PICO_UTC` | opcional, solo para el costo estimado del log | — |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | los crea la integración de Upstash del Marketplace (o `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) | opcional |
+
+`VERCEL_ENV` lo pone Vercel: con cualquier valor distinto de `production` el proxy usa el mock. Si el
+dominio de la web no está en `ALLOWED_ORIGINS`, el proxy responde 403 y no llama a DeepSeek.
+
+En Windows con Git Bash, `VITE_BASE=/x/ pnpm build` no sirve para probar a mano: MSYS convierte la ruta;
+usa PowerShell (`$env:VITE_BASE='/x/'; pnpm build`) o `pnpm verify:base`.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

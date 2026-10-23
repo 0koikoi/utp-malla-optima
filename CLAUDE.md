@@ -15,7 +15,8 @@
 - pnpm vía corepack: `corepack pnpm <comando>`.
 - `pnpm test`: Vitest; corre también `ai-proxy/tests`.
 - `pnpm lint`, `pnpm build`.
-- `pnpm verify:base`: los builds con y sin `VITE_BASE=/`.
+- `pnpm verify:base`: los builds con la base por defecto (`/`) y con una subruta (`VITE_BASE`), y el service worker.
+- Evaluación con la API real (manual, gasta saldo): `cd ai-proxy && pnpm evaluar` (`--simulado` no gasta).
 - Proxy: `cd ai-proxy && pnpm test && pnpm typecheck`.
 
 ## Reglas del código

@@ -129,8 +129,12 @@ export class MockAIClient implements AIClient {
   }
 }
 
-/** VITE_AI_ENDPOINT vacío en desarrollo → MockAIClient; en producción → HttpAIClient (sin endpoint falla con aviso). */
-export const crearAIClient = (env: { VITE_AI_ENDPOINT?: string; DEV?: boolean } = import.meta.env): AIClient => {
+/**
+ * VITE_AI_MOCK=true (previews de Vercel) o VITE_AI_ENDPOINT vacío en desarrollo → MockAIClient;
+ * si no → HttpAIClient (sin endpoint falla con aviso).
+ */
+export const crearAIClient = (env: { VITE_AI_ENDPOINT?: string; VITE_AI_MOCK?: string; DEV?: boolean } = import.meta.env): AIClient => {
   const endpoint = env.VITE_AI_ENDPOINT?.trim() ?? '';
+  if (env.VITE_AI_MOCK === 'true') return new MockAIClient();
   return !endpoint && env.DEV ? new MockAIClient() : new HttpAIClient({ endpoint });
 };

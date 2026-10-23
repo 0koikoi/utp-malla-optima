@@ -1,11 +1,11 @@
 # MallaU — proxy del asistente IA
 
-Función de Vercel (`api/asistente.ts`) entre el frontend (GitHub Pages) y la API de DeepSeek.
+Función de Vercel (`api/asistente.ts`) entre la web (otro proyecto de Vercel) y la API de DeepSeek.
 La API key y el prompt del sistema viven **solo aquí**; el navegador envía únicamente el
 contexto calculado por `buildAIContext` (sin nombre de archivo ni datos personales) y el historial.
 
 ```
-GitHub Pages ──POST /api/asistente──▶ Vercel (este proyecto) ──▶ https://api.deepseek.com/chat/completions
+Web en Vercel ──POST /api/asistente──▶ proxy en Vercel (este proyecto) ──▶ https://api.deepseek.com/chat/completions
 ```
 
 - Formato OpenAI con `fetch` directo (sin SDK), `response_format: json_object`, `temperature: 0.3`,
@@ -48,7 +48,7 @@ un test del repo falla si difieren. Edita el original y vuelve a copiarlo.
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | `sk-...` | Secreta. Sin ella el proxy responde con mocks (ver abajo). |
 | `DEEPSEEK_MODEL` | `deepseek-flash` | Opcional; por defecto `deepseek-flash`. Revisa el nombre vigente en <https://api-docs.deepseek.com>. |
-| `ALLOWED_ORIGINS` | `https://<usuario>.github.io,http://localhost:5173,http://127.0.0.1:5173` | Orígenes separados por coma, sin `/` final ni ruta. |
+| `ALLOWED_ORIGINS` | `https://<proyecto-web>.vercel.app,http://localhost:5173,http://127.0.0.1:5173` | Orígenes separados por coma, sin `/` final ni ruta. |
 | `AI_MOCK` | `true` | Fuerza el modo mock. Fuera de producción (`VERCEL_ENV` distinto de `production`) el mock va siempre. |
 | `DEEPSEEK_PICO_UTC` | `HH:MM-HH:MM` | Opcional. Franja (UTC) de precio doble, solo para el costo estimado del log. |
 | `AI_PAUSADO` | `true` | Interruptor: responde `PAUSADO` sin llamar a DeepSeek. |
@@ -107,23 +107,28 @@ corepack pnpm evaluar --simulado           # mismo flujo con un fetch simulado (
 
 ## Deploy en Vercel (proyecto aparte)
 
+Proyecto de Vercel conectado al repo de GitHub, con **Root Directory `ai-proxy`** y rama de producción `main`.
+`ai-proxy/vercel.json` hace que solo se construya cuando cambia `ai-proxy/`. Variables por entorno
+(Production / Preview): ver la tabla del [README principal](../README.md#variables-por-entorno).
+
 ```bash
 cd ai-proxy
-npx vercel link                 # crea/enlaza el proyecto; en el dashboard: Root Directory = ai-proxy
-npx vercel env add ALLOWED_ORIGINS production   # https://<usuario>.github.io
-npx vercel env add AI_MOCK production           # true (mientras no haya clave)
-npx vercel env add DEEPSEEK_MODEL production    # deepseek-flash (opcional)
-npx vercel --prod
+npx vercel link                                   # enlaza el proyecto (Root Directory = ai-proxy)
+npx vercel env add ALLOWED_ORIGINS production     # https://<proyecto-web>.vercel.app
+npx vercel env add AI_SALT production             # texto aleatorio largo
+npx vercel env add DEEPSEEK_API_KEY production    # la clave (nunca en el repo)
 ```
 
-Si enlazas desde la raíz del repo, en **Settings → Build and Deployment → Root Directory** pon `ai-proxy`.
-La URL queda como `https://<proyecto>.vercel.app/api/asistente`. Ponla en GitHub:
-**Settings → Secrets and variables → Actions → Variables → `VITE_AI_ENDPOINT`** y vuelve a desplegar el frontend.
+Para límites compartidos entre instancias, agrega la integración de **Upstash** desde el Marketplace de
+Vercel: crea `KV_REST_API_URL` y `KV_REST_API_TOKEN`.
+
+La URL queda como `https://<proyecto>.vercel.app/api/asistente`: ponla en `VITE_AI_ENDPOINT` (Production) del
+proyecto web y vuelve a desplegarlo.
 
 Prueba rápida:
 
 ```bash
-curl -i -X OPTIONS https://<proyecto>.vercel.app/api/asistente -H "Origin: https://<usuario>.github.io"
+curl -i -X OPTIONS https://<proyecto>.vercel.app/api/asistente -H "Origin: https://<proyecto-web>.vercel.app"
 # 204 con Access-Control-Allow-Origin
 ```
 
@@ -131,11 +136,11 @@ curl -i -X OPTIONS https://<proyecto>.vercel.app/api/asistente -H "Origin: https
 
 1. En <https://platform.deepseek.com>: crea la cuenta, recarga saldo (Top up) y genera una API key.
    Opcional: fija un límite de gasto/alerta de saldo.
-2. `npx vercel env add DEEPSEEK_API_KEY production` (pega la clave).
-3. `npx vercel env rm AI_MOCK production` (o cámbiala a `false`).
-4. `npx vercel --prod` para que el deploy tome las variables nuevas.
-5. Prueba el asistente. Si ves “El servicio de IA no tiene saldo” → `SIN_SALDO` (recarga);
-   “Hay muchas consultas” → `LIMITE` (espera); “no está disponible” → revisa la clave y el modelo
-   en los logs de Vercel (solo verás el código de error y la duración).
+2. Prueba la clave en local con `pnpm evaluar` (ver arriba) antes de ponerla en Vercel.
+3. `npx vercel env add DEEPSEEK_API_KEY production` (pega la clave) y quita `AI_MOCK` si estaba.
+4. Redespliega (push a `main` o `npx vercel --prod`) para que tome las variables nuevas.
+5. Prueba el asistente. "El asistente está en pausa…" → `PAUSADO` o `SIN_SALDO` (revisa `AI_PAUSADO` y el
+   saldo); "Llegaste al límite…" → `LIMITE`; "no está disponible" → revisa la clave y el modelo en los logs
+   de Vercel (solo verás código, duración, tokens y costo).
 
-Para volver a mock basta con `AI_MOCK=true` y un nuevo `vercel --prod`.
+Para cortar el gasto al instante: `AI_PAUSADO=true` y redesplegar. Para volver a mock: `AI_MOCK=true`.

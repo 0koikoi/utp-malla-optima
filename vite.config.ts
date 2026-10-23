@@ -4,9 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { APP_FULL_NAME, APP_NAME } from './src/config/appIdentity.ts';
 
-// GitHub Pages sirve el repo en /utp-malla-optima/; la demo en Vercel usa VITE_BASE=/ (raíz).
+// Vercel sirve la web en la raíz del dominio. VITE_BASE es opcional (p. ej. '/utp-malla-optima/' para una subruta).
 // El manifest (start_url, scope) y el service worker de vite-plugin-pwa toman esta misma base.
-const base = process.env.VITE_BASE ?? '/utp-malla-optima/';
+const base = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({
   base,
