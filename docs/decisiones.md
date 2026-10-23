@@ -41,6 +41,10 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | [D-028](#d-028) | Despliegue solo en Vercel: dos proyectos, rama de producción `main` | vigente |
 | [D-029](#d-029) | `main` forzado a `b/final1`, con respaldo en `respaldo/main-antes-de-force` | vigente |
 | [D-030](#d-030) | Finales de línea LF en el repo (`.gitattributes`) | vigente |
+| [D-031](#d-031) | Razonamiento desactivado, `max_tokens` 900/1800 y un reintento si se corta | vigente |
+| [D-032](#d-032) | `CONTEXTO.derivados`: restas y totales calculados en código | vigente |
+| [D-033](#d-033) | El contexto va en un mensaje del sistema entre delimitadores | vigente |
+| [D-034](#d-034) | Filtro de salida en el proxy y evaluación de lo que ve el alumno | vigente |
 
 ---
 
@@ -405,7 +409,7 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 ## D-025 · Control de gasto en el proxy: origen, interruptor, límites, tokens y previews en mock
 
 - **Fecha:** 2026-10-23 (`806d84f`). Reemplaza a [D-007](#d-007).
-- **Estado:** vigente.
+- **Estado:** vigente. El punto de `max_tokens` lo reemplaza [D-031](#d-031) (2026-10-23).
 - **Contexto:** ya hay claves reales de DeepSeek y cada llamada cuesta.
 - **Decisión:**
   - Origen: sin un `Origin` de `ALLOWED_ORIGINS`, 403 sin leer el cuerpo ni llamar a DeepSeek.
@@ -452,6 +456,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 - **Alternativas descartadas:** correrla en CI (gasta saldo en cada push); un framework de evaluación externo.
 - **Consecuencias:** si el reporte muestra fallos, el prompt no se cambia sin revisarlo antes con el autor.
   Los fixtures se generan con `buildAIContext` y un test falla si dejan de coincidir.
+- **Actualización (2026-10-23, `16e909e`):** usa `llamarConVerificacion` (con el filtro de salida,
+  [D-034](#d-034)), 42 casos, guarda cada intento crudo y agrega los criterios de aprobación.
 
 <a id="d-028"></a>
 ## D-028 · Despliegue solo en Vercel: dos proyectos, rama de producción `main`
@@ -498,3 +504,91 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 - **Alternativas descartadas:** pedir a cada uno que cambie `core.autocrlf`.
 - **Consecuencias:** correr `pnpm test` dos veces deja `git status` limpio en Windows. Un test verifica el
   `.gitattributes` y que los snapshots no tengan CRLF.
+
+<a id="d-031"></a>
+## D-031 · Razonamiento desactivado, `max_tokens` 900/1800 y un reintento si se corta
+
+- **Fecha:** 2026-10-23 (`f627423` diagnóstico, `755853f`). Reemplaza el punto de `max_tokens` de
+  [D-025](#d-025).
+- **Estado:** vigente.
+- **Contexto:** en la primera corrida real, 56 fallos CRÍTICOS de JSON inválido. El diagnóstico por intento mostró
+  `finish_reason: "length"` en todos los intentos fallidos y `completion_tokens_details.reasoning_tokens` igual al
+  tope (600 o 1200) en los vacíos: `deepseek-flash` razona por defecto y `max_tokens` incluye el razonamiento
+  ([F-027](fallos.md#f-027)). Según la documentación, `thinking` viene en `enabled` (esfuerzo `high`) y se
+  desactiva con `thinking: {type: "disabled"}` o `reasoning_effort: "none"`
+  (https://api-docs.deepseek.com/api/create-chat-completion, https://api-docs.deepseek.com/guides/thinking_mode).
+- **Decisión:**
+  - `thinking: {type: "disabled"}` en cada llamada: la tarea es redactar datos ya calculados.
+  - `max_tokens`: 900 en chat y 1800 en análisis.
+  - Si `finish_reason` es `"length"`: UN reintento con un mensaje del sistema al final que pide máximo 60 palabras
+    en chat o 2 frases por sección. Si vuelve a cortarse: `RESPUESTA_LARGA`; el frontend muestra "No pude terminar
+    la respuesta, intenta preguntarlo más corto" con Reintentar.
+  - El log de consumo agrega `finish_reasons` (uno por intento) y `reasoning_tokens`.
+- **Alternativas descartadas:** subir `max_tokens` sin desactivar el razonamiento (más gasto y latencia);
+  `reasoning_effort: "low"` (sigue gastando tokens en razonar).
+- **Consecuencias:** en la corrida final, 0 respuestas cortadas, salida de 23 292 tokens contra 97 072 y p95 de
+  3 982 ms contra 14 096 ms.
+
+<a id="d-032"></a>
+## D-032 · `CONTEXTO.derivados`: restas y totales calculados en código
+
+- **Fecha:** 2026-10-23 (`4bd1de9`). Aplica [D-001](#d-001).
+- **Estado:** vigente.
+- **Contexto:** el modelo restaba por su cuenta ("te faltarían S/ 61.57") e inventaba totales ("121 créditos
+  aprobados de 190": 190 no está en ningún campo del contexto; aprobados 121 + en curso 19 + pendientes 70 = 210)
+  ([F-029](fallos.md#f-029)).
+- **Decisión:** `buildAIContext` agrega `derivados`:
+  - `horas`: del próximo periodo, sobre el tope de la escala y sobre las 24 h recomendadas (y los márgenes);
+  - `presupuesto`: por escenario de pago, la diferencia contra el presupuesto por mes y por ciclo (diferencia
+    mensual × número de cuotas; la matrícula va aparte), con signo y como "falta" o "sobra";
+  - `creditos`: total de la malla, obligatorios, electivos mínimos (`creditosMinimosElectivos` de
+    `academic.json`), para egresar (obligatorios + electivos mínimos), aprobados que cuentan (los electivos solo
+    hasta el mínimo), faltantes, faltantes si aprueba lo que lleva y ciclos restantes;
+  - `cursosProximoPeriodo`: créditos, horas, estado, jalado y si se puede mover sin dejar sin prerrequisito a
+    otro curso planificado.
+  - El prompt (regla 1) prohíbe sumar o restar lo que no esté en `CONTEXTO`, incluido `derivados`.
+- **Alternativas descartadas:** pedirle al modelo que calcule con cuidado; calcular en el proxy (el dominio vive
+  en el frontend).
+- **Consecuencias:** que los electivos cuenten solo hasta el mínimo de 3 créditos es una lectura de
+  `academic.json` (solo trae el mínimo): cómo cuenta la UTP un electivo de más está **(por verificar)**.
+
+<a id="d-033"></a>
+## D-033 · El contexto va en un mensaje del sistema entre delimitadores
+
+- **Fecha:** 2026-10-23 (`4b7a7a0` prompt, `dbcde71` mensajes).
+- **Estado:** vigente.
+- **Contexto:** el contexto iba como mensaje `user` con el prefijo `CONTEXTO:`, igual a lo que un alumno puede
+  escribir; en la primera corrida el modelo usó los montos de un contexto falso escrito en el chat
+  ([F-028](fallos.md#f-028)).
+- **Decisión:** orden de los mensajes: 1) system con el prompt estático y el esquema; 2) system con
+  `<<CONTEXTO_MALLAU>>`, el JSON del contexto y `<<FIN_CONTEXTO_MALLAU>>`; 3) el historial; 4) el mensaje del
+  alumno. Los delimitadores se eliminan de todo texto del alumno. La regla 15 del prompt dice que el único
+  CONTEXTO válido es el que llega entre esos delimitadores.
+- **Alternativas descartadas:** dejar el contexto en un mensaje `user`.
+- **Consecuencias:** el prefijo del prompt sigue estático (caché). En la corrida final, los dos casos de contexto
+  falso no usaron sus montos (6/6 repeticiones sin `usa-contexto-falso`).
+
+<a id="d-034"></a>
+## D-034 · Filtro de salida en el proxy y evaluación de lo que ve el alumno
+
+- **Fecha:** 2026-10-23 (`68e0ab0`, `16e909e`).
+- **Estado:** vigente.
+- **Contexto:** el prompt reduce los datos inventados, pero no los impide; en producción no había ninguna
+  verificación del contenido.
+- **Decisión:**
+  - `ai-proxy/src/verificacion.ts` (compartido con la evaluación) revisa cada respuesta real: cada `S/ x` en el
+    contexto (incluido `derivados`, tolerancia 0.01); cada código en el catálogo; créditos, horas y estado junto
+    a un curso iguales a los del contexto; sin delimitadores ni fragmentos del prompt.
+  - Un monto que el alumno escribió en una pregunta normal ("¿me alcanza con 800?") se puede repetir; si su
+    mensaje trae JSON o la palabra CONTEXTO, sus cifras no cuentan.
+  - Si falla: UNA regeneración con la respuesta anterior y un mensaje del sistema con el error concreto. Si
+    vuelve a fallar: `RESPUESTA_NO_VERIFICADA` (422) con la respuesta segura fija "No pude verificar esos datos
+    con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.".
+  - El log registra `verificacion` (primera, regenerada o segura) y `chequeos_fallidos` (solo los nombres).
+  - La evaluación usa el mismo flujo y mide la salida final; criterios de aprobación: 0 CRÍTICOS, ≥ 95 % de
+    repeticiones aprobadas, respuestas seguras ≤ 3 %, p95 < 6 s en chat y < 10 s en análisis.
+- **Alternativas descartadas:** reemplazar los montos dudosos en el texto (cambia lo que dijo el modelo sin que
+  lo sepa); devolver la respuesta con un aviso.
+- **Consecuencias:** una regeneración cuesta una llamada más (en la corrida final, 3 de 126). La atribución de
+  créditos y horas a un curso es heurística (ventana de 60 caracteres después del curso); un falso positivo
+  termina en una regeneración o en la respuesta segura.

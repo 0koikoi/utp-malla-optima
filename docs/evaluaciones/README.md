@@ -1,8 +1,16 @@
 # Evaluaciones del asistente
 
 Reportes de `pnpm evaluar` (en `ai-proxy/`), uno por corrida: `AAAA-MM-DD-HHMM.md` en hora de Lima.
-Cada reporte trae el resumen (aprobados por severidad, consistencia, latencia p50/p95, tokens con y sin caché
-y costo), la tabla de casos y **todas** las respuestas con sus chequeos fallidos, para revisar el tono a mano.
+Cada reporte trae el resumen (aprobados por severidad, consistencia, latencia p50/p95 y por modo, filtro de
+salida, tokens con y sin caché, costo y criterios de aprobación), la tabla de casos y **todas** las respuestas con
+sus chequeos fallidos y cada intento crudo (`finish_reason`, `usage`, razonamiento), para revisar el tono a mano.
+
+| Reporte | Qué es |
+| --- | --- |
+| `2026-10-23-1731.md` | Primera corrida real (38 casos × 3), con el razonamiento activado: 16/38 casos. |
+| `2026-10-23-1807-contrato-analisis-plan1.md`, `2026-10-23-1808-montos-800.md` | Diagnóstico por intento ([F-027](../fallos.md#f-027)). |
+| `2026-10-23-1813-*-sin-razonamiento.md` | Verificación con `thinking` desactivado. |
+| `2026-10-23-1841.md` | Corrida completa después de los cambios (42 casos × 3): 23/42 casos. |
 
 - La evaluación es manual: llama a la API real de DeepSeek y gasta saldo. No corre en CI.
 - La clave va en `ai-proxy/.env.local` (ignorado por git). Nunca aparece en los reportes.

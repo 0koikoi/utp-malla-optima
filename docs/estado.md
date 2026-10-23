@@ -30,6 +30,12 @@ git está marcado **(por verificar)**.
     [D-024](decisiones.md#d-024)).
   - Proxy con control de gasto ([D-025](decisiones.md#d-025)) y registro de consumo
     ([D-026](decisiones.md#d-026)).
+  - Razonamiento de DeepSeek desactivado, `max_tokens` 900/1800 y un reintento si se corta
+    ([D-031](decisiones.md#d-031)).
+  - `CONTEXTO.derivados` con restas y totales ya calculados ([D-032](decisiones.md#d-032)); el contexto va en un
+    mensaje del sistema entre delimitadores ([D-033](decisiones.md#d-033)).
+  - Filtro de salida: cada respuesta real se verifica contra el contexto, con una regeneración y una respuesta
+    segura fija ([D-034](decisiones.md#d-034)).
 
 ## De mock a real
 
@@ -38,18 +44,28 @@ git está marcado **(por verificar)**.
 - **Previews y local:** el proxy usa siempre el mock, aunque haya clave. La web en preview usa
   `VITE_AI_MOCK=true` (`MockAIClient`, cabecera "En línea · demo"). En `pnpm dev` sin `VITE_AI_ENDPOINT`,
   también mock local.
-- **Pruebas con la API real:** solo con `pnpm evaluar` ([D-027](decisiones.md#d-027)). **No se corrió todavía**:
-  falta `ai-proxy/.env.local` con la clave. La integración real está probada con `fetch` simulado y con
-  `pnpm evaluar --simulado` (38/38).
-- Si la evaluación real muestra fallos, el prompt no se cambia sin revisarlo antes con el autor.
+- **Pruebas con la API real:** solo con `pnpm evaluar` ([D-027](decisiones.md#d-027)), con la clave en
+  `ai-proxy/.env.local` (ignorado por git). Corridas del 2026-10-23 en `docs/evaluaciones/`:
+
+  | Corrida | Casos | Repeticiones | CRÍTICOS | p95 | Costo |
+  | --- | --- | --- | --- | --- | --- |
+  | Primera (`2026-10-23-1731.md`) | 16/38 | 51 % | 56 | 14.1 s | US$ 0.0723 |
+  | Final (`2026-10-23-1841.md`) | 23/42 | 63.5 % | 8 | 4.0 s | US$ 0.0267 |
+
+- **Criterios de aprobación** (0 CRÍTICOS, ≥ 95 % de repeticiones, seguras ≤ 3 %, p95 < 6 s en chat y < 10 s en
+  análisis): **no se cumplen** todavía. Fallan los CRÍTICOS (el análisis omite secciones, [F-031](fallos.md#f-031))
+  y el porcentaje (63.5 %; la mayoría por mencionar la carga sin que se la pregunten, [F-030](fallos.md#f-030)).
+  Sí se cumplen las respuestas seguras (0 %) y la latencia (chat 2.2 s, análisis 5.3 s).
+- Las propuestas de cambio al prompt y al contrato están en la [bitácora](bitacora.md); no se aplican sin el autor.
+  Recomendación: no activar la clave en producción hasta cumplirlos (la decisión es del autor).
 
 ## Tests
 
 | Proyecto | Archivos | Tests | Comando |
 | --- | --- | --- | --- |
-| Frontend (`tests/`) | 39 | 320 | `pnpm vitest run --exclude 'ai-proxy/**'` |
-| Proxy (`ai-proxy/tests/`) | 6 | 110 | `cd ai-proxy && pnpm test` |
-| Todo (raíz) | 45 | 430 | `pnpm test` (Vitest también recoge `ai-proxy/tests`) |
+| Frontend (`tests/`) | 39 | 325 | `pnpm vitest run --exclude 'ai-proxy/**'` |
+| Proxy (`ai-proxy/tests/`) | 7 | 130 | `cd ai-proxy && pnpm test` |
+| Todo (raíz) | 46 | 455 | `pnpm test` (Vitest también recoge `ai-proxy/tests`) |
 
 Además: `pnpm lint`, `pnpm build`, `pnpm verify:base` y `cd ai-proxy && pnpm typecheck`. Correr `pnpm test`
 dos veces seguidas deja `git status` limpio ([F-026](fallos.md#f-026)).
@@ -58,7 +74,7 @@ dos veces seguidas deja `git status` limpio ([F-026](fallos.md#f-026)).
 
 | Rama | Último commit | Estado |
 | --- | --- | --- |
-| `feat/ia-real` | prompt, control de gasto, evaluación, migración a Vercel y estos docs | sin PR, sin push |
+| `feat/ia-real` | prompt, control de gasto, evaluación, migración a Vercel, evaluación real, derivados y filtro de salida | sin PR, sin push |
 | `main` (`origin/main`) | `9cbfd8e` (merge del PR #10) | forzada a `b/final1` ([D-029](decisiones.md#d-029)) |
 | `b/final1` (`origin/b/final1`) | `9cbfd8e` | igual que `main` |
 | tag `respaldo/main-antes-de-force` | `90962be` (merge del PR #1) | respaldo de `main` antes del push forzado |
@@ -90,7 +106,8 @@ reemplazada).
    impuesto = US$ 2.12; puede tardar de 24 a 72 h en acreditarse) y generar una API key. Opcional: alerta de
    gasto. Ver [D-005](decisiones.md#d-005).
 2. Crear `ai-proxy/.env.local` con `DEEPSEEK_API_KEY=...` (ignorado por git) y correr
-   `cd ai-proxy && corepack pnpm evaluar`. Revisar el reporte en `docs/evaluaciones/`.
+   `cd ai-proxy && corepack pnpm evaluar`. Revisar el reporte en `docs/evaluaciones/` y que se cumplan los
+   criterios de aprobación ([D-034](decisiones.md#d-034)).
 3. En el proyecto del proxy (Production): `DEEPSEEK_API_KEY`, `ALLOWED_ORIGINS`, `AI_SALT` y, si se quiere un
    contador compartido, la integración de Upstash (`KV_REST_API_URL`, `KV_REST_API_TOKEN`).
 4. En el proyecto web (Production): `VITE_AI_ENDPOINT`; en Preview: `VITE_AI_MOCK=true`.
@@ -116,7 +133,8 @@ Otro dato abierto: la franja del horario pico de DeepSeek (precio doble) **(por 
 
 ## Próximos pasos
 
-1. Crear `ai-proxy/.env.local`, correr `pnpm evaluar` y revisar el reporte con el autor antes de tocar el prompt.
+1. Revisar con el autor las propuestas de la [bitácora](bitacora.md) (5 secciones del análisis, carga, ejemplo 3,
+   electivos y dos casos), aplicarlas y volver a correr `pnpm evaluar` hasta cumplir los criterios.
 2. Crear y conectar los dos proyectos de Vercel con las variables por entorno; agregar Upstash.
 3. Abrir el PR de `feat/ia-real` hacia `main`.
 4. Resolver las preguntas abiertas con la UTP.

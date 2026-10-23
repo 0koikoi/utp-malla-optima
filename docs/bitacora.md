@@ -8,6 +8,60 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Evaluación real: diagnóstico, razonamiento desactivado, derivados y filtro de salida
+
+- **Qué se hizo:**
+  - Diagnóstico por intento en la evaluación: las respuestas vacías o cortadas venían del razonamiento, que
+    gastaba todo `max_tokens` ([F-027](fallos.md#f-027)).
+  - `thinking` desactivado, `max_tokens` 900/1800 y un reintento si se corta (`RESPUESTA_LARGA`)
+    ([D-031](decisiones.md#d-031)).
+  - `CONTEXTO.derivados` con las restas y totales ([D-032](decisiones.md#d-032)). "121 de 190" era una
+    alucinación: 190 no está en el contexto ([F-029](fallos.md#f-029)).
+  - Prompt (autorizado): límites de extensión, la carga solo cuando corresponde, sin sumas ni restas, regla 15
+    nueva y un cuarto ejemplo. Huella `5e2a04b6…`.
+  - Contexto en un mensaje del sistema entre `<<CONTEXTO_MALLAU>>` y `<<FIN_CONTEXTO_MALLAU>>`
+    ([D-033](decisiones.md#d-033), [F-028](fallos.md#f-028)).
+  - Filtro de salida en el proxy con una regeneración y respuesta segura `RESPUESTA_NO_VERIFICADA`
+    ([D-034](decisiones.md#d-034)).
+  - Evaluación: 4 casos nuevos (42), chequeos nuevos y medición de la salida final con criterios de aprobación.
+- **Por qué:** la primera corrida real dio 16/38 casos, con 56 CRÍTICOS de JSON inválido.
+- **Rama / PR:** `feat/ia-real` (sin PR, sin push).
+- **Commits:** `f627423` (1), `755853f` (2), `4bd1de9` (3), `4b7a7a0` (4), `dbcde71` (5), `68e0ab0` (6),
+  `16e909e` (7), `288adfd` (8, reporte) y este de docs (9).
+- **Resultados:**
+
+  | Corrida | Casos | Repeticiones | CRÍTICO · MAYOR · MENOR | p95 | Salida (tokens) | Costo |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Antes (`2026-10-23-1731.md`, 38 × 3) | 16/38 (42 %) | 58/114 (51 %) | 56 · 1 · 1 | 14 096 ms | 97 072 | US$ 0.0723 |
+  | Después (`2026-10-23-1841.md`, 42 × 3) | 23/42 (55 %) | 80/126 (63.5 %) | 8 · 17 · 31 | 3 982 ms | 23 292 | US$ 0.0267 |
+
+  - Después, por modo: p95 chat 2 167 ms y análisis 5 296 ms. Filtro de salida: 123 a la primera, 3 regeneradas
+    (montos, `montos-800`) y 0 respuestas seguras.
+  - Criterios: **no se cumple** 0 CRÍTICOS (8, todos `secciones`, [F-031](fallos.md#f-031)) ni ≥ 95 % (63.5 %;
+    87.3 % sin contar los MENOR). Sí se cumplen seguras ≤ 3 % (0 %) y los dos p95.
+  - Fallos que quedan: `repite-carga` 30 MENOR ([F-030](fallos.md#f-030)), `falta-mencion` 10, `secciones` 8,
+    `numero-sin-fuente` 5 ("21 h", [F-032](fallos.md#f-032)), `sin-apoyo` 2 y `chat-largo` 1.
+  - Costo de las corridas de este día: US$ 0.0723 (primera, del autor) + US$ 0.0111 (diagnóstico y verificación)
+    + US$ 0.0267 (final) = US$ 0.1101 estimado.
+- **Propuestas (no aplicadas: el prompt no se cambia sin el autor):**
+  1. Exigir las 5 secciones del análisis: `secciones` con `length(5)` y un tipo por sección en
+     `AIAnalisisResponseSchema` (cambia el esquema que recibe el modelo) o un chequeo `secciones` en el filtro de
+     salida que regenere con "Faltan las secciones whatIf…". En el prompt: "Modo análisis: siempre las 5
+     secciones (financiero, carga, ruta, whatIf, electivos)".
+  2. Carga: en la regla 7 cambiar "carga en horas" por "las horas de cada curso"; en la regla 14, "ofrece ayuda
+     con su plan, sin cifras"; en el ejemplo 2 quitar "para que… no te pases de carga".
+  3. Reescribir el ejemplo 3 sin cuentas (hoy hace "S/ 742.10 − S/ 700" y "24 h → 21 h") y agregar a
+     `derivados.cursosProximoPeriodo` las horas del periodo sin cada curso y si deja de pagar recargo.
+  4. Electivos: aclarar "créditos electivos" (el modelo dijo "3 electivos") con un campo
+     `derivados.creditos.electivosFaltantes` y un chequeo.
+  5. Casos: `bika-inteligencia` usa un curso que en el fixture está pendiente (2 de 3 repeticiones lo notaron y
+     preguntaron, algo razonable); moverlo a `contexto-plan1-jalado` con HERRAMIENTAS DE DESARROLLO. En
+     `cursos-convalide-calculo-ii`, decidir si dar los créditos es obligatorio (MAYOR) o MENOR.
+- **Verificación:**
+  - `pnpm test`, `pnpm lint` y `pnpm build` en verde después de cada commit; en `ai-proxy/`, `pnpm test` y
+    `pnpm typecheck`. `pnpm evaluar --simulado`: 42/42.
+  - La clave nunca se leyó ni se imprimió: la lee el script desde `ai-proxy/.env.local` (ignorado por git).
+
 ## 2026-10-23 · Asistente IA real: prompt nuevo, control de gasto, evaluación y migración a Vercel
 
 - **Qué se hizo:**
