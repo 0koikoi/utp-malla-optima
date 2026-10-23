@@ -19,6 +19,32 @@ GitHub Pages (este frontend) ──▶ proxy en Vercel (ai-proxy/) ──▶ API
   la variable de Actions `vars.VITE_AI_ENDPOINT` (Settings → Secrets and variables → Actions → Variables).
 - Sin clave de DeepSeek el proxy responde en modo mock con los datos reales del contexto.
 
+## Demo en Vercel
+
+La demo usa **dos proyectos de Vercel** creados desde este mismo repo:
+
+| Proyecto | Root Directory | Framework | Build | Output |
+| --- | --- | --- | --- | --- |
+| Proxy del asistente | `ai-proxy` | Other (función `api/asistente.ts`) | (ninguno) | (ninguno) |
+| Web (demo) | raíz del repo (`./`) | Vite | `pnpm build` | `dist` |
+
+Variables de la **web** (Settings → Environment Variables):
+
+- `VITE_BASE=/`: la demo se sirve en la raíz del dominio. Sin esta variable el build usa
+  `/utp-malla-optima/`, la base de GitHub Pages (que no cambia).
+- `VITE_AI_ENDPOINT=https://<proyecto-proxy>.vercel.app/api/asistente`: URL pública del proxy.
+
+Las variables `VITE_*` se leen **al compilar**: después de cambiarlas hay que volver a desplegar.
+
+Variables del **proxy**: ver `ai-proxy/README.md`. El dominio de la demo
+(`https://<proyecto-web>.vercel.app`) debe agregarse a `ALLOWED_ORIGINS` del proxy, junto al de
+GitHub Pages, separados por coma; si no, el navegador bloquea las llamadas por CORS.
+
+Comprobación local de las dos bases: `pnpm verify:base` compila con y sin `VITE_BASE=/` y revisa
+`index.html`, el manifest de la PWA (`start_url`, `scope`) y el service worker. En Windows con Git
+Bash, `VITE_BASE=/ pnpm build` no sirve para probar a mano: MSYS convierte `/` en una ruta de Windows;
+usa PowerShell (`$env:VITE_BASE='/'; pnpm build`) o `pnpm verify:base`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
