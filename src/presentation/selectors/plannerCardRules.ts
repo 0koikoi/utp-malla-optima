@@ -58,3 +58,15 @@ export const contarAvance = (cursos: Curso[], cicloActual: number | null) => {
       (curso.ubicacion === 'banco' || sinReplanificar(curso))).length,
   };
 };
+
+/**
+ * Avisos de carga de una fila. El de recargo nunca se muestra en periodos
+ * bloqueados (pasados ni actual); los ciclos pasados no muestran ninguno.
+ */
+export const avisosCargaFila = ({ pasado, bloqueado, totalHoras, horasRecomendadas, horasSinRecargo }: {
+  pasado: boolean; bloqueado: boolean; totalHoras: number;
+  horasRecomendadas: number; horasSinRecargo: number | null;
+}) => ({
+  excesoHoras: !pasado && totalHoras > horasRecomendadas,
+  recargo: !bloqueado && horasSinRecargo !== null && totalHoras > horasSinRecargo,
+});

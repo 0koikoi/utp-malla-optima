@@ -18,7 +18,7 @@ import {
   obtenerHorasSinRecargo,
 } from '../domain/rules/planningRules';
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
-import { resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
+import { avisosCargaFila, resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
 
 interface Props {
   numCiclo: number;
@@ -80,9 +80,11 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const totalHoras = calcularHorasEfectivas(cursosParaCarga, tipoPeriodo);
   // Los ciclos pasados solo informan lo llevado: sin cotización ni avisos de carga.
   const resumenPasado = esPeriodoPasado && !esVerano ? resumenCicloPasado(cursos, cicloActual) : null;
-  const excesoHoras = !resumenPasado && totalHoras > LIMITE_HORAS_PERIODO;
   const horasSinRecargo = obtenerHorasSinRecargo(tarifario, disciplinaActiva);
-  const conRecargo = horasSinRecargo !== null && totalHoras > horasSinRecargo;
+  const { excesoHoras, recargo: conRecargo } = avisosCargaFila({
+    pasado: Boolean(resumenPasado), bloqueado: esPeriodoBloqueado, totalHoras,
+    horasRecomendadas: LIMITE_HORAS_PERIODO, horasSinRecargo,
+  });
   const cursosLlevados = cursos.filter(
     (curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO'
   ).length;
@@ -135,7 +137,7 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
           {esVerano && <span className="stat-chip summer-limit">máx. {LIMITE_CREDITOS_VERANO} cr</span>}
         </div>}
         {excesoHoras && <span className="tier-hours-warning" title={`La carga supera las ${LIMITE_HORAS_PERIODO} horas recomendadas; se permite planificar.`}><AlertTriangle size={11} /> Más de {LIMITE_HORAS_PERIODO} h</span>}
-        {conRecargo && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
+        {conRecargo && horasSinRecargo !== null && <span className="tier-hours-warning tier-surcharge-warning" title="Las horas superan el último rango de pensión del tarifario; cada hora adicional tiene recargo."><AlertTriangle size={11} /> {mensajeRecargoHoras(horasSinRecargo)}</span>}
         {!habilitado ? (
           <span className="tier-lock-note"><LockKeyhole size={10} /> verano no habilitado</span>
         ) : esPeriodoPasado ? (
