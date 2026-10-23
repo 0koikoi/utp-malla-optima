@@ -14,6 +14,12 @@ describe('deploy del frontend con el asistente', () => {
     expect(workflow).not.toContain('DEEPSEEK');
   });
 
+  it('.vercel queda fuera de git en la raíz y en ai-proxy', () => {
+    for (const ruta of ['../../.gitignore', '../../ai-proxy/.gitignore']) {
+      expect(leer(ruta).split('\n').map((linea) => linea.trim()), ruta).toContain('.vercel');
+    }
+  });
+
   it('.env.example documenta VITE_AI_ENDPOINT vacío y ninguna clave', () => {
     const ejemplo = leer('../../.env.example');
     expect(ejemplo).toMatch(/^VITE_AI_ENDPOINT=$/m);
