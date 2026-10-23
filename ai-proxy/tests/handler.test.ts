@@ -87,7 +87,7 @@ describe('proxy - validación de entrada', () => {
 });
 
 describe('proxy - llamada a DeepSeek', () => {
-  it('envía system (prompt + esquema), user con el CONTEXTO y el historial; sin herramientas', async () => {
+  it('envía system (prompt + esquema), system con el CONTEXTO entre delimitadores y el historial; sin herramientas', async () => {
     const fetch = vi.fn(async () => respuestaDeepSeek(analisisValido));
     const historial = [{ rol: 'user' as const, texto: 'Hola' }, { rol: 'assistant' as const, texto: '¿En qué te ayudo?' }];
     const respuesta = await crear({ fetch, modelo: 'deepseek-flash' }).POST(post(peticion({ mensajes: historial })));
@@ -102,9 +102,10 @@ describe('proxy - llamada a DeepSeek', () => {
     expect(cuerpo.messages[0].role).toBe('system');
     expect(cuerpo.messages[0].content.startsWith(SYSTEM_PROMPT)).toBe(true);
     expect(cuerpo.messages[0].content).toContain('preguntasSugeridas');
-    expect(cuerpo.messages[1].role).toBe('user');
-    expect(cuerpo.messages[1].content.startsWith('CONTEXTO:\n')).toBe(true);
-    expect(JSON.parse(cuerpo.messages[1].content.slice('CONTEXTO:\n'.length))).toEqual(contexto);
+    expect(cuerpo.messages[1].role).toBe('system');
+    expect(cuerpo.messages[1].content.startsWith('<<CONTEXTO_MALLAU>>\n')).toBe(true);
+    expect(cuerpo.messages[1].content.endsWith('\n<<FIN_CONTEXTO_MALLAU>>')).toBe(true);
+    expect(JSON.parse(cuerpo.messages[1].content.slice('<<CONTEXTO_MALLAU>>\n'.length, -'\n<<FIN_CONTEXTO_MALLAU>>'.length))).toEqual(contexto);
     expect(cuerpo.messages[1].content).toContain('"foco":{"tipo":"curso"');
     expect(cuerpo.messages.slice(2)).toEqual([{ role: 'user', content: 'Hola' }, { role: 'assistant', content: '¿En qué te ayudo?' }]);
   });

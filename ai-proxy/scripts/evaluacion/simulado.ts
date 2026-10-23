@@ -1,4 +1,5 @@
 import type { AIRequest } from '../../src/contracts.js';
+import { FIN_CONTEXTO, INICIO_CONTEXTO } from '../../src/deepseek.js';
 import { generarRespuestaMock } from '../../src/mockRespuestas.js';
 
 /**
@@ -12,8 +13,10 @@ export const crearFetchSimulado = (): typeof fetch => {
     const [system, contexto, ...historial] = cuerpo.messages;
     const peticion: AIRequest = {
       modo: system.content.includes('(modo "analisis")') ? 'analisis' : 'chat',
-      contexto: JSON.parse(contexto.content.slice('CONTEXTO:\n'.length)),
-      mensajes: historial.map((mensaje) => ({ rol: mensaje.role === 'assistant' ? 'assistant' : 'user', texto: mensaje.content })),
+      contexto: JSON.parse(contexto.content.slice(INICIO_CONTEXTO.length + 1, -(FIN_CONTEXTO.length + 1))),
+      // Los avisos del sistema al final (reintentos) no son parte de la conversación.
+      mensajes: historial.filter((mensaje) => mensaje.role !== 'system')
+        .map((mensaje) => ({ rol: mensaje.role === 'assistant' ? 'assistant' : 'user', texto: mensaje.content })),
     };
     const contenido = JSON.stringify(generarRespuestaMock(peticion));
     const prompt = Math.ceil(cuerpo.messages.reduce((total, mensaje) => total + mensaje.content.length, 0) / 4);

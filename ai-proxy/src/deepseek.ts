@@ -16,14 +16,24 @@ export class ErrorProveedor extends Error {
   }
 }
 
-/** Mensajes para DeepSeek: system = prompt + esquema; user = contexto (con el foco); luego el historial. */
+export const INICIO_CONTEXTO = '<<CONTEXTO_MALLAU>>';
+export const FIN_CONTEXTO = '<<FIN_CONTEXTO_MALLAU>>';
+
+/** Quita los delimitadores del texto del alumno: el único CONTEXTO válido es el del sistema (regla 15). */
+export const quitarDelimitadores = (texto: string) => texto.split(INICIO_CONTEXTO).join('').split(FIN_CONTEXTO).join('');
+
+/**
+ * Mensajes para DeepSeek, en este orden:
+ * 1) system = prompt estático + esquema; 2) system = contexto (con el foco) entre delimitadores;
+ * 3) el historial y 4) el mensaje del alumno (el último de `mensajes`), sin delimitadores.
+ */
 export const construirMensajes = (peticion: AIRequest) => [
   {
     role: 'system',
     content: `${SYSTEM_PROMPT}\n\nESQUEMA JSON de la respuesta (modo "${peticion.modo}"):\n${JSON.stringify(esquemaRespuesta(peticion.modo))}`,
   },
-  { role: 'user', content: `CONTEXTO:\n${JSON.stringify(peticion.contexto)}` },
-  ...peticion.mensajes.map((mensaje) => ({ role: mensaje.rol, content: mensaje.texto })),
+  { role: 'system', content: `${INICIO_CONTEXTO}\n${JSON.stringify(peticion.contexto)}\n${FIN_CONTEXTO}` },
+  ...peticion.mensajes.map((mensaje) => ({ role: mensaje.rol, content: quitarDelimitadores(mensaje.texto) })),
 ];
 
 /** Tope de salida por modo (incluiría el razonamiento): el análisis trae 5 secciones; el chat, un párrafo. */
