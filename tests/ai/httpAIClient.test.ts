@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AIRequest } from '../../src/application/ai/contracts';
 import {
-  crearAIClient, escucharConexion, HttpAIClient, MENSAJES_ERROR, MockAIClient, TIMEOUT_CLIENTE_MS,
+  crearAIClient, escucharConexion, HttpAIClient, MENSAJE_PAUSA, MENSAJES_ERROR, mensajeLimite, MockAIClient, TIMEOUT_CLIENTE_MS,
 } from '../../src/infrastructure/ai/HttpAIClient';
 import { crearContextoMinimo } from '../helpers/aiContexto';
 
@@ -116,5 +116,35 @@ describe('escucharConexion', () => {
     dejar();
     eventos.dispatchEvent(new Event('offline'));
     expect(cambios).toEqual([false, true]);
+  });
+});
+
+describe('HttpAIClient - control de gasto', () => {
+  const enviarCon = async (cuerpo: unknown, status: number) => {
+    const fetch = vi.fn(async () => json(cuerpo, status));
+    return new HttpAIClient({ endpoint: ENDPOINT, fetch, enLinea: () => true, zonaHoraria: 'America/Lima' }).enviar(peticion);
+  };
+
+  it('PAUSADO y SIN_SALDO muestran el mismo aviso de pausa; nunca se habla de saldo', async () => {
+    for (const [codigo, status] of [['PAUSADO', 503], ['SIN_SALDO', 402]] as const) {
+      const resultado = await enviarCon({ error: codigo }, status);
+      expect(resultado).toEqual({ ok: false, error: codigo, mensaje: MENSAJE_PAUSA });
+    }
+    expect(MENSAJE_PAUSA).toBe('El asistente está en pausa por mantenimiento. Vuelve a intentarlo más tarde.');
+    expect(Object.values(MENSAJES_ERROR).join(' ')).not.toMatch(/saldo/i);
+  });
+
+  it('LIMITE del proxy muestra la hora aproximada en que se libera', async () => {
+    // 22:00 UTC = 17:00 en Lima.
+    const resultado = await enviarCon({ error: 'LIMITE', mensaje: 'x', reintentarEn: '2026-10-23T22:00:00.000Z' }, 429);
+    expect(resultado).toEqual({
+      ok: false, error: 'LIMITE',
+      mensaje: 'Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato. Se libera hacia las 17:00.',
+    });
+  });
+
+  it('LIMITE sin hora (por ejemplo, el 429 de DeepSeek) muestra solo el mensaje', async () => {
+    expect(await enviarCon({ error: 'LIMITE' }, 429)).toMatchObject({ mensaje: MENSAJES_ERROR.LIMITE });
+    expect(mensajeLimite(undefined)).toBe('Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato.');
   });
 });

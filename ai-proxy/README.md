@@ -9,11 +9,28 @@ GitHub Pages ──POST /api/asistente──▶ Vercel (este proyecto) ──▶
 ```
 
 - Formato OpenAI con `fetch` directo (sin SDK), `response_format: json_object`, `temperature: 0.3`,
-  `max_tokens: 1200`. **No** se activan herramientas, búsqueda web ni fetch de DeepSeek (cobro aparte).
-- CORS solo para `ALLOWED_ORIGINS`; body ≤ 64 KB; validación Zod de entrada y salida; timeout de 30 s.
+  `max_tokens` 1200 en análisis y 600 en chat. **No** se activan herramientas, búsqueda web ni fetch de
+  DeepSeek (cobro aparte).
+- CORS solo para `ALLOWED_ORIGINS`; con otro `Origin` responde 403 sin leer el cuerpo ni llamar a DeepSeek.
+  Body ≤ 64 KB; validación Zod de entrada y salida; timeout de 30 s.
 - Si la respuesta no es JSON válido según el contrato, reintenta una vez; luego `RESPUESTA_INVALIDA`.
-- Errores: `SIN_SALDO` (402), `LIMITE` (429), `PROVEEDOR_CAIDO` (502/503/504), `ENTRADA_INVALIDA` (400/403/413),
-  `RESPUESTA_INVALIDA` (502).
+- Errores: `SIN_SALDO` (402), `LIMITE` (429), `PAUSADO` (503), `PROVEEDOR_CAIDO` (502/503/504),
+  `ENTRADA_INVALIDA` (400/403/413), `RESPUESTA_INVALIDA` (502).
+
+## Control de gasto
+
+- **Interruptor:** `AI_PAUSADO=true` responde `PAUSADO` sin llamar a DeepSeek. El frontend muestra "El asistente
+  está en pausa por mantenimiento…". `SIN_SALDO` muestra el mismo aviso: al alumno nunca se le dice que se
+  acabó el saldo.
+- **Límites** (solo cuentan llamadas reales; el mock no gasta):
+  - por IP: `AI_LIMITE_IP_HORA` consultas por hora (por defecto 15);
+  - global: `AI_LIMITE_DIARIO` consultas por día de Lima (por defecto 200).
+  - La IP sale de `x-forwarded-for` (primer valor) o `x-real-ip` y se guarda solo como sha256 con `AI_SALT`.
+  - Con `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` (o los `KV_REST_API_URL` y `KV_REST_API_TOKEN`
+    que crea la integración de Upstash del Marketplace de Vercel) el contador es compartido (INCR + EXPIRE por
+    la API REST). Sin ellas, cuenta en memoria por instancia (best effort). Si Upstash falla, sigue en memoria.
+  - Al superar un límite: `LIMITE` (429) con `mensaje` y `reintentarEn`; el frontend muestra la hora aproximada.
+- **Previews:** si `VERCEL_ENV` no es `production`, el proxy usa siempre el mock, aunque exista la clave.
 - Los logs solo tienen `resultado`, `modo`, `ms` y `mock`: nunca el contexto ni los mensajes.
 
 `src/contracts.ts` y `src/mockRespuestas.ts` son copias exactas de `src/application/ai/` del frontend;
@@ -26,11 +43,16 @@ un test del repo falla si difieren. Edita el original y vuelve a copiarlo.
 | `DEEPSEEK_API_KEY` | `sk-...` | Secreta. Sin ella el proxy responde con mocks (ver abajo). |
 | `DEEPSEEK_MODEL` | `deepseek-flash` | Opcional; por defecto `deepseek-flash`. Revisa el nombre vigente en <https://api-docs.deepseek.com>. |
 | `ALLOWED_ORIGINS` | `https://<usuario>.github.io,http://localhost:5173,http://127.0.0.1:5173` | Orígenes separados por coma, sin `/` final ni ruta. |
-| `AI_MOCK` | `true` | Fuerza el modo mock. En producción, sin clave, el mock **solo** se activa con `AI_MOCK=true`. |
+| `AI_MOCK` | `true` | Fuerza el modo mock. Fuera de producción (`VERCEL_ENV` distinto de `production`) el mock va siempre. |
+| `AI_PAUSADO` | `true` | Interruptor: responde `PAUSADO` sin llamar a DeepSeek. |
+| `AI_LIMITE_IP_HORA` | `15` | Consultas por IP por hora. |
+| `AI_LIMITE_DIARIO` | `200` | Consultas por día (hora de Lima), en total. |
+| `AI_SALT` | texto aleatorio largo | Secreta. Sal del hash de la IP. Sin ella se usa una sal por instancia y, con Upstash, cada instancia contaría aparte. |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | — | Opcionales (o `KV_REST_API_URL` / `KV_REST_API_TOKEN`). El token es secreto. |
 
 ## Modo mock
 
-Sin `DEEPSEEK_API_KEY` (y fuera de producción), o con `AI_MOCK=true`, el proxy no llama a DeepSeek:
+Fuera de producción (previews y local), o con `AI_MOCK=true`, el proxy no llama a DeepSeek:
 arma respuestas válidas según el contrato con los datos reales del contexto recibido (cursos, montos,
 nivel de carga, what-if y ventana de jalados) y espera ~800 ms para que se vea “escribiendo…”.
 

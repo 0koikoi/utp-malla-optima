@@ -16,7 +16,7 @@ const peticion = (cambios: Partial<AIRequest> = {}): AIRequest => ({ modo: 'anal
 const crear = (cambios: Partial<ConfigProxy> = {}) => {
   const registros: unknown[] = [];
   const config = leerConfig(
-    { DEEPSEEK_API_KEY: 'sk-prueba', ALLOWED_ORIGINS: `${ORIGEN},http://localhost:5173` },
+    { DEEPSEEK_API_KEY: 'sk-prueba', ALLOWED_ORIGINS: `${ORIGEN},http://localhost:5173`, VERCEL_ENV: 'production' },
     { esperaMockMs: 0, registrar: (entrada) => registros.push(entrada), ...cambios },
   );
   return { ...crearHandlers(config), registros };
@@ -98,6 +98,7 @@ describe('proxy - llamada a DeepSeek', () => {
     const cuerpo = JSON.parse(String(init.body));
     expect(cuerpo).toMatchObject({ model: 'deepseek-flash', response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1200 });
     expect(cuerpo.tools).toBeUndefined();
+    expect(cuerpo.tool_choice).toBeUndefined();
     expect(cuerpo.messages[0].role).toBe('system');
     expect(cuerpo.messages[0].content.startsWith(SYSTEM_PROMPT)).toBe(true);
     expect(cuerpo.messages[0].content).toContain('preguntasSugeridas');
@@ -172,12 +173,27 @@ describe('proxy - llamada a DeepSeek', () => {
 });
 
 describe('proxy - modo mock', () => {
-  it('sin clave fuera de producción usa mock; en producción solo con AI_MOCK=true', () => {
+  it('fuera de producción (previews, local) usa siempre el mock, aunque haya clave; en producción solo con AI_MOCK=true', () => {
     expect(leerConfig({}).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'preview' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'development' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', NODE_ENV: 'production' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'production' }).mock).toBe(false);
     expect(leerConfig({ VERCEL_ENV: 'production' }).mock).toBe(false);
     expect(leerConfig({ VERCEL_ENV: 'production', AI_MOCK: 'true' }).mock).toBe(true);
-    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk' }).mock).toBe(false);
     expect(leerConfig({}).modelo).toBe('deepseek-flash');
+  });
+
+  it('una preview con clave responde con mock y nunca llama a DeepSeek', async () => {
+    const fetch = vi.fn();
+    const config = leerConfig(
+      { DEEPSEEK_API_KEY: 'sk-prueba', VERCEL_ENV: 'preview', ALLOWED_ORIGINS: ORIGEN },
+      { fetch, esperaMockMs: 0, registrar: () => undefined },
+    );
+    const respuesta = await crearHandlers(config).POST(post(peticion()));
+    expect(respuesta.status).toBe(200);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('en producción sin clave ni mock responde PROVEEDOR_CAIDO sin llamar a nadie', async () => {

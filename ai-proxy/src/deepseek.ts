@@ -25,13 +25,17 @@ export const construirMensajes = (peticion: AIRequest) => [
   ...peticion.mensajes.map((mensaje) => ({ role: mensaje.rol, content: mensaje.texto })),
 ];
 
+/** Tope de salida por modo: el análisis trae 5 secciones; el chat, un párrafo. */
+export const MAX_TOKENS = { analisis: 1200, chat: 600 } as const;
+export const TEMPERATURA = 0.3;
+
 /** Sin herramientas, búsqueda web ni fetch: tienen cobro aparte. */
 export const construirCuerpo = (peticion: AIRequest, modelo: string) => ({
   model: modelo,
   messages: construirMensajes(peticion),
   response_format: { type: 'json_object' },
-  temperature: 0.3,
-  max_tokens: 1200,
+  temperature: TEMPERATURA,
+  max_tokens: MAX_TOKENS[peticion.modo],
   stream: false,
 });
 
