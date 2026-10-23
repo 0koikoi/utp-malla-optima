@@ -71,9 +71,9 @@ export const notificacionPorConflictos = (
 };
 
 export const notificacionJalado = (
-  curso: CursoReferencia, invalidos: CursoReferencia[], cicloRecuperacion: number | null
+  curso: CursoReferencia, invalidos: CursoReferencia[], ventana: string
 ): NotificacionMovimiento => {
-  const recuperacion = cicloRecuperacion ? ` Deberás llevarlo en el Ciclo ${cicloRecuperacion}.` : '';
+  const recuperacion = ventana ? ` Deberás llevarlo ${ventana}.` : '';
   return {
     tipo: 'JALADO', cursoNombre: curso.nombre, faltantes: invalidos, deshacerJalado: curso.codigo,
     mensaje: invalidos.length
@@ -83,10 +83,10 @@ export const notificacionJalado = (
 };
 
 export const notificacionJaladoRetirado = (
-  cursoNombre: string, afectados: CursoReferencia[], cicloRecuperacion: number | null
+  cursoNombre: string, afectados: CursoReferencia[], ventana: string
 ): NotificacionMovimiento | null => afectados.length ? {
   tipo: 'IMPACTO_DESCENDIENTE', cursoNombre, faltantes: afectados,
-  mensaje: `volvió a su ciclo original. Estos cursos quedan marcados (falta llevar curso jalado) hasta que lo agregues al Ciclo ${cicloRecuperacion ?? '?'}:`,
+  mensaje: `volvió a su ciclo original. Estos cursos quedan marcados (falta llevar curso jalado) hasta que lo lleves ${ventana || 'en su periodo de recuperación'}:`,
 } : null;
 
 export const notificacionPlanAplicado = (

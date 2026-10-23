@@ -8,8 +8,7 @@ import { detectarNuevosConflictosDescendientes } from '../domain/services/prereq
 import { simularJalado } from '../domain/services/whatIfService';
 import {
   destinoJaladoPermitido, devolverJaladoAOrigen, esCursoJalado, esRegresoAlOrigen, jaladosFaltantes,
-  mensajeJaladoObligatorio,
-  periodoRecuperacion, planificadosSinJalado,
+  mensajeJaladoObligatorio, planificadosSinJalado, textoVentana, ventanaJalado,
 } from '../domain/rules/jaladoRules';
 import {
   notificacionDesdeResultado, notificacionErrorPersistencia, notificacionJalado, notificacionJaladoRetirado,
@@ -39,7 +38,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       await repos.courses.update(codigo, cambios);
       set({ cursos: cursosActualizados, cursoAMover: null,
         notificacionMovimiento: notificacionJalado(cursoActual, invalidos,
-          periodoRecuperacion(cursosActualizados, state)?.cicloReferencia ?? null) });
+          textoVentana(ventanaJalado({ ...cursoActual, ...cambios }, cursosActualizados, state))) });
       return invalidos;
     } catch {
       set({ notificacionMovimiento: notificacionErrorPersistencia(cursoActual.nombre) });
@@ -85,10 +84,10 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
     const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
-    // Sacar un jalado de su periodo de recuperación invalida lo planificado desde allí.
+    // Sacar un jalado de su ventana invalida lo planificado desde allí.
     const avisoJalado = esRegresoAlOrigen(curso, periodo, state.cursos, state)
       ? notificacionJaladoRetirado(curso.nombre, planificadosSinJalado(cursosActualizados, state),
-        periodoRecuperacion(cursosActualizados, state)?.cicloReferencia ?? null)
+        textoVentana(ventanaJalado(curso, cursosActualizados, state)))
       : null;
     try {
       await repos.courses.update(codigo, {
@@ -120,7 +119,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     }
     if (!destinoJaladoPermitido(curso, 'banco', state.cursos, state)) {
       set({ notificacionMovimiento: { tipo: 'JALADO_OBLIGATORIO', cursoNombre: curso.nombre,
-        mensaje: mensajeJaladoObligatorio(state.cursos, state) } });
+        mensaje: mensajeJaladoObligatorio(curso, state.cursos, state) } });
       return false;
     }
     if (state.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, state.cicloActual) &&
@@ -145,13 +144,15 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     }
   },
 
-  agregarJaladosARecuperacion: async () => {
+  agregarJaladosARecuperacion: async (destino) => {
     const state = get();
-    const destino = periodoRecuperacion(state.cursos, state);
-    if (!destino) return false;
     let todos = true;
     for (const jalado of jaladosFaltantes(state.cursos, state)) {
-      todos = await get().moverCursoAPeriodo(jalado.codigo, destino) && todos;
+      // Sin destino, cada jalado va al ciclo regular de su ventana.
+      const ventana = ventanaJalado(jalado, state.cursos, state);
+      const objetivo = destino ? ventana.find((periodo) => periodo.id === destino.id) : ventana.at(-1);
+      if (!objetivo) continue;
+      todos = await get().moverCursoAPeriodo(jalado.codigo, objetivo) && todos;
     }
     return todos;
   },

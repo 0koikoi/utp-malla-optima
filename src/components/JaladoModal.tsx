@@ -4,7 +4,7 @@ import { AlertTriangle, Check } from 'lucide-react';
 import type { Curso } from '../types/academic';
 import { crearPeriodoAcademico } from '../domain/rules/academicPeriodRules';
 import { simularJalado } from '../domain/services/whatIfService';
-import { periodoRecuperacion } from '../domain/rules/jaladoRules';
+import { textoVentana, ventanaJalado } from '../domain/rules/jaladoRules';
 import { useAcademicStore } from '../store/useAcademicStore';
 
 interface Props {
@@ -21,7 +21,8 @@ const etiquetaPeriodo = (periodoId: string) => {
 export function JaladoModal({ curso, onClose }: Props) {
   const cursos = useAcademicStore((state) => state.cursos);
   const marcarComoJalado = useAcademicStore((state) => state.marcarComoJalado);
-  const cicloRecuperacion = useAcademicStore((state) => periodoRecuperacion(state.cursos, state)?.cicloReferencia ?? null);
+  const ventana = useAcademicStore((state) =>
+    textoVentana(ventanaJalado({ ...curso, estado: 'PENDIENTE', jalado: true, cicloJalado: curso.ciclo }, state.cursos, state)));
   const [guardando, setGuardando] = useState(false);
   const modalRef = useRef<HTMLElement>(null);
   const simulacion = useMemo(() => simularJalado(curso.codigo, cursos), [curso.codigo, cursos]);
@@ -63,7 +64,7 @@ export function JaladoModal({ curso, onClose }: Props) {
           <AlertTriangle size={25} />
           <h2>Marcar como jalado</h2>
           <p><b>{curso.nombre}</b> quedará como jalado en su ciclo. Mientras siga ahí no cuenta como prerrequisito ni se cotiza.</p>
-          {cicloRecuperacion && <p className="jalado-recovery-note"><b>Deberás llevarlo en el Ciclo {cicloRecuperacion}.</b> Hasta agregarlo allí no podrás sumar otros cursos a ese ciclo ni a los siguientes.</p>}
+          {ventana && <p className="jalado-recovery-note"><b>Deberás llevarlo {ventana}.</b> Hasta agregarlo allí no podrás sumar otros cursos a ese periodo ni a los siguientes.</p>}
           {simulacion.cursosBloqueados.length > 0 ? <>
             <h3>Cursos que no podrás llevar hasta aprobarlo</h3>
             <ul className="jalado-preview-list">

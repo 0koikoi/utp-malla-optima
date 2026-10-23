@@ -1,13 +1,13 @@
 import type { Curso, PeriodoAcademico } from '../../../types/academic';
 import { determinarPeriodoEnCurso, obtenerPeriodoCurso, crearPeriodoRegular } from '../../rules/academicPeriodRules';
-import { LIMITE_HORAS_PLANIFICACION, LIMITE_HORAS_PERIODO, calcularHorasEfectivas } from '../../rules/planningRules';
+import { LIMITE_HORAS_PLANIFICACION, LIMITE_HORAS_PERIODO, calcularHorasEfectivas, validarLimiteCreditosVerano } from '../../rules/planningRules';
 import { calcularPrioridadesPendientes } from '../recommendationService';
 import { optimizarSemestre } from '../semesterOptimizationService';
 import { determinarTotalCiclos, normalizarTotalCiclos, normalizarCiclosExcluidos, obtenerCiclosDisponibles } from '../../rules/cycleRules';
 import { obtenerAsignacionesConservadas } from '../preservedPlanningAssignments';
 import { periodoBloqueadoPorCicloActual } from '../../rules/academicContextRules';
 import { esJaladoSinReplanificar } from '../../rules/courseRules';
-import { esCursoJalado } from '../../rules/jaladoRules';
+import { esCursoJalado, nombrePeriodoCorto, ventanaDesdeCiclo } from '../../rules/jaladoRules';
 import { prerrequisitosCumplidos } from './prerequisiteChecks';
 import { horasValidas, motivosNoPlanificado } from './unplannedReasons';
 import type { CicloPlanificadoResumen, ExplicacionPlan, OpcionesPlanificacion, ResultadoPlanificacionAutomatica } from './types';
@@ -34,12 +34,18 @@ export const generarPlanificacionAutomatica = (
       curso.ubicacion = 'banco';
     }
   }
-  // Regla UTP: los jalados van primero, todos en el periodo de recuperación (el ciclo siguiente al actual).
-  const periodoRecuperacion = cicloActual > 0 ? crearPeriodoRegular(cicloActual + 1) : null;
-  const jalados = periodoRecuperacion ? cursosBase.filter(esCursoJalado) : [];
+  // Regla UTP: los jalados van primero, en el PRIMER periodo de su ventana (el verano si
+  // existe). Si el verano ya no admite sus créditos, van al ciclo regular de la ventana.
+  const ventana = cicloActual > 0 ? ventanaDesdeCiclo(cicloActual, opciones) : [];
+  const jalados = ventana.length ? cursosBase.filter(esCursoJalado) : [];
+  const destinoJalado = new Map<string, PeriodoAcademico>();
   for (const curso of jalados) {
-    curso.ciclo = periodoRecuperacion!.cicloReferencia;
-    curso.tipoPeriodo = 'REGULAR';
+    const destino = ventana.find((periodo) => periodo.tipo === 'REGULAR' ||
+      validarLimiteCreditosVerano([...cursosBase.filter((item) => item !== curso && item.estado === 'PENDIENTE' &&
+        item.ubicacion === 'periodo' && obtenerPeriodoCurso(item).id === periodo.id), curso]).valido)!;
+    destinoJalado.set(curso.codigo, destino);
+    curso.ciclo = destino.cicloReferencia;
+    curso.tipoPeriodo = destino.tipo;
     curso.ubicacion = 'periodo';
   }
   const electivoCubierto = cursosBase.some((curso) => curso.tipo === 'ELECTIVO' &&
@@ -67,16 +73,27 @@ export const generarPlanificacionAutomatica = (
   const nuevasAsignaciones = new Map<string, PeriodoAcademico>();
   for (const curso of jalados) {
     conservados.add(curso.codigo);
-    asignaciones.set(curso.codigo, periodoRecuperacion!);
-    nuevasAsignaciones.set(curso.codigo, periodoRecuperacion!);
+    asignaciones.set(curso.codigo, destinoJalado.get(curso.codigo)!);
+    nuevasAsignaciones.set(curso.codigo, destinoJalado.get(curso.codigo)!);
   }
   const pendientes = cursosBase.filter((curso) => curso.estado === 'PENDIENTE' &&
     curso.tipo !== 'ELECTIVO' && !conservados.has(curso.codigo));
   const restantes = new Map(pendientes.map((curso) => [curso.codigo, curso]));
   const ciclos: CicloPlanificadoResumen[] = [];
+  // El verano de la ventana solo recibe jalados: se resume antes de los ciclos regulares.
+  for (const periodo of ventana.filter((item) => item.tipo === 'VERANO')) {
+    const carga = cursosBase.filter((curso) => curso.ubicacion === 'periodo' && conservados.has(curso.codigo) &&
+      obtenerPeriodoCurso(curso).id === periodo.id);
+    const jaladosVerano = carga.filter(esCursoJalado);
+    if (!jaladosVerano.length) continue;
+    ciclos.push({ ciclo: periodo.cicloReferencia, periodo,
+      creditos: carga.reduce((suma, curso) => suma + curso.creditos, 0),
+      horasEfectivas: calcularHorasEfectivas(carga, 'VERANO'), impacto: 0,
+      cursos: jaladosVerano.map((curso) => ({ codigo: curso.codigo, nombre: curso.nombre, creditos: curso.creditos, impacto: 0 })) });
+  }
 
   for (const periodo of periodos) {
-    if (restantes.size === 0 && periodo.id !== periodoRecuperacion?.id) break;
+    if (restantes.size === 0 && ![...destinoJalado.values()].some((destino) => destino.id === periodo.id)) break;
     const cargaConservada = cursosBase.filter((curso) => curso.ubicacion === 'periodo' &&
       (curso.estado === 'EN_CURSO' || (curso.estado === 'PENDIENTE' && conservados.has(curso.codigo))) &&
       obtenerPeriodoCurso(curso).id === periodo.id);
@@ -176,7 +193,8 @@ export const generarPlanificacionAutomatica = (
         : motivosNoPlanificado(electivoElegido, porCodigo, asignaciones, ultimoPeriodo, cicloFinal) });
   }
   const explicacion: ExplicacionPlan[] = [
-    { tipo: 'RESUMEN', total: nuevasAsignaciones.size, cicloInicio, cicloFinal },
+    { tipo: 'RESUMEN', total: nuevasAsignaciones.size, cicloInicio, cicloFinal,
+      veranoJalados: [...destinoJalado.values()].some((destino) => destino.tipo === 'VERANO') },
     { tipo: 'LIMITE', horas: LIMITE_HORAS_PLANIFICACION },
     { tipo: 'PRIORIDAD_OBLIGATORIOS' },
     { tipo: 'APROBADOS_SIN_CARGA' },
@@ -186,9 +204,11 @@ export const generarPlanificacionAutomatica = (
   if (excluidos.length) explicacion.push({ tipo: 'CICLOS_EXCLUIDOS', ciclos: excluidos });
   if (electivoElegido) explicacion.push({ tipo: 'ELECTIVO_ELEGIDO', curso: electivoElegido });
   else if (electivoCubierto) explicacion.push({ tipo: 'ELECTIVO_CUBIERTO' });
-  // Los jalados se fijan en el periodo de recuperación, pero no son asignaciones conservadas del estudiante.
+  // Los jalados se fijan en su ventana de recuperación, pero no son asignaciones conservadas del estudiante.
   const totalConservados = conservados.size - jalados.length;
-  if (jalados.length) explicacion.push({ tipo: 'JALADOS_PRIMERO', total: jalados.length, ciclo: periodoRecuperacion!.cicloReferencia });
+  if (jalados.length) explicacion.push({ tipo: 'JALADOS_PRIMERO', total: jalados.length,
+    periodos: [...new Map([...destinoJalado.values()].sort((a, b) => a.orden - b.orden)
+      .map((destino) => [destino.id, nombrePeriodoCorto(destino)])).values()] });
   if (totalConservados) explicacion.push({ tipo: 'CONSERVADOS', total: totalConservados });
   if (noPlanificados.length) explicacion.push({ tipo: 'PENDIENTES', total: noPlanificados.length });
   else if (pendientes.length || electivoElegido) explicacion.push({ tipo: 'COMPLETADOS' });

@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import type { Curso } from '../types/academic';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { isCursoDesbloqueado, motivoPlanificadoInvalido } from '../domain/services/prerequisiteService';
-import { periodoRecuperacion, ubicacionOriginalJalado } from '../domain/rules/jaladoRules';
+import { etiquetaVentana, ubicacionOriginalJalado, ventanaJalado } from '../domain/rules/jaladoRules';
 import { esJaladoSinReplanificar } from '../domain/rules/courseRules';
 import { obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../domain/rules/academicContextRules';
@@ -37,8 +37,8 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const setCursoAMover = useAcademicStore((state) => state.setCursoAMover);
   const moverCursoABanco = useAcademicStore((state) => state.moverCursoABanco);
   const cicloActual = useAcademicStore((state) => state.cicloActual);
-  const cicloRecuperacion = useAcademicStore((state) => curso.jalado
-    ? periodoRecuperacion(state.cursos, state)?.cicloReferencia ?? null : null);
+  const ventanaRecuperacion = useAcademicStore((state) => curso.jalado
+    ? etiquetaVentana(ventanaJalado(curso, state.cursos, state)) : '');
 
   const [tooltip, setTooltip] = useState<{ top: number; left: number } | null>(null);
   const [retirando, setRetirando] = useState(false);
@@ -202,11 +202,11 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
         )}
         {curso.jalado && (
           <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /> Jalado
-            {cicloRecuperacion && esJaladoSinReplanificar(curso, cicloActual) && ` · llevar en Ciclo ${cicloRecuperacion}`}</div>
+            {ventanaRecuperacion && esJaladoSinReplanificar(curso, cicloActual) && ` · llevar en ${ventanaRecuperacion}`}</div>
         )}
         {invalido && (
           motivoInvalido === 'JALADO_PENDIENTE'
-            ? <div className="curso-estado-chip invalido-chip" title="Primero debes llevar tus cursos jalados en el periodo de recuperación.">
+            ? <div className="curso-estado-chip invalido-chip" title="Primero debes llevar tus cursos jalados en su ventana de recuperación.">
               <AlertTriangle size={11} /> Falta llevar curso jalado
             </div>
             : <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">

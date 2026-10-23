@@ -32,7 +32,7 @@ export interface CursoNoPlanificado {
 }
 
 export type ExplicacionPlan =
-  | { tipo: 'RESUMEN'; total: number; cicloInicio: number; cicloFinal: number }
+  | { tipo: 'RESUMEN'; total: number; cicloInicio: number; cicloFinal: number; veranoJalados?: boolean }
   | { tipo: 'LIMITE'; horas: number }
   | { tipo: 'PRIORIDAD_OBLIGATORIOS' }
   | { tipo: 'APROBADOS_SIN_CARGA' }
@@ -41,7 +41,7 @@ export type ExplicacionPlan =
   | { tipo: 'ELECTIVO_ELEGIDO'; curso: { nombre: string; horasSemanales: number; creditos: number } }
   | { tipo: 'ELECTIVO_CUBIERTO' }
   | { tipo: 'CONSERVADOS'; total: number }
-  | { tipo: 'JALADOS_PRIMERO'; total: number; ciclo: number }
+  | { tipo: 'JALADOS_PRIMERO'; total: number; periodos: string[] }
   | { tipo: 'PENDIENTES'; total: number }
   | { tipo: 'COMPLETADOS' }
   | { tipo: 'ADVERTENCIAS_HORAS'; horas: number };
@@ -65,4 +65,5 @@ export interface OpcionesPlanificacion {
   ciclosExcluidos?: number[];
   cicloActual?: number | null;
   periodoIngreso?: PeriodoIngreso | null;
+  jaladoPermiteVerano?: boolean;
 }

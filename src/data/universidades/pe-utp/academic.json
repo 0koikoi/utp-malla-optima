@@ -10,5 +10,5 @@
   "verano": {
     "multiplicadorHorasTarifarias": 2
   },
-  "jaladoPermiteVerano": false
+  "jaladoPermiteVerano": true
 }

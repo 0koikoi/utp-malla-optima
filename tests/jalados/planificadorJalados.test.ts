@@ -38,7 +38,7 @@ describe('Planificador automático con jalados', () => {
     expect(calcularHorasEfectivas(ciclo8, 'REGULAR')).toBeLessThanOrEqual(LIMITE_HORAS_PLANIFICACION);
     expect(() => validarCargaPlanificacionAutomatica(propuesta)).not.toThrow();
     // El jalado se explica aparte; no cuenta como asignación conservada.
-    expect(propuesta.explicacion).toContainEqual({ tipo: 'JALADOS_PRIMERO', total: 1, ciclo: 8 });
+    expect(propuesta.explicacion).toContainEqual({ tipo: 'JALADOS_PRIMERO', total: 1, periodos: ['Ciclo 8'] });
     expect(propuesta.totalConservados).toBe(0);
   });
 

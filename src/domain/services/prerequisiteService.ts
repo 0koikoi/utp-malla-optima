@@ -106,7 +106,7 @@ export const motivoPlanificadoInvalido = (
 ): 'JALADO_PENDIENTE' | 'PRERREQUISITOS' | null => {
   if (curso.estado !== 'PENDIENTE' || curso.ubicacion !== 'periodo' ||
       esJaladoSinReplanificar(curso, resolverCicloActual(todosLosCursos, contexto))) return null;
-  // Regla UTP: desde el periodo de recuperación, falta llevar un curso jalado.
+  // Regla UTP: un jalado fuera de su ventana bloquea este periodo.
   if (faltaJaladoParaPlanificado(curso, todosLosCursos, contexto)) return 'JALADO_PENDIENTE';
   return validarPrerequisitosParaPeriodo(curso, todosLosCursos, obtenerPeriodoCurso(curso), contexto).valido
     ? null : 'PRERREQUISITOS';

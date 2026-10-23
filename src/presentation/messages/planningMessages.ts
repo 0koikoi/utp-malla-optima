@@ -4,7 +4,7 @@ import { formatCredits } from '../../utils/formatCredits';
 export const explicarPlan = (explicacion: ExplicacionPlan): string => {
   switch (explicacion.tipo) {
     case 'RESUMEN':
-      return `Se organizaron ${explicacion.total} cursos pendientes desde el ciclo ${explicacion.cicloInicio} hasta el ${explicacion.cicloFinal}, utilizando solo ciclos regulares.`;
+      return `Se organizaron ${explicacion.total} cursos pendientes desde el ciclo ${explicacion.cicloInicio} hasta el ${explicacion.cicloFinal}, utilizando solo ciclos regulares${explicacion.veranoJalados ? ' (el verano se usa únicamente para recuperar jalados)' : ''}.`;
     case 'LIMITE':
       return `Cada ciclo que recibe nuevas asignaciones respeta hasta ${explicacion.horas} horas semanales. Los créditos son informativos y no limitan la propuesta.`;
     case 'PRIORIDAD_OBLIGATORIOS':
@@ -20,7 +20,7 @@ export const explicarPlan = (explicacion: ExplicacionPlan): string => {
     case 'ELECTIVO_CUBIERTO':
       return 'Ya hay un electivo aprobado, convalidado, en curso o en un bloque cerrado. No se añaden electivos adicionales.';
     case 'JALADOS_PRIMERO':
-      return `Primero se ${explicacion.total === 1 ? 'colocó tu curso jalado' : `colocaron tus ${explicacion.total} cursos jalados`} en el Ciclo ${explicacion.ciclo}, como exige la UTP; el resto se organiza alrededor.`;
+      return `Primero se ${explicacion.total === 1 ? 'colocó tu curso jalado' : `colocaron tus ${explicacion.total} cursos jalados`} en el ${explicacion.periodos.join(' y en el ')}, el primer periodo de su ventana de recuperación, como exige la UTP; el resto se organiza en los ciclos regulares.`;
     case 'CONSERVADOS':
       return `Se conservaron ${explicacion.total} pendientes con asignaciones cerradas o vinculadas a veranos manuales válidos. Sus prerrequisitos y cargas se consideran al planificar.`;
     case 'PENDIENTES':

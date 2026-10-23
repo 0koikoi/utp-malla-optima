@@ -6,7 +6,7 @@ import { parseUTPExcel } from '../../src/adapters/utpExcelAdapter';
 import { moveCourseUseCase } from '../../src/application/usecases/moveCourseUseCase';
 import { JALADO_PERMITE_VERANO } from '../../src/config/academicLimits';
 import { crearPeriodoRegular, crearPeriodoVerano } from '../../src/domain/rules/academicPeriodRules';
-import { periodoRecuperacion, periodosRecuperacion } from '../../src/domain/rules/jaladoRules';
+import { ventanaDesdeCiclo, ventanaJalado } from '../../src/domain/rules/jaladoRules';
 import { motivoPlanificadoInvalido } from '../../src/domain/services/prerequisiteService';
 import { UniversityFinancialRulesProvider } from '../../src/financial/rules/UniversityFinancialRulesProvider';
 import { FinancialPlanningService } from '../../src/financial/services/FinancialPlanningService';
@@ -37,8 +37,8 @@ const mover = (store: Store, codigo: string, ciclo: number) =>
 const aviso = (store: Store) => store.getState().notificacionMovimiento;
 
 describe('Configuración jaladoPermiteVerano', () => {
-  it('es false por defecto en academic.json', () => {
-    expect(JALADO_PERMITE_VERANO).toBe(false);
+  it('es true en academic.json', () => {
+    expect(JALADO_PERMITE_VERANO).toBe(true);
   });
 
   it('Zod solo acepta un booleano', () => {
@@ -46,21 +46,22 @@ describe('Configuración jaladoPermiteVerano', () => {
     expect(() => validateAcademicConfig({ jaladoPermiteVerano: 'sí' })).toThrow();
   });
 
-  it('con true, el verano del ciclo actual también es periodo de recuperación', () => {
-    const contexto = { cicloActual: 7, periodoIngreso: 'agosto' as const };
-    expect(periodosRecuperacion([], contexto).map((periodo) => periodo.id)).toEqual(['ciclo-8']);
-    expect(periodosRecuperacion([], { ...contexto, jaladoPermiteVerano: true }).map((periodo) => periodo.id))
-      .toEqual(['verano-7', 'ciclo-8']);
+  it('con false la ventana es solo el ciclo regular; con true incluye el verano si existe', () => {
+    const ids = (contexto: Parameters<typeof ventanaDesdeCiclo>[1]) =>
+      ventanaDesdeCiclo(7, contexto).map((periodo) => periodo.id);
+    expect(ids({ periodoIngreso: 'agosto', jaladoPermiteVerano: false })).toEqual(['ciclo-8']);
+    expect(ids({ periodoIngreso: 'agosto', jaladoPermiteVerano: true })).toEqual(['verano-7', 'ciclo-8']);
+    expect(ids({ periodoIngreso: 'agosto' })).toEqual(['verano-7', 'ciclo-8']);
     // Con ingreso marzo no hay verano después del ciclo 7.
-    expect(periodosRecuperacion([], { ...contexto, periodoIngreso: 'marzo', jaladoPermiteVerano: true })
-      .map((periodo) => periodo.id)).toEqual(['ciclo-8']);
+    expect(ids({ periodoIngreso: 'marzo', jaladoPermiteVerano: true })).toEqual(['ciclo-8']);
   });
 });
 
 describe('Regla UTP con Plan_de_Estudio_desaprobado.xlsx (I60N jalado)', () => {
-  it('el periodo de recuperación es ciclo-8', async () => {
+  it('la ventana de I60N es [Ciclo 8]', async () => {
     const store = await crearStore('Plan_de_Estudio_desaprobado.xlsx');
-    expect(periodoRecuperacion(store.getState().cursos, store.getState())?.id).toBe('ciclo-8');
+    expect(ventanaJalado(curso(store, I60N), store.getState().cursos, store.getState()).map((periodo) => periodo.id))
+      .toEqual(['ciclo-8']);
   });
 
   it('sin I60N en ciclo-8, S72T se rechaza en ciclo-8 y ciclo-9', async () => {
@@ -68,7 +69,7 @@ describe('Regla UTP con Plan_de_Estudio_desaprobado.xlsx (I60N jalado)', () => {
     for (const ciclo of [8, 9]) {
       expect(await mover(store, S72T, ciclo)).toBe(false);
       expect(aviso(store)).toMatchObject({ tipo: 'JALADO_OBLIGATORIO',
-        mensaje: 'Primero agrega tus cursos jalados al Ciclo 8: ANÁLISIS Y DISEÑO DE SISTEMAS DE INFORMACIÓN.' });
+        mensaje: 'Debes llevar primero ANÁLISIS Y DISEÑO DE SISTEMAS DE INFORMACIÓN en el Ciclo 8.' });
     }
     // Un curso sin relación con I60N tampoco entra.
     expect(await mover(store, '100000H01C', 8)).toBe(false);
@@ -98,8 +99,8 @@ describe('Regla UTP con Plan_de_Estudio_desaprobado.xlsx (I60N jalado)', () => {
     const conFalse = moveCourseUseCase(cursos, I60N, crearPeriodoVerano(7), { ...contexto, jaladoPermiteVerano: false });
     expect(!conFalse.ok && conFalse.reason).toBe('JALADO_DESTINO');
     expect(moveCourseUseCase(cursos, I60N, crearPeriodoVerano(7), { ...contexto, jaladoPermiteVerano: true }).ok).toBe(true);
-    // El store usa la configuración por defecto (false).
-    expect(await store.getState().moverCursoAVerano(I60N, 7)).toBe(false);
+    // El store usa la configuración por defecto (true).
+    expect(await store.getState().moverCursoAVerano(I60N, 7)).toBe(true);
   });
 
   it('con true y I60N en verano-7, los demás cursos ya pueden ir a ciclo-8', async () => {
@@ -149,7 +150,7 @@ describe('Regla UTP con S61T marcado como jalado (Excel real)', () => {
     const store = await crearConS61T();
     expect(await mover(store, '100000H01C', 8)).toBe(false);
     expect(await mover(store, '100000H01C', 9)).toBe(false);
-    expect(aviso(store)?.mensaje).toBe('Primero agrega tus cursos jalados al Ciclo 8: HERRAMIENTAS DE DESARROLLO.');
+    expect(aviso(store)?.mensaje).toBe('Debes llevar primero HERRAMIENTAS DE DESARROLLO en el Ciclo 8.');
     expect(await mover(store, '100000S61T', 9)).toBe(false);
     expect(await mover(store, '100000S61T', 8)).toBe(true);
     expect(await mover(store, '100000H01C', 8)).toBe(true);

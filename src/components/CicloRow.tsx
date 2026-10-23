@@ -20,7 +20,7 @@ import {
 import { useFinancialPlanning } from '../financial/FinancialPlanningContext';
 import { avisosCargaFila, resumenCicloPasado } from '../presentation/selectors/plannerCardRules';
 import { useShallow } from 'zustand/react/shallow';
-import { esRegresoAlOrigen, jaladosFaltantes, periodoRecuperacion } from '../domain/rules/jaladoRules';
+import { esRegresoAlOrigen, gruposPorVentana, jaladosFaltantesEn } from '../domain/rules/jaladoRules';
 
 interface Props {
   numCiclo: number;
@@ -42,10 +42,13 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
   const cicloActual = useAcademicStore((state) => state.cicloActual);
   const eliminarCiclo = useAcademicStore((state) => state.eliminarCiclo);
   const agregarJaladosARecuperacion = useAcademicStore((state) => state.agregarJaladosARecuperacion);
-  // Regla UTP: en la fila del periodo de recuperación se avisa qué jalados faltan.
-  const jaladosPendientes = useAcademicStore(useShallow((state) =>
-    periodoRecuperacion(state.cursos, state)?.id === `${tipoPeriodo === 'VERANO' ? 'verano' : 'ciclo'}-${numCiclo}`
-      ? jaladosFaltantes(state.cursos, state).map((curso) => curso.nombre) : []));
+  // Regla UTP: en cada fila de la ventana de recuperación se avisa qué jalados faltan.
+  // Pares [nombres, ventana] aplanados para que useShallow compare cadenas.
+  const jaladosPendientes = useAcademicStore(useShallow((state) => {
+    const fila = crearPeriodoAcademico(tipoPeriodo, numCiclo);
+    return gruposPorVentana(jaladosFaltantesEn(fila, state.cursos, state), state.cursos, state)
+      .flatMap(({ nombres, ventana }) => [nombres, ventana]);
+  }));
   // Un jalado en movimiento (modo táctil) puede volver a su ciclo original aunque esté bloqueado.
   const jaladoVuelveAqui = useAcademicStore((state) => {
     const enMovimiento = state.cursos.find((curso) => curso.codigo === state.cursoAMover);
@@ -180,11 +183,12 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       >
         {jaladosPendientes.length > 0 && (
           <div className="jalado-recovery-banner" role="alert">
-            <span><AlertTriangle size={13} /> Debes llevar primero: <b>{jaladosPendientes.join(', ')}</b></span>
+            <span><AlertTriangle size={13} /> {jaladosPendientes.map((texto, indice) => indice % 2 === 0
+              ? <span key={indice}>Debes llevar primero <b>{texto}</b> {jaladosPendientes[indice + 1]}. </span> : null)}</span>
             <button type="button" disabled={agregandoJalados} onClick={() => {
               setAgregandoJalados(true);
-              void agregarJaladosARecuperacion().finally(() => setAgregandoJalados(false));
-            }}>Agregar jalados a este ciclo</button>
+              void agregarJaladosARecuperacion(periodo).finally(() => setAgregandoJalados(false));
+            }}>Agregar jalados a este {esVerano ? 'verano' : 'ciclo'}</button>
           </div>
         )}
         {cursoAMover && (!esPeriodoBloqueado || jaladoVuelveAqui) && (

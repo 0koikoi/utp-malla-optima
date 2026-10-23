@@ -1,5 +1,5 @@
 import { obtenerPeriodoCurso } from '../rules/academicPeriodRules';
-import { calcularHorasEfectivas, LIMITE_HORAS_PLANIFICACION } from '../rules/planningRules';
+import { calcularHorasEfectivas, LIMITE_HORAS_PLANIFICACION, validarLimiteCreditosVerano } from '../rules/planningRules';
 import { horasValidas } from './planning/unplannedReasons';
 import type { ResultadoPlanificacionAutomatica } from './planning/types';
 
@@ -14,8 +14,11 @@ export const validarCargaPlanificacionAutomatica = (resultado: ResultadoPlanific
   for (const ciclo of resultado.ciclos) {
     const carga = resultado.cursos.filter((curso) => curso.ubicacion === 'periodo' &&
       (curso.estado === 'PENDIENTE' || curso.estado === 'EN_CURSO') && obtenerPeriodoCurso(curso).id === ciclo.periodo.id);
-    if (ciclo.periodo.tipo !== 'REGULAR' || carga.some((curso) => !horasValidas(curso)) ||
-        calcularHorasEfectivas(carga, 'REGULAR') > LIMITE_HORAS_PLANIFICACION) {
+    // El único verano de la propuesta es el de los jalados: se valida con el tope de créditos.
+    const excede = ciclo.periodo.tipo === 'VERANO'
+      ? !validarLimiteCreditosVerano(carga).valido
+      : calcularHorasEfectivas(carga, 'REGULAR') > LIMITE_HORAS_PLANIFICACION;
+    if (carga.some((curso) => !horasValidas(curso)) || excede) {
       throw new Error(`La propuesta supera las ${LIMITE_HORAS_PLANIFICACION} horas o contiene una carga inválida en ${ciclo.periodo.etiqueta}. Genera una propuesta nueva.`);
     }
   }

@@ -48,7 +48,7 @@ describe('Jalado adelantado (ciclo de origen mayor que el actual)', () => {
     expect(cotizados(store)).not.toContain(I60N);
     expect(await store.getState().moverCursoAPeriodo('100000S71T', crearPeriodoRegular(6))).toBe(false);
     expect(store.getState().notificacionMovimiento?.mensaje)
-      .toBe('Primero agrega tus cursos jalados al Ciclo 6: ANÁLISIS Y DISEÑO DE SISTEMAS DE INFORMACIÓN.');
+      .toBe('Debes llevar primero ANÁLISIS Y DISEÑO DE SISTEMAS DE INFORMACIÓN en el Ciclo 6.');
   });
 
   it('se cotiza al planificarlo en ciclo-6 y puede volver al banco', async () => {

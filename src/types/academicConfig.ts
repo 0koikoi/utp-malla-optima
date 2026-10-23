@@ -11,6 +11,6 @@ export interface AcademicConfig {
   verano?: {
     multiplicadorHorasTarifarias: number;
   };
-  /** Si es true, el verano del ciclo actual también es periodo de recuperación de jalados. */
+  /** Si es true, el verano que sigue al ciclo del jalado (cuando existe) forma parte de su ventana. */
   jaladoPermiteVerano?: boolean;
 }

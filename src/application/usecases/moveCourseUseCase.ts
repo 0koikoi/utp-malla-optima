@@ -49,10 +49,10 @@ export function moveCourseUseCase(
     ? { ...item, ciclo: destino.cicloReferencia, tipoPeriodo: destino.tipo, ubicacion: 'periodo' as const }
     : item);
 
-  // Regla UTP: un jalado solo va a su periodo de recuperación o vuelve a su ciclo original.
+  // Regla UTP: un jalado solo va a su ventana de recuperación o vuelve a su ciclo original.
   if (!destinoJaladoPermitido(curso, periodo, cursos, contexto)) {
     return { ok: false as const, reason: 'JALADO_DESTINO' as MoveCourseFailureReason,
-      mensaje: mensajeJaladoObligatorio(cursos, contexto) };
+      mensaje: mensajeJaladoObligatorio(curso, cursos, contexto) };
   }
   if (esRegresoAlOrigen(curso, periodo, cursos, contexto)) {
     return { ok: true as const, warning: null, surcharge: null, cursos: moverA(periodo) };
