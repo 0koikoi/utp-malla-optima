@@ -894,6 +894,9 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI67",
@@ -908,30 +911,45 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
           "periodoId": "ciclo-8",
         },
       ],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI68",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI66",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000I45N",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI69",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000S06I",
@@ -941,18 +959,30 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S72T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S73T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000H01C",
@@ -961,6 +991,10 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000TD09",
@@ -969,6 +1003,10 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000I62N",
@@ -978,12 +1016,20 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S71T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
   ],
 }
@@ -1028,6 +1074,10 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con fo
       "100000S09I",
     ],
     "planificadosInvalidos": [],
+    "ventanaSiJala": [
+      "verano-8",
+      "ciclo-9",
+    ],
   },
 }
 `;
@@ -1915,6 +1965,9 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI67",
@@ -1928,6 +1981,9 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
           "codigo": "100000S73T",
           "periodoId": "ciclo-8",
         },
+      ],
+      "ventanaSiJala": [
+        "ciclo-8",
       ],
     },
     {
@@ -1944,30 +2000,45 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
           "periodoId": "ciclo-8",
         },
       ],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI68",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI66",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000I45N",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000SI69",
       "cursosBloqueados": [],
       "origen": "EN_CURSO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "ciclo-8",
+      ],
     },
     {
       "codigo": "100000S06I",
@@ -1977,18 +2048,30 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S72T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S73T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000H01C",
@@ -1997,6 +2080,10 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000TD09",
@@ -2005,6 +2092,10 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000I62N",
@@ -2014,12 +2105,20 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       ],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
     {
       "codigo": "100000S71T",
       "cursosBloqueados": [],
       "origen": "PROXIMO_PERIODO",
       "planificadosInvalidos": [],
+      "ventanaSiJala": [
+        "verano-8",
+        "ciclo-9",
+      ],
     },
   ],
 }

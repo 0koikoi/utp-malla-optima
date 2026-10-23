@@ -227,6 +227,9 @@ describe('proxy - modo mock', () => {
     const mensajes = [{ rol: 'user' as const, texto: '¿Qué pasa si lo jalo?' }];
     const datos = await (await crearMock().POST(post(peticion({ modo: 'chat', mensajes, foco: { tipo: 'curso', id: '100000I62N' } })))).json();
     expect(datos.texto).toContain('INTELIGENCIA DE NEGOCIOS (100000I62N)');
+    // Marzo, ciclo-8 (par): la ventana del contexto es [Verano 8, Ciclo 9] y el mock la nombra.
+    expect(contexto.foco).toMatchObject({ whatIf: { ventanaSiJala: ['verano-8', 'ciclo-9'] } });
+    expect(datos.texto).toContain('Tendrías que llevarlo en el Verano 8 o en el Ciclo 9');
     expect(datos.cursos[0]).toBe('100000I62N');
   });
 

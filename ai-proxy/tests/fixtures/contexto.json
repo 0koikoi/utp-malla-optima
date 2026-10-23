@@ -787,6 +787,9 @@
    "codigo": "100000ST61",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
@@ -800,6 +803,9 @@
      "codigo": "100000S73T",
      "periodoId": "ciclo-8"
     }
+   ],
+   "ventanaSiJala": [
+    "ciclo-8"
    ],
    "origen": "EN_CURSO"
   },
@@ -816,30 +822,45 @@
      "periodoId": "ciclo-8"
     }
    ],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
    "codigo": "100000SI68",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
    "codigo": "100000SI66",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
    "codigo": "100000I45N",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
    "codigo": "100000SI69",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "ciclo-8"
+   ],
    "origen": "EN_CURSO"
   },
   {
@@ -849,18 +870,30 @@
     "100000S09I"
    ],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
    "codigo": "100000S72T",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
    "codigo": "100000S73T",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
@@ -869,6 +902,10 @@
     "100000N11I"
    ],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
@@ -877,6 +914,10 @@
     "10000096SI"
    ],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
@@ -886,12 +927,20 @@
     "100000S09I"
    ],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   },
   {
    "codigo": "100000S71T",
    "cursosBloqueados": [],
    "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ],
    "origen": "PROXIMO_PERIODO"
   }
  ],
@@ -1021,7 +1070,11 @@
     "100000S02I",
     "100000S09I"
    ],
-   "planificadosInvalidos": []
+   "planificadosInvalidos": [],
+   "ventanaSiJala": [
+    "verano-8",
+    "ciclo-9"
+   ]
   },
   "ventanaRecuperacion": [],
   "area": null

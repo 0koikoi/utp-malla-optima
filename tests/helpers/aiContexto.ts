@@ -36,7 +36,7 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
     nivel: 'ok', puntos: 0, horas: 4, topeEscala: 22, limiteRecomendado: 24,
     cursos4HorasOMas: 1, laboratorios: 0, cadenasLargas: 0, motivos: [],
   },
-  whatIf: [{ codigo: '100000S61T', origen: 'EN_CURSO', cursosBloqueados: ['100000I62N'], planificadosInvalidos: [] }],
+  whatIf: [{ codigo: '100000S61T', origen: 'EN_CURSO', cursosBloqueados: ['100000I62N'], planificadosInvalidos: [], ventanaSiJala: ['ciclo-8'] }],
   ruta: { propuesta: [{ periodoId: 'ciclo-8', cursos: ['100000I62N'] }], ciclosRestantes: 1, cicloFinal: 8, noPlanificados: [] },
   electivos: [{
     codigo: '100000I64M', nombre: 'CALIDAD DE SOFTWARE', creditos: 3, horas: 3,

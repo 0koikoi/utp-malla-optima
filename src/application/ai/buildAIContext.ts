@@ -5,7 +5,7 @@ import electivosAreas from '../../data/universidades/pe-utp/electivosAreas.json'
 import { ACADEMIC_LIMITS } from '../../config/academicLimits';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
-import { esCursoJalado, estaEnVentana, nombrePeriodoCorto, ventanaJalado } from '../../domain/rules/jaladoRules';
+import { esCursoJalado, estaEnVentana, nombrePeriodoCorto, ventanaDesdeCiclo, ventanaJalado } from '../../domain/rules/jaladoRules';
 import { calcularHorasEfectivas, MINIMO_CREDITOS_ELECTIVOS, obtenerHorasSinRecargo } from '../../domain/rules/planningRules';
 import { calcularPrioridadesPendientes } from '../../domain/services/recommendationService';
 import { simularJalado } from '../../domain/services/whatIfService';
@@ -132,13 +132,30 @@ const detalleCursos = (cursos: Curso[], prioridades: Map<string, { impacto: numb
     jalado: Boolean(curso.jalado),
   }));
 
-const whatIfDe = (codigo: string, cursos: Curso[]): Omit<AIWhatIf, 'origen'> => {
-  const simulacion = simularJalado(codigo, cursos);
+type PeriodoId = AIWhatIf['ventanaSiJala'][number];
+
+/**
+ * Ventana hipotética si se jalara el curso, con la regla de dominio
+ * (ventanaDesdeCiclo: mes de ingreso y jaladoPermiteVerano) según el periodo
+ * donde está o estará: jalado en el Ciclo N → [Verano N si existe, Ciclo N+1];
+ * jalado en el Verano N → [Ciclo N+1]. En el banco no hay periodo: vacía.
+ */
+export const ventanaSiJala = (curso: Curso, estado: Pick<EstadoContextoIA, 'periodoIngreso'>): PeriodoId[] => {
+  if (curso.ubicacion !== 'periodo') return [];
+  const periodo = obtenerPeriodoCurso(curso);
+  const contexto = { periodoIngreso: estado.periodoIngreso, ...(periodo.tipo === 'VERANO' ? { jaladoPermiteVerano: false } : {}) };
+  return ventanaDesdeCiclo(periodo.cicloReferencia, contexto).map((item) => item.id);
+};
+
+const whatIfDe = (curso: Curso, estado: EstadoContextoIA): Omit<AIWhatIf, 'origen'> => {
+  const { codigo } = curso;
+  const simulacion = simularJalado(codigo, estado.cursos);
   return {
     codigo,
     cursosBloqueados: simulacion.cursosBloqueados.map((curso) => curso.codigo),
     planificadosInvalidos: simulacion.planificadosInvalidos.map(({ codigo: afectado, periodoId }) =>
-      ({ codigo: afectado, periodoId: periodoId as AIWhatIf['planificadosInvalidos'][number]['periodoId'] })),
+      ({ codigo: afectado, periodoId: periodoId as PeriodoId })),
+    ventanaSiJala: ventanaSiJala(curso, estado),
   };
 };
 
@@ -229,7 +246,7 @@ const construirFoco = (
       return requisito ? [{ codigo, nombre: requisito.nombre, estado: requisito.estado }] : [];
     }),
     habilitaA: cursos.filter((item) => item.prerrequisitos.includes(curso.codigo)).map((item) => item.codigo),
-    whatIf: whatIfDe(curso.codigo, cursos),
+    whatIf: whatIfDe(curso, estado),
     ventanaRecuperacion: esCursoJalado(curso) ? ventanaJalado(curso, cursos, contextoJalados).map((periodo) => periodo.id) : [],
     area: AREAS[curso.codigo]?.area ?? null,
   };
@@ -324,8 +341,8 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     } : null,
     carga: calcularCarga(cursosProximos, siguiente?.periodo.tipo ?? 'REGULAR', topeEscala, prioridades),
     whatIf: [
-      ...conEstado('EN_CURSO').map((curso) => ({ ...whatIfDe(curso.codigo, cursos), origen: 'EN_CURSO' as const })),
-      ...cursosProximos.map((curso) => ({ ...whatIfDe(curso.codigo, cursos), origen: 'PROXIMO_PERIODO' as const })),
+      ...conEstado('EN_CURSO').map((curso) => ({ ...whatIfDe(curso, estado), origen: 'EN_CURSO' as const })),
+      ...cursosProximos.map((curso) => ({ ...whatIfDe(curso, estado), origen: 'PROXIMO_PERIODO' as const })),
     ],
     ruta,
     electivos: cursos.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE').map((curso) => ({

@@ -17,6 +17,10 @@ const horas = (valor: number) => `${valor} h`;
 const periodo = (id: string) => id.replace(/^ciclo-/, 'Ciclo ').replace(/^verano-/, 'Verano ');
 const listar = (items: string[]) => items.length > 1 ? `${items.slice(0, -1).join(', ')} y ${items.at(-1)}` : items.join('');
 
+/** "en el Ciclo 9" o "en el Verano 8 o en el Ciclo 9"; sin ventana conocida, "en su ventana de recuperación". */
+const enVentana = (ventana: string[]) =>
+  ventana.length ? `en el ${ventana.map(periodo).join(' o en el ')}` : 'en su ventana de recuperación';
+
 const nombreDe = (contexto: AIContext, codigo: string) =>
   contexto.catalogo.find((curso) => curso.codigo === codigo)?.nombre ?? codigo;
 const conCodigo = (contexto: AIContext, codigo: string) => `${nombreDe(contexto, codigo)} (${codigo})`;
@@ -108,7 +112,7 @@ const seccionWhatIf = (contexto: AIContext): AISeccion | null => {
     nivel: total >= 3 ? 'atencion' : 'ok',
     titulo: 'Curso que más te conviene asegurar',
     detalle: total
-      ? `Si jalas ${conCodigo(contexto, critico.codigo)}, se bloquean ${total} cursos, entre ellos ${listar(critico.cursosBloqueados.slice(0, 3).map((codigo) => nombreDe(contexto, codigo)))}.`
+      ? `Si jalas ${conCodigo(contexto, critico.codigo)}, se bloquean ${total} cursos, entre ellos ${listar(critico.cursosBloqueados.slice(0, 3).map((codigo) => nombreDe(contexto, codigo)))}. Tendrías que llevarlo ${enVentana(critico.ventanaSiJala)}.`
       : 'Ningún curso actual bloquea a otros si lo jalas.',
     acciones: total ? [`Dale prioridad a ${nombreDe(contexto, critico.codigo)}.`] : [],
     cursos: [critico.codigo, ...critico.cursosBloqueados.slice(0, 3)],
@@ -163,8 +167,8 @@ const respuestaCurso = (contexto: AIContext, tema: Tema): AIChatResponse | null 
     const bloqueados = foco.whatIf.cursosBloqueados;
     return {
       texto: bloqueados.length
-        ? `Si jalas ${nombre}, se bloquean ${bloqueados.length} cursos: ${listar(bloqueados.map((codigo) => nombreDe(contexto, codigo)))}.\nTendrías que llevarlo en su ventana de recuperación antes de seguir.`
-        : `Si jalas ${nombre}, no se bloquea ningún otro curso, pero igual debes llevarlo en su ventana de recuperación.`,
+        ? `Si jalas ${nombre}, se bloquean ${bloqueados.length} cursos: ${listar(bloqueados.map((codigo) => nombreDe(contexto, codigo)))}.\nTendrías que llevarlo ${enVentana(foco.whatIf.ventanaSiJala)} antes de seguir.`
+        : `Si jalas ${nombre}, no se bloquea ningún otro curso, pero igual tendrías que llevarlo ${enVentana(foco.whatIf.ventanaSiJala)}.`,
       cursos: [foco.codigo, ...bloqueados], preguntasSugeridas: preguntas.filter((_, indice) => indice !== 0),
     };
   }

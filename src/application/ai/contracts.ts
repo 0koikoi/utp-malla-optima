@@ -92,6 +92,8 @@ const WhatIfSchema = z.object({
   origen: z.enum(['EN_CURSO', 'PROXIMO_PERIODO']),
   cursosBloqueados: z.array(z.string()),
   planificadosInvalidos: z.array(z.object({ codigo: z.string(), periodoId: PeriodoIdSchema })),
+  /** Ventana de recuperación si se jalara: periodos donde tendría que llevarse (vacía si no está ubicado). */
+  ventanaSiJala: z.array(PeriodoIdSchema),
 });
 
 const FocoCursoSchema = z.object({
