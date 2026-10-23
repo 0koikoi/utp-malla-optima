@@ -61,7 +61,7 @@ describe('gasto - interruptor AI_PAUSADO', () => {
       expect(await respuesta.json()).toEqual({ error: 'PAUSADO' });
       expect(respuesta.headers.get('access-control-allow-origin')).toBe(ORIGEN);
       expect(fetch).not.toHaveBeenCalled();
-      expect(registros).toMatchObject([{ resultado: 'PAUSADO' }]);
+      expect(registros).toMatchObject([{ codigo: 'PAUSADO' }]);
     }
   });
 

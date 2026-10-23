@@ -162,11 +162,10 @@ describe('proxy - llamada a DeepSeek', () => {
     expect(await respuesta.json()).toEqual({ error: 'PROVEEDOR_CAIDO' });
   });
 
-  it('registra solo resultado, modo y duración; nunca el contexto ni los mensajes', async () => {
+  it('registra una sola línea por petición; nunca el contexto ni los mensajes (detalle en consumo.test.ts)', async () => {
     const { POST, registros } = crear({ fetch: vi.fn(async () => respuestaDeepSeek(analisisValido)) });
     await POST(post(peticion({ mensajes: [{ rol: 'user', texto: 'mi secreto' }] })));
     expect(registros).toHaveLength(1);
-    expect(Object.keys(registros[0] as object).sort()).toEqual(['mock', 'modo', 'ms', 'resultado']);
     expect(JSON.stringify(registros)).not.toContain('secreto');
     expect(JSON.stringify(registros)).not.toContain('100000');
   });

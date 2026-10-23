@@ -1,3 +1,4 @@
+import { leerUso, type UsoTokens } from './consumo.js';
 import { esquemaRespuesta, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta } from './contracts.js';
 import { SYSTEM_PROMPT } from './systemPrompt.js';
 
@@ -46,15 +47,20 @@ const errorPorStatus = (status: number): ErrorProveedor => {
   return new ErrorProveedor('PROVEEDOR_CAIDO', 502);
 };
 
-interface OpcionesLlamada {
+export interface OpcionesLlamada {
   apiKey: string;
   modelo: string;
   fetch: typeof fetch;
   signal: AbortSignal;
+  /** Se llama con el `usage` de cada respuesta 200 (también la de un reintento). */
+  alUsar?: (uso: UsoTokens) => void;
+  /** Se llama antes de cada petición HTTP a DeepSeek. */
+  alIntentar?: () => void;
 }
 
 const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<AIRespuesta | null> => {
   let respuesta: Response;
+  opciones.alIntentar?.();
   try {
     respuesta = await opciones.fetch(DEEPSEEK_URL, {
       method: 'POST',
@@ -67,7 +73,8 @@ const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise
   }
   if (!respuesta.ok) throw errorPorStatus(respuesta.status);
   try {
-    const datos = await respuesta.json() as { choices?: { message?: { content?: string } }[] };
+    const datos = await respuesta.json() as { choices?: { message?: { content?: string } }[]; usage?: unknown };
+    opciones.alUsar?.(leerUso(datos.usage));
     const contenido = datos.choices?.[0]?.message?.content ?? '';
     return parsearRespuesta(peticion.modo, JSON.parse(contenido), peticion.contexto);
   } catch {

@@ -31,7 +31,13 @@ GitHub Pages ──POST /api/asistente──▶ Vercel (este proyecto) ──▶
     la API REST). Sin ellas, cuenta en memoria por instancia (best effort). Si Upstash falla, sigue en memoria.
   - Al superar un límite: `LIMITE` (429) con `mensaje` y `reintentarEn`; el frontend muestra la hora aproximada.
 - **Previews:** si `VERCEL_ENV` no es `production`, el proxy usa siempre el mock, aunque exista la clave.
-- Los logs solo tienen `resultado`, `modo`, `ms` y `mock`: nunca el contexto ni los mensajes.
+- Logs: una línea JSON por petición con `modo`, `codigo`, `duracion_ms` y `mock`. En cada llamada real
+  agrega `modelo`, `intentos`, `prompt_tokens`, `prompt_cache_hit_tokens`, `prompt_cache_miss_tokens`,
+  `completion_tokens`, `tarifa` y `costo_usd` estimado (precios en `src/consumo.ts`, consultados el
+  2026-10-23: US$ 0.15/M de entrada sin caché, US$ 0.003/M con caché y US$ 0.60/M de salida; el doble en
+  horario pico). Nunca el contexto, los mensajes, la IP ni la clave.
+- El horario pico no está fijado en el código **(por verificar)**: se configura con
+  `DEEPSEEK_PICO_UTC=HH:MM-HH:MM`; sin ella, el costo se estima con la tarifa normal.
 
 `src/contracts.ts` y `src/mockRespuestas.ts` son copias exactas de `src/application/ai/` del frontend;
 un test del repo falla si difieren. Edita el original y vuelve a copiarlo.
@@ -44,6 +50,7 @@ un test del repo falla si difieren. Edita el original y vuelve a copiarlo.
 | `DEEPSEEK_MODEL` | `deepseek-flash` | Opcional; por defecto `deepseek-flash`. Revisa el nombre vigente en <https://api-docs.deepseek.com>. |
 | `ALLOWED_ORIGINS` | `https://<usuario>.github.io,http://localhost:5173,http://127.0.0.1:5173` | Orígenes separados por coma, sin `/` final ni ruta. |
 | `AI_MOCK` | `true` | Fuerza el modo mock. Fuera de producción (`VERCEL_ENV` distinto de `production`) el mock va siempre. |
+| `DEEPSEEK_PICO_UTC` | `HH:MM-HH:MM` | Opcional. Franja (UTC) de precio doble, solo para el costo estimado del log. |
 | `AI_PAUSADO` | `true` | Interruptor: responde `PAUSADO` sin llamar a DeepSeek. |
 | `AI_LIMITE_IP_HORA` | `15` | Consultas por IP por hora. |
 | `AI_LIMITE_DIARIO` | `200` | Consultas por día (hora de Lima), en total. |

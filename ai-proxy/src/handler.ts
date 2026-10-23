@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { costoEstimadoUsd, esHorarioPico, sumarUso, USO_VACIO, type UsoTokens } from './consumo.js';
 import { AIRequestSchema, MENSAJE_LIMITE, parsearRespuesta, type AIErrorCodigo, type AIErrorResponse } from './contracts.js';
 import { ErrorProveedor, llamarDeepSeek, MODELO_POR_DEFECTO } from './deepseek.js';
 import {
@@ -24,8 +25,27 @@ export interface ConfigProxy {
   ahora: () => number;
   esperaMockMs: number;
   timeoutMs: number;
+  /** DEEPSEEK_PICO_UTC="HH:MM-HH:MM": horario pico (precio doble) para el costo estimado. */
+  horarioPicoUtc: string | undefined;
   fetch: typeof fetch;
-  registrar: (entrada: { resultado: 'ok' | AIErrorCodigo; modo: string; ms: number; mock: boolean }) => void;
+  registrar: (entrada: RegistroAsistente) => void;
+}
+
+/** Una línea por petición. Nunca lleva el contexto, los mensajes, la IP ni la clave. */
+export interface RegistroAsistente {
+  evento: 'asistente';
+  modo: string;
+  codigo: 'ok' | AIErrorCodigo;
+  duracion_ms: number;
+  mock: boolean;
+}
+
+/** Llamadas reales a DeepSeek: además, el consumo y el costo estimado. */
+export interface RegistroConsumo extends RegistroAsistente, UsoTokens {
+  modelo: string;
+  intentos: number;
+  tarifa: 'normal' | 'pico';
+  costo_usd: number;
 }
 
 type Entorno = Record<string, string | undefined>;
@@ -47,11 +67,11 @@ export const leerConfig = (env: Entorno, base: Partial<ConfigProxy> = {}): Confi
     limites: leerLimites(env, SAL_DE_INSTANCIA),
     limitador: crearLimitadorMemoria(),
     ahora: Date.now,
+    horarioPicoUtc: env.DEEPSEEK_PICO_UTC,
     esperaMockMs: ESPERA_MOCK_MS,
     timeoutMs: TIMEOUT_MS,
     fetch: globalThis.fetch.bind(globalThis),
-    // Solo código de resultado y duración: nunca el contexto ni los mensajes.
-    registrar: (entrada) => console.info(JSON.stringify({ evento: 'asistente', ...entrada })),
+    registrar: (entrada) => console.log(JSON.stringify(entrada)),
     ...base,
   };
 };
@@ -86,8 +106,19 @@ export const crearHandlers = (config: ConfigProxy) => {
     const inicio = Date.now();
     const origen = origenPermitido(request);
     let modo = 'desconocido';
-    const terminar = (resultado: 'ok' | AIErrorCodigo, cuerpo: unknown, status: number) => {
-      config.registrar({ resultado, modo, ms: Date.now() - inicio, mock: config.mock });
+    let consumo: { uso: UsoTokens; intentos: number } | null = null;
+    const terminar = (codigo: 'ok' | AIErrorCodigo, cuerpo: unknown, status: number) => {
+      const base: RegistroAsistente = { evento: 'asistente', modo, codigo, duracion_ms: Date.now() - inicio, mock: config.mock };
+      if (!consumo) {
+        config.registrar(base);
+      } else {
+        const pico = esHorarioPico(new Date(config.ahora()), config.horarioPicoUtc);
+        const registro: RegistroConsumo = {
+          ...base, modelo: config.modelo, intentos: consumo.intentos, ...consumo.uso,
+          tarifa: pico ? 'pico' : 'normal', costo_usd: costoEstimadoUsd(consumo.uso, pico),
+        };
+        config.registrar(registro);
+      }
       return json(cuerpo, status, origen);
     };
     const fallar = (codigo: AIErrorCodigo, status: number, extra: Omit<AIErrorResponse, 'error'> = {}) =>
@@ -123,9 +154,13 @@ export const crearHandlers = (config: ConfigProxy) => {
 
     const controlador = new AbortController();
     const temporizador = setTimeout(() => controlador.abort(), config.timeoutMs);
+    const acumulado = { uso: USO_VACIO, intentos: 0 };
+    consumo = acumulado;
     try {
       const respuesta = await llamarDeepSeek(peticion.data, {
         apiKey: config.apiKey, modelo: config.modelo, fetch: config.fetch, signal: controlador.signal,
+        alUsar: (uso) => { acumulado.uso = sumarUso(acumulado.uso, uso); },
+        alIntentar: () => { acumulado.intentos += 1; },
       });
       return terminar('ok', respuesta, 200);
     } catch (error) {
