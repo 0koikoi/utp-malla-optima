@@ -46,9 +46,6 @@ export const calcularPrioridadesPendientes = (cursos: Curso[]): Map<string, Prio
   }));
 };
 
-export const calcularImpactoFuturo = (codigo: string, cursos: Curso[]): number =>
-  calcularPrioridadesPendientes(cursos).get(codigo)?.impacto ?? 0;
-
 export const calcularRutaCritica = (cursos: Curso[]): CursoCritico[] => {
   const obligatorios = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.tipo !== 'ELECTIVO');
   const prioridades = calcularPrioridadesPendientes(obligatorios);
@@ -61,6 +58,3 @@ export const calcularRutaCritica = (cursos: Curso[]): CursoCritico[] => {
     }))
     .sort((a, b) => b.desbloquea - a.desbloquea || a.codigo.localeCompare(b.codigo));
 };
-
-export const obtenerCursosPrioritarios = (cursos: Curso[], limite = 10): CursoCritico[] =>
-  calcularRutaCritica(cursos).slice(0, limite);

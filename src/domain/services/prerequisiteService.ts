@@ -92,14 +92,6 @@ export const validarPrerequisitosParaPeriodo = (
   return { valido: faltantes.length === 0, faltantes };
 };
 
-/** Compatibilidad con llamadas antiguas que solo conocen ciclos regulares. */
-export const validarPrerequisitosParaCiclo = (
-  curso: Curso,
-  todosLosCursos: Curso[],
-  cicloDestino: number
-): { valido: boolean; faltantes: CursoReferencia[] } =>
-  validarPrerequisitosParaPeriodo(curso, todosLosCursos, crearPeriodoRegular(cicloDestino));
-
 /**
  * Un pendiente planificado es inválido si sus prerrequisitos no se cumplen para
  * su propio periodo (p. ej. tras marcar un prerrequisito como jalado). No se
@@ -150,39 +142,4 @@ export const construirGrafoAcademico = (cursos: Curso[]): Map<string, string[]> 
   });
 
   return grafo;
-};
-
-/** Ordenamiento topológico básico para conocer el orden académico posible. */
-export const obtenerOrdenTopologico = (cursos: Curso[]): string[] => {
-  const grafo = construirGrafoAcademico(cursos);
-  const grados = new Map<string, number>();
-
-  cursos.forEach((curso) => grados.set(curso.codigo, 0));
-
-  grafo.forEach((dependientes) => {
-    dependientes.forEach((dependiente) => {
-      grados.set(dependiente, (grados.get(dependiente) ?? 0) + 1);
-    });
-  });
-
-  const cola = [...grados.entries()]
-    .filter(([, grado]) => grado === 0)
-    .map(([codigo]) => codigo);
-
-  const resultado: string[] = [];
-
-  while (cola.length) {
-    const actual = cola.shift()!;
-    resultado.push(actual);
-
-    (grafo.get(actual) ?? []).forEach((siguiente) => {
-      grados.set(siguiente, grados.get(siguiente)! - 1);
-
-      if (grados.get(siguiente) === 0) {
-        cola.push(siguiente);
-      }
-    });
-  }
-
-  return resultado;
 };
