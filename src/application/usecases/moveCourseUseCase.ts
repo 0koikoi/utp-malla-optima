@@ -60,7 +60,7 @@ export function moveCourseUseCase(
     };
   }
 
-  const validation = validarPrerequisitosParaPeriodo(curso, cursos, periodo);
+  const validation = validarPrerequisitosParaPeriodo(curso, cursos, periodo, contexto);
   if (!validation.valido) {
     return {
       ok: false as const,

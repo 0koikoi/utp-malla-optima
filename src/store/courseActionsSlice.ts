@@ -56,7 +56,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     }
     const cursosActualizados = ordenarCursos(resultado.cursos);
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
-    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo);
+    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
     try {
       await repos.courses.update(codigo, {
@@ -94,7 +94,7 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const cursosActualizados = ordenarCursos(state.cursos.map((item) => item.codigo === codigo
       ? { ...item, ciclo: item.cicloOrigen, tipoPeriodo: 'REGULAR' as const, ubicacion: 'banco' as const }
       : item));
-    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo);
+    const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     try {
       await repos.courses.update(codigo, {
         ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR', ubicacion: 'banco',

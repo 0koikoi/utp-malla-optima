@@ -19,7 +19,7 @@ interface Props {
 const CourseCardBase = ({ curso, compacto = false }: Props) => {
   const estaSeleccionado = useAcademicStore((state) =>
     state.cursosSeleccionadosParaMatricula.includes(curso.codigo));
-  const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos));
+  const desbloqueado = useAcademicStore((state) => isCursoDesbloqueado(curso, state.cursos, state));
   const requisitos = useAcademicStore(useShallow((state) => curso.prerrequisitos.map((codigo) =>
     etiquetaPrerrequisito(codigo, state.cursos))));
   const habilitaA = useAcademicStore(useShallow((state) => state.cursos
