@@ -20,7 +20,7 @@ export const createCourseImportSlice = (repos: AcademicRepositories): AcademicSl
         ...normalizado,
         ciclo: normalizado.cicloOrigen,
         tipoPeriodo: 'REGULAR' as const,
-        ubicacion: cursoBloqueado(normalizado) ? 'periodo' as const : 'banco' as const,
+        ubicacion: cursoBloqueado(normalizado) || normalizado.jalado ? 'periodo' as const : 'banco' as const,
       };
     }));
     const cursosNormalizados = state.cicloActual

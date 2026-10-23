@@ -17,6 +17,12 @@ type ColumnasUTP = {
   ciclo: number | null;
 };
 
+/**
+ * Textos del Excel que significan que el curso se jaló. Se comparan sin
+ * importar mayúsculas ni tildes. Un PENDIENTE normal no es jalado.
+ */
+export const ESTADOS_EXCEL_JALADO = ['DESAPROBADO'];
+
 const CICLO_MINIMO = 1;
 const CICLO_MAXIMO = MAXIMO_CICLOS;
 
@@ -178,9 +184,16 @@ const detectarColumnas = (fila: ExcelRow): ColumnasUTP | null => {
   };
 };
 
+const ESTADOS_JALADO_NORMALIZADOS = new Set(ESTADOS_EXCEL_JALADO.map(normalizarTexto));
+
+export const esEstadoJalado = (valor: ExcelCell): boolean =>
+  ESTADOS_JALADO_NORMALIZADOS.has(normalizarTexto(valor));
+
 const normalizarEstado = (valor: ExcelCell): EstadoCurso => {
   const estado = normalizarTexto(valor);
 
+  // Antes que 'APROB': "DESAPROBADO" contiene ese texto.
+  if (esEstadoJalado(valor)) return 'PENDIENTE';
   if (estado.includes('CONVALID')) return 'CONVALIDADO';
   if (estado.includes('APROB')) return 'APROBADO';
   if (estado.includes('EN CURSO') || estado.includes('EN PROCESO') || estado.includes('MATRIC')) return 'EN_CURSO';
@@ -317,6 +330,7 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
     }
 
     const estado = normalizarEstado(fila[columnas.estado]);
+    const jalado = esEstadoJalado(fila[columnas.estado]);
 
     cursos.push({
       codigo: codigoRaw,
@@ -324,8 +338,9 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       ciclo: cicloCurso,
       cicloOrigen: cicloCurso,
       tipoPeriodo: 'REGULAR',
+      // Un jalado queda en su ciclo de origen, desbloqueado para moverse.
       ubicacion:
-        estado === 'APROBADO' || estado === 'CONVALIDADO' || estado === 'EN_CURSO'
+        jalado || estado === 'APROBADO' || estado === 'CONVALIDADO' || estado === 'EN_CURSO'
           ? 'periodo'
           : 'banco',
       horasSemanales: normalizarNumero(fila[columnas.horas]),
@@ -334,6 +349,7 @@ export const parseUTPExcel = async (file: File): Promise<Curso[]> => {
       prerrequisitos: normalizarPrerrequisitos(fila[columnas.prerrequisitos]),
       esLaboratorio: /LABORATORIO|TALLER|CURSO INTEGRADOR/i.test(nombreRaw),
       estado,
+      ...(jalado ? { jalado: true } : {}),
     });
   }
 
