@@ -229,6 +229,11 @@
   color: #86efac !important;
 }
 
+.period-excess-line {
+  color: #fcd34d !important;
+  font-size: 0.74rem !important;
+}
+
 .period-total-line {
   margin-top: 4px !important;
   font-size: 0.92rem !important;
