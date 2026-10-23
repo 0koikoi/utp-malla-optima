@@ -1,0 +1,679 @@
+/* Barra de Navegación (Controles Glassmorphic) */
+#app-nav {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 1050;
+  height: var(--nav-h);
+  background: var(--bg-nav);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.inline-icon {
+  vertical-align: -1px;
+  margin-right: 4px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Divisor vertical */
+.nav-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255,255,255,0.09);
+  flex-shrink: 0;
+  margin: 0 6px;
+}
+
+/* Grupo de control */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.nav-group-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--t-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  user-select: none;
+}
+.nav-group-body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Botón de subida de archivo (Upload) vívido y de alto contraste ─ */
+.upload-wrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+.upload-wrap input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+.upload-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--upload-bg);
+  border: 2px dashed var(--upload-border);
+  border-radius: var(--r);
+  color: var(--upload-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--tr);
+  pointer-events: none;   /* el input real captura clicks */
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+}
+.upload-wrap:hover .upload-face {
+  background: var(--upload-hover-bg);
+  border-color: var(--upload-text);
+  color: var(--blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+}
+.upload-wrap.loaded .upload-face {
+  background: var(--upload-loaded-bg);
+  border-style: solid;
+  border-color: var(--upload-loaded-border);
+  color: var(--upload-loaded-text);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+}
+.upload-face .upload-icon {
+  color: inherit;
+}
+#upload-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Facultad/pago */
+/* Botón principal del dropdown — alto contraste y estilo vívido */
+.nav-dropdown .dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 176px;           /* FIJO — no cambia con el contenido */
+  padding: 6px 11px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--r);
+  color: var(--t-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all var(--tr);
+}
+.nav-dropdown .dropdown-toggle:hover,
+.nav-dropdown .dropdown-toggle:focus,
+.nav-dropdown.show .dropdown-toggle {
+  background: var(--bg-surface-subtle);
+  border-color: var(--blue-primary);
+  color: var(--t-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.nav-dropdown .dropdown-toggle::after {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--t-dim);
+}
+.nav-dropdown .dd-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 0.76rem;
+  color: var(--blue-primary);
+}
+.nav-dropdown .dd-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--t-primary);
+}
+.nav-dropdown .dd-chevron {
+  color: var(--t-dim);
+}
+
+/* Menú dropdown */
+.nav-dropdown .dropdown-menu {
+  background: var(--menu-bg);
+  border: 1.5px solid var(--menu-border);
+  border-radius: var(--r);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
+  padding: 6px;
+  min-width: 260px;
+  margin-top: 4px !important;
+}
+.nav-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--t-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.nav-dropdown .dropdown-item .item-icon {
+  color: var(--blue-primary);
+}
+.nav-dropdown .dropdown-item .item-text {
+  color: var(--t-primary);
+  font-weight: 700;
+}
+.nav-dropdown .dropdown-item:hover {
+  background: var(--menu-hover-bg);
+  color: var(--menu-hover-text);
+}
+.nav-dropdown .dropdown-item:hover .item-icon,
+.nav-dropdown .dropdown-item:hover .item-text {
+  color: var(--menu-hover-text);
+}
+.nav-dropdown .dropdown-item.active {
+  background: var(--menu-active-bg);
+  color: var(--menu-active-text);
+  font-weight: 800;
+  border: 1px solid var(--purple-border);
+}
+.nav-dropdown .dropdown-item.active .item-icon,
+.nav-dropdown .dropdown-item.active .item-text {
+  color: var(--menu-active-text);
+}
+.nav-dropdown .dropdown-item .dd-badge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--chip-bg-default);
+  color: var(--t-secondary);
+  border: 1px solid var(--border-default);
+}
+.nav-dropdown .dropdown-item.active .dd-badge {
+  background: var(--blue-primary);
+  color: var(--t-white);
+  border-color: var(--blue-primary);
+}
+.nav-dropdown .dropdown-divider {
+  border-color: var(--border-subtle);
+  margin: 5px 0;
+}
+
+/* ── Inputs numéricos (ciclos) ──────────────────────────────────── */
+.ciclo-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ciclo-inputs .lbl {
+  font-size: 0.72rem;
+  color: var(--t-secondary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ciclo-num {
+  width: 46px;
+  padding: 6px 4px;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--r);
+  color: var(--t-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: inherit;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  transition: all var(--tr);
+}
+.ciclo-num::-webkit-inner-spin-button,
+.ciclo-num::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; }
+.ciclo-num:focus {
+  outline: none;
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.ciclo-inputs .sep {
+  color: var(--t-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* ── Toggle Verano ──────────────────────────────────────────────── */
+.verano-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.sw-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-default);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--tr);
+}
+.sw-track::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+  background: var(--bg-surface);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: transform var(--tr);
+}
+.switch input:checked + .sw-track { background: var(--amber-primary); }
+.switch input:checked + .sw-track::before { transform: translateX(16px); }
+
+.verano-tag {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--t-secondary);
+  transition: color var(--tr);
+  white-space: nowrap;
+  user-select: none;
+}
+.verano-tag.on { color: var(--amber-hover); }
+
+.verano-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.25s ease, opacity 0.2s ease;
+}
+.verano-qty-wrap.show {
+  max-width: 150px;
+  opacity: 1;
+}
+.verano-qty {
+  width: 44px;
+  padding: 5px;
+  text-align: center;
+  background: var(--amber-subtle);
+  border: 1.5px solid var(--amber-border);
+  border-radius: var(--r);
+  color: var(--amber-dark);
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: inherit;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.verano-qty::-webkit-inner-spin-button,
+.verano-qty::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; }
+.verano-qty:focus {
+  outline: none;
+  border-color: var(--amber-hover);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+.verano-mat {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--amber-hover);
+  white-space: nowrap;
+}
+
+/* ── Botones de acción ──────────────────────────────────────────── */
+.nav-actions-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0 9px;
+  border: 1.5px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--tr);
+  white-space: nowrap;
+}
+.nav-btn:hover {
+  background: var(--blue-subtle);
+  border-color: var(--blue-primary);
+  color: var(--blue-hover);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+.nav-btn.active {
+  background: var(--blue-primary);
+  color: var(--t-white);
+  border-color: var(--blue-primary);
+}
+
+/* Botón Estrategia y Asistente con estilo destacado */
+.nav-btn-strategy,
+.nav-btn-autoplanner {
+  background: linear-gradient(135deg, var(--indigo-primary) 0%, var(--indigo-light) 100%);
+  color: var(--t-white);
+  border-color: rgba(79, 70, 229, 0.5);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.nav-btn-strategy:hover,
+.nav-btn-autoplanner:hover {
+  background: linear-gradient(135deg, var(--indigo-hover) 0%, var(--indigo-primary) 100%);
+  border-color: var(--indigo-hover);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.5);
+  transform: translateY(-1px);
+}
+.btn-icon-sparkle {
+  color: var(--amber-bright);
+  filter: drop-shadow(0 0 3px rgba(253, 224, 71, 0.6));
+}
+
+.nav-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Menú flotante y vistazo rápido */
+.nav-sub-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 240px;
+  background: var(--menu-bg);
+  border: 1.5px solid var(--menu-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
+  padding: 6px;
+  list-style: none;
+  z-index: 1200;
+  animation: fadeIn 0.12s ease-out;
+}
+.nav-sub-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
+.nav-sub-header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 6px 10px 6px;
+  border-bottom: 1.5px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+.nav-sub-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--t-primary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.nav-sub-item:hover {
+  background: var(--menu-hover-bg);
+  color: var(--menu-hover-text);
+}
+.sub-item-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--blue-primary);
+}
+.sub-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sub-item-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  line-height: 1.2;
+}
+.nav-sub-item:hover .sub-item-title {
+  color: var(--blue-hover);
+}
+.sub-item-desc {
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--t-dim);
+  line-height: 1.25;
+}
+.nav-sub-item.sub-danger {
+  color: var(--rose-hover);
+}
+.nav-sub-item.sub-danger .sub-item-icon {
+  color: var(--rose-hover);
+}
+.nav-sub-item.sub-danger .sub-item-title {
+  color: var(--rose-hover);
+}
+.nav-sub-item.sub-danger:hover {
+  background: var(--rose-subtle);
+  color: var(--rose-dark);
+}
+.sub-divider {
+  height: 1.5px;
+  background: var(--border-subtle);
+  margin: 5px 0;
+}
+.sub-chevron {
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.nav-btn-more {
+  background: var(--bg-surface);
+  color: var(--t-primary);
+}
+.nav-btn-more:hover {
+  background: var(--blue-subtle);
+  color: var(--blue-hover);
+}
+
+.nav-btn-reset {
+  background: var(--bg-surface);
+  color: var(--t-dim);
+}
+.nav-btn-reset:hover { background: var(--rose-subtle); color: var(--rose-hover); }
+
+.nav-btn-export {
+  background: var(--bg-surface);
+  color: var(--t-primary);
+}
+.nav-btn-export:hover { background: var(--blue-subtle); color: var(--blue-hover); }
+
+.nav-btn-config {
+  background: var(--bg-surface);
+  color: var(--t-primary);
+}
+.nav-btn-config:hover { background: var(--blue-subtle); color: var(--blue-hover); }
+
+/* Toast de feedback para acciones del simulador */
+.nav-feedback-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  animation: slideUpFade 0.22s ease-out;
+}
+.toast-exito {
+  background: var(--emerald-darker);
+  color: var(--emerald-bright);
+  border: 1px solid rgba(110, 231, 183, 0.35);
+}
+.toast-info {
+  background: var(--bg-dark-2);
+  color: var(--blue-border);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+}
+.toast-error {
+  background: var(--rose-darker);
+  color: var(--rose-border);
+  border: 1px solid rgba(252, 165, 165, 0.35);
+}
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ── Badge de Créditos Electivos ────────────────────────────────── */
+.nav-chip-electivos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--r);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: all var(--tr);
+}
+.nav-chip-electivos.cumplido {
+  background: var(--emerald-subtle);
+  color: var(--emerald-dark);
+  border: 1.5px solid var(--emerald-bright);
+}
+.nav-chip-electivos.pendiente {
+  background: var(--amber-subtle);
+  color: var(--amber-dark);
+  border: 1.5px solid var(--amber-border);
+}
+
+/* ── Espacio vacío (sección reservada en nav donde antes iba el precio) ─ */
+.nav-slot-empty {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 32px;
+  height: 32px;
+}
+
+/* ── Utilidades de Botones y Controles de Navegación ──────────────── */
+.nav-control-btn,
+.nav-action,
+.nav-cancel-move {
+  min-height: 29px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-btn);
+  background: var(--bg-nav-item);
+  color: var(--t-primary);
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all var(--tr);
+  white-space: nowrap;
+}
+.nav-control-btn { padding: 5px 12px; }
+.nav-control-btn:hover, .nav-action.secondary:hover { background: var(--bg-surface-subtle); color: var(--blue-primary); }
+.nav-action { padding: 6px 11px; }
+.nav-action.primary { background: var(--accent); border-color: var(--accent); color: var(--t-white); }
+.nav-action.primary:hover { background: var(--accent-hov); }
+.nav-action.secondary { background: var(--bg-surface); border-color: var(--border-default); color: var(--t-secondary); }
+.nav-action:disabled { opacity: 0.4; cursor: not-allowed; }
+.nav-cancel-move { border-color: var(--amber-border); background: var(--amber-subtle); color: var(--amber-dark); padding: 6px 10px; }
+
+.discipline-control { display: flex; align-items: center; gap: 6px; color: var(--t-secondary); }
+.discipline-control select {
+  width: 100%;
+  max-width: 220px;
+  height: 32px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r);
+  outline: none;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  color: var(--t-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.discipline-control option { color: var(--t-primary); background: var(--bg-surface); }
+.nav-status-chips { display: flex; align-items: center; gap: 4px; }
+.nav-status-chips span {
+  padding: 4px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--bg-surface-subtle);
+  color: var(--t-muted);
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+.nav-status-chips b { color: var(--t-primary); }
+

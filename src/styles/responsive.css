@@ -1,0 +1,258 @@
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 900px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+
+  /* Nav: scroll horizontal compacto */
+  #app-nav {
+    overflow-x: auto;
+    overflow-y: visible;
+    gap: 0;
+    padding: 0 10px;
+    scrollbar-width: none;
+  }
+  #app-nav::-webkit-scrollbar { display: none; }
+
+  /* Reducir ancho fijo de dropdowns */
+  .nav-dropdown .dropdown-toggle {
+    width: 140px;
+  }
+
+  /* Aside: ancho reducido */
+  #panel-pendientes {
+    width: 220px;
+  }
+  :root { --aside-w: 220px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL (≤ 640px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Variables móvil ── */
+  :root {
+    --topbar-h: 40px;
+    --nav-h:    auto;
+    --chrome-h: 40px; /* solo topbar, nav no es sticky en móvil */
+    --aside-w:  100%;
+  }
+
+  /* ── TopBar ── */
+  #app-topbar {
+    height: var(--topbar-h);
+    padding: 0 14px;
+    gap: 8px;
+  }
+  .topbar-note { display: none; } /* ocultar nota secundaria en pantallas pequeñas */
+
+  /* ── Nav: scroll horizontal sin sticky ── */
+  #app-nav {
+    position: relative;          /* deja de ser sticky */
+    top: unset;
+    height: auto;
+    padding: 6px 10px;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    /* Línea separadora inferior */
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
+  #app-nav::-webkit-scrollbar { display: none; }
+
+  /* Grupos de nav: más compactos */
+  .nav-group {
+    padding: 0 4px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .nav-group-label {
+    font-size: 0.52rem;
+    letter-spacing: 0.4px;
+  }
+
+  /* Botón dropdown: ancho fijo reducido */
+  .nav-dropdown .dropdown-toggle {
+    width: 130px;
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  /* Upload compacto */
+  .upload-face {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+  #upload-text {
+    max-width: 90px;
+  }
+
+  /* Costo global retirado de navbar */
+  .nav-cost-amount {
+    font-size: 0.9rem;
+  }
+
+  /* ── Layout principal: columna ── */
+  #app-main {
+    flex-direction: column;
+    min-height: unset;
+  }
+
+  /* ── Aside Pendientes: colapsable desde abajo ── */
+  #panel-pendientes {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: unset;
+    width: 100%;
+    height: 52px;               /* altura colapsada: solo el header */
+    z-index: 900;
+    border-right: none;
+    border-top: 2px solid rgba(0,0,0,0.1);
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+  }
+  #panel-pendientes.mob-open {
+    height: 55vh;
+    overflow: visible;
+  }
+  #panel-pendientes.mob-open #pozo-cursos {
+    overflow-y: auto;
+  }
+
+  /* Header del aside: actúa como handle de drag */
+  .aside-head {
+    cursor: pointer;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  /* Indicador de expansión */
+  .aside-head::after {
+    content: '▲';
+    font-size: 0.6rem;
+    color: var(--t-light);
+    margin-left: auto;
+    transition: transform 0.3s ease;
+  }
+  #panel-pendientes.mob-open .aside-head::after {
+    transform: rotate(180deg);
+  }
+
+  .aside-hint {
+    padding: 4px 14px 5px;
+    font-size: 0.6rem;
+  }
+
+  #pozo-cursos {
+    overflow-y: hidden; /* se activa solo cuando está abierto */
+    padding: 4px 10px 80px; /* padding extra para que el último card no quede tapado */
+  }
+
+  /* ── Planificador: ocupa todo el ancho ── */
+  #panel-planificador {
+    padding: 12px 10px 120px; /* 120px de margen inferior para que no quede tapado por el aside */
+    overflow-y: unset;
+    flex: unset;
+    min-height: 100vh;
+  }
+
+  /* ── Ciclos: layout compacto ── */
+  .tier-row {
+    min-height: 90px;
+    flex-direction: column;      /* etiqueta arriba, cards abajo */
+  }
+  .tier-label {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 6px 12px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    gap: 10px;
+  }
+  .tier-num {
+    font-size: 1.1rem;
+  }
+  .tier-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  /* Zona dropzone: horizontal scrolleable */
+  .tier-dropzone {
+    min-height: 80px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    flex-wrap: nowrap;           /* en móvil: una sola fila scrolleable */
+    gap: 6px;
+    scrollbar-width: none;
+  }
+  .tier-dropzone::-webkit-scrollbar { display: none; }
+
+  /* Cards de cursos en planificador: ancho fijo para scroll horizontal */
+  .tier-dropzone:not(#pozo-cursos) .curso-card {
+    width: 140px;
+    min-height: 80px;
+    flex-shrink: 0;
+  }
+
+  /* Cards en el pozo: full-width compactas */
+  #pozo-cursos .curso-card {
+    width: 100%;
+    min-height: unset;
+    padding: 6px 10px 6px 11px;
+  }
+
+  /* ── Modal: pantalla completa en móvil ── */
+  .modal-dialog {
+    margin: 0.5rem auto;
+    max-width: calc(100% - 1rem);
+  }
+
+  /* Título del planificador */
+  .planner-section-title {
+    font-size: 0.6rem;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .title-note {
+    font-size: 0.55rem;
+  }
+
+  /* Ciclo inputs: más compactos */
+  .ciclo-num {
+    width: 38px;
+    padding: 4px 2px;
+    font-size: 0.72rem;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL PEQUEÑO (≤ 380px)
+   ═══════════════════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .nav-dropdown .dropdown-toggle {
+    width: 110px;
+    font-size: 0.64rem;
+  }
+  #upload-text {
+    max-width: 70px;
+  }
+  .nav-cost-amount {
+    font-size: 0.82rem;
+  }
+  .tier-num {
+    font-size: 0.95rem;
+  }
+  .tier-dropzone:not(#pozo-cursos) .curso-card {
+    width: 128px;
+  }
+}

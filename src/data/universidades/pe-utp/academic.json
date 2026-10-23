@@ -1,0 +1,9 @@
+{
+  "limitesAcademicos": {
+    "creditosMinimos": 12,
+    "creditosMaximos": 40
+  },
+  "verano": {
+    "multiplicadorHorasTarifarias": 2
+  }
+}

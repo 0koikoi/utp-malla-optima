@@ -1,0 +1,463 @@
+/* ── Panel Planificador ─────────────────────────────────────────── */
+#panel-planificador {
+  flex: 1;
+  padding: 18px 18px 48px;
+  overflow-y: auto;
+  min-width: 0;
+}
+#panel-planificador::-webkit-scrollbar { width: 4px; }
+#panel-planificador::-webkit-scrollbar-track { background: transparent; }
+#panel-planificador::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+}
+
+.planner-section-title {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.planner-section-title i { color: var(--accent); }
+.planner-section-title.summer i { color: var(--amber); }
+.title-note {
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: var(--t-light);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#contenedor-verano-master { margin-top: 24px; }
+
+/* Filas de ciclos (Regulares y Verano) con alto contraste */
+.tier-row {
+  display: flex;
+  min-height: 110px;
+  margin-bottom: 9px;
+  background: var(--bg-surface);
+  border-radius: var(--r-card);
+  border: 1px solid var(--border-default);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--tr), border-color var(--tr);
+}
+.tier-row:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+/* Etiqueta lateral del ciclo con acento visual vívido */
+.tier-label {
+  width: 88px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  background: var(--tier-bg-regular);
+  text-align: center;
+  gap: 2px;
+  border-right: 1.5px solid var(--border-subtle);
+  border-left: 4px solid var(--tier-accent-regular);
+  transition: background var(--tr), color var(--tr), border-color var(--tr);
+}
+.tier-num {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  line-height: 1;
+}
+.tier-name {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.tier-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  margin-top: 2px;
+}
+.stat-chip {
+  font-size: 0.60rem;
+  font-weight: 700;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: var(--chip-bg-default);
+  color: var(--chip-t-default);
+  border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.stat-chip.stat-horas {
+  background: var(--chip-hrs-bg);
+  color: var(--chip-hrs-t);
+  border-color: var(--chip-hrs-border);
+  font-weight: 800;
+}
+.ciclo-costo-val {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  margin-top: 1px;
+}
+.ciclo-mat {
+  font-size: 0.56rem;
+  font-weight: 600;
+  color: var(--t-muted);
+  display: block;
+}
+
+/* Peligro — exceso de horas */
+.tier-label.peligro {
+  background: var(--tier-bg-peligro);
+  border-left: 4px solid var(--tier-accent-peligro);
+  border-right: 1.5px solid var(--accent-border);
+}
+.tier-label.peligro .tier-num { color: var(--accent); }
+.tier-label.peligro .tier-name { color: var(--accent-hov); }
+.tier-label.peligro::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  animation: blink-bar 1.4s ease-in-out infinite;
+}
+@keyframes blink-bar { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+/* Estados de ciclo por avance */
+.tier-label.ciclo-aprobado {
+  background: var(--tier-bg-locked);
+  border-left: 4px solid var(--tier-accent-locked);
+  border-right: 1.5px solid var(--emerald-border);
+}
+.tier-label.ciclo-aprobado .tier-num { color: var(--tier-text-locked); opacity: 1; }
+.tier-label.ciclo-aprobado .tier-name { color: var(--card-apr-text); }
+
+.tier-label.ciclo-adelantado {
+  background: var(--tier-bg-advanced);
+  border-left: 4px solid var(--tier-accent-advanced);
+  border-right: 1.5px solid var(--purple-border);
+}
+.tier-label.ciclo-adelantado .tier-num { color: var(--purple-hover); opacity: 1; }
+.tier-label.ciclo-adelantado .tier-name { color: var(--purple-primary); }
+.tier-label.ciclo-adelantado .stat-chip { background: var(--purple-subtle); color: var(--purple-primary); border-color: var(--purple-border); }
+.tier-label.ciclo-adelantado .stat-chip.stat-horas { color: var(--purple-primary); }
+
+/* Ciclo concluido / Histórico */
+.tier-label.locked {
+  background: var(--tier-bg-locked);
+  border-left: 4px solid var(--tier-accent-locked);
+  border-right: 1.5px solid var(--emerald-border);
+}
+.tier-label.locked .tier-num {
+  color: var(--tier-text-locked);
+  opacity: 1;
+}
+.tier-label.locked .tier-name {
+  color: var(--card-apr-text);
+}
+.tier-dropzone.locked {
+  background: rgba(240, 253, 244, 0.4);
+}
+.stat-chip.stat-concluido {
+  background: var(--chip-apr-bg);
+  color: var(--chip-apr-t);
+  border: 1px solid var(--chip-apr-border);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ciclo-costo-val.historico .hist-lbl {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--tier-text-locked);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ciclo-mat.sin-cursos {
+  color: var(--t-muted);
+  font-style: italic;
+}
+
+/* Verano intercalado */
+.tier-row[data-tipo="verano"] {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: var(--amber-tint);
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.08);
+}
+.tier-row[data-tipo="verano"]:hover {
+  border-color: var(--amber-primary);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+.tier-row[data-tipo="verano"] .tier-label {
+  background: var(--tier-bg-verano);
+  border-left: 4px solid var(--tier-accent-verano);
+  border-right: 1.5px solid var(--amber-border);
+  padding: 6px 4px;
+  gap: 1px;
+}
+.tier-row[data-tipo="verano"] .tier-num {
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--tier-text-verano);
+}
+.tier-row[data-tipo="verano"] .tier-name {
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--amber-dark);
+  letter-spacing: 0.2px;
+}
+
+/* Botón para omitir el periodo de verano en la tarjeta lateral */
+.btn-verano-omitir {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--amber-border);
+  color: var(--amber-darker);
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 0.60rem;
+  font-weight: 750;
+  cursor: pointer;
+  margin-top: 2px;
+  transition: all var(--tr);
+}
+
+.btn-verano-omitir:hover {
+  background: rgba(239, 35, 60, 0.1);
+  border-color: rgba(239, 35, 60, 0.4);
+  color: #ef233c;
+}
+
+/* Franja compacta cuando el periodo de verano está deshabilitado / omitido */
+.verano-disabled-strip {
+  min-height: 44px;
+  background: rgba(245, 158, 11, 0.03);
+  border: 1.5px dashed rgba(245, 158, 11, 0.28);
+  border-radius: var(--r-card);
+  padding: 8px 14px;
+  margin: 3px 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all var(--tr);
+}
+
+.verano-disabled-strip:hover {
+  border-color: var(--amber-primary);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.verano-disabled-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verano-disabled-icon {
+  color: var(--amber-primary);
+  flex-shrink: 0;
+}
+
+.verano-disabled-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.verano-disabled-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--amber-darker);
+}
+
+.verano-disabled-sub {
+  font-size: 0.64rem;
+  color: var(--t-muted);
+}
+
+.btn-verano-toggle-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--amber-border);
+  color: var(--amber-darker);
+  font-size: 0.70rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  transition: all var(--tr);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.btn-verano-toggle-strip:hover {
+  background: #F59E0B;
+  border-color: #D97706;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Zona drop — en ciclos: horizontal wrap */
+.tier-dropzone {
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-content: flex-start;
+  min-height: 108px;
+}
+/* El pozo es la excepción: vertical */
+#pozo-cursos.tier-dropzone {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 3px;
+  padding: 4px 8px 16px;
+}
+
+/* ── Encabezado y Leyenda del Planificador ───────────────────────── */
+.planner-heading {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.planner-heading h1 {
+  margin: 2px 0 2px;
+  color: var(--t-primary);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.planner-heading p {
+  margin: 0;
+  color: var(--t-muted);
+  font-size: 0.72rem;
+}
+.planner-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: var(--t-secondary);
+  font-size: 0.65rem;
+}
+.planner-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-default);
+}
+.legend-dot.obligatorio { background: var(--blue-primary); }
+.legend-dot.electivo { background: var(--purple-primary); }
+.legend-dot.aprobado { background: var(--emerald-primary); }
+
+/* ── Filas de ciclo: Casillas vacías y estados extendidos ────────── */
+.tier-empty {
+  min-height: 90px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--border-default);
+  border-radius: var(--r-card);
+  color: var(--t-muted);
+  font-size: 0.72rem;
+  background: var(--placeholder-bg);
+}
+
+.tier-lock-note {
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--t-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.tier-label.ciclo-actual {
+  background: var(--tier-bg-advanced);
+  border-left: 4px solid var(--amber-primary);
+  box-shadow: inset 4px 0 0 var(--amber-primary);
+}
+.tier-label.ciclo-actual .tier-num { color: var(--purple-hover); opacity: 1; }
+.tier-label.ciclo-actual .tier-name { color: var(--purple-primary); }
+.tier-label.ciclo-actual .stat-chip { background: var(--purple-subtle); color: var(--purple-primary); border-color: var(--purple-border); }
+
+.stat-chip.stat-price {
+  color: var(--emerald-dark);
+  font-weight: 850;
+  background: var(--emerald-subtle);
+  border-color: var(--emerald-border);
+}
+.tier-label.ciclo-aprobado .stat-chip.stat-price,
+.tier-label.ciclo-adelantado .stat-chip.stat-price,
+.tier-label.ciclo-actual .stat-chip.stat-price,
+.tier-label[data-tipo="verano"] .stat-chip.stat-price {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  border-color: transparent;
+}
+
+/* ── Compatibilidad con CicloRow (verano y periodos) ─────────────── */
+.tier-row.summer-row {
+  min-height: 92px;
+  margin-top: -3px;
+  margin-bottom: 11px;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.8), var(--bg-surface) 18%);
+}
+.tier-row.summer-row .tier-dropzone { min-height: 92px; }
+.tier-row.summer-row .tier-empty { min-height: 74px; border-color: rgba(245, 158, 11, 0.3); color: var(--amber-dark); }
+.tier-label.summer-label { background: var(--tier-bg-verano); border-left: 4px solid var(--amber-primary); }
+.tier-label.summer-label .tier-name { color: var(--amber-dark); }
+.tier-label.summer-label .stat-chip { background: rgba(180, 112, 0, 0.08); }
+.summer-icon { color: var(--amber-primary); margin-bottom: 2px; }
+.summer-limit { color: var(--amber-dark); font-size: 0.58rem; }
+.verano-mes-chip {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--amber-darker);
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid var(--amber-border);
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
+
+
+.tier-row.period-past { opacity: 0.72; }
+.tier-row.period-past .tier-dropzone { background: repeating-linear-gradient(135deg, rgba(148,163,184,0.04), rgba(148,163,184,0.04) 8px, transparent 8px, transparent 16px); }
+.tier-row.period-past .tier-empty { color: var(--t-muted); border-color: var(--border-subtle); }
+.tier-row.period-past.is-over { border-color: transparent; box-shadow: var(--shadow-card); }
+.tier-row.period-current { border-color: rgba(245, 158, 11, 0.4); }
+.tier-row.period-current .tier-dropzone { background: rgba(245, 158, 11, 0.03); }
+.tier-row.period-current.is-over { border-color: var(--amber-primary); box-shadow: var(--shadow-card); }
+

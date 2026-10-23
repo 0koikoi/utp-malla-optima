@@ -1,0 +1,169 @@
+/* ── Aside — Pendientes con alto contraste y colores vívidos ─────── */
+#panel-pendientes {
+  width: var(--aside-w);
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--chrome-h);
+  height: calc(100vh - var(--chrome-h));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-aside);
+  border-right: 1.5px solid var(--border-default);
+}
+
+.aside-head {
+  padding: 12px 14px 10px;
+  background: var(--bg-surface);
+  border-bottom: 1.5px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aside-head-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--t-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  flex: 1;
+}
+.aside-count {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: var(--accent);
+  color: var(--t-white);
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(239, 35, 60, 0.3);
+}
+.aside-hint {
+  padding: 7px 14px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--t-dim);
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Área scroll del pozo — SIEMPRE vertical */
+#pozo-cursos {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 10px 20px;
+  /* Sobreescribir el flex-wrap que hereda de .tier-dropzone */
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-content: flex-start;
+  gap: 5px;
+}
+#pozo-cursos::-webkit-scrollbar { width: 4px; }
+#pozo-cursos::-webkit-scrollbar-track { background: transparent; }
+#pozo-cursos::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+/* Separadores por ciclo */
+.separador-ciclo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 4px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--t-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  user-select: none;
+}
+.separador-ciclo::after {
+  content: '';
+  flex: 1;
+  height: 1.5px;
+  background: var(--border-default);
+}
+
+/* Estado vacío */
+.pozo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 16px;
+  color: var(--t-light);
+  text-align: center;
+}
+.pozo-empty i { font-size: 1.6rem; opacity: 0.35; }
+.pozo-empty p { font-size: 0.7rem; line-height: 1.5; }
+
+/* ── Estados Interactivos y Colapsado (Fase 5) ───────────────────── */
+#panel-pendientes.collapsed {
+  width: 54px;
+}
+#panel-pendientes.collapsed .aside-head {
+  height: 100%;
+  align-items: flex-start;
+  padding-top: 16px;
+  flex-direction: column;
+}
+#panel-pendientes.collapsed .aside-head-title span {
+  display: none;
+}
+#panel-pendientes.collapsed .aside-count {
+  order: 2;
+}
+#panel-pendientes.is-over {
+  background: var(--blue-subtle);
+  box-shadow: inset -3px 0 0 var(--accent);
+}
+.pozo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Buscador de cursos en el pozo (Fase 6.3) ────────────────────── */
+.pozo-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 10px 4px;
+  padding: 4px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-btn);
+  transition: all var(--tr);
+}
+.pozo-search-wrap:focus-within {
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 0 2px var(--blue-subtle);
+}
+.pozo-search-input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.72rem;
+  color: var(--t-primary);
+  outline: none;
+}
+.pozo-search-input::placeholder {
+  color: var(--t-muted);
+  font-size: 0.68rem;
+}
+.pozo-search-clear {
+  border: none;
+  background: transparent;
+  color: var(--t-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.pozo-search-clear:hover {
+  color: var(--accent);
+}
+
+

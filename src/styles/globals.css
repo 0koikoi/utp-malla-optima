@@ -1,0 +1,27 @@
+/* ==========================================================================
+   UTP MALLA ÓPTIMA — ARQUITECTURA MODULAR DE ESTILOS
+   ==========================================================================
+   Dividido por dominios y componentes para máxima legibilidad y rendimiento:
+   - tokens.css: Variables de diseño (:root), reset, tipografía y paleta base
+   - layout.css: TopBar superior, Layout principal (#app-main)
+   - navbar.css: Barra de navegación glassmorphic, dropdowns, switches y acciones
+   - sidebar.css: Aside lateral de pendientes y pozo de cursos
+   - planner.css: Contenedor planificador, filas de ciclo (tier-row), veranos
+   - cards.css: Tarjetas de cursos, etiquetas, drag-and-drop y modo selección
+   - modals.css: Tooltips globales, ConfigSidebar, BienvenidaModal, BottomSheet
+   - homepage.css: Pantalla inicial de bienvenida y subida de archivos
+   - responsive.css: Reglas y adaptaciones para tablets y móviles
+   ========================================================================== */
+
+@import './tokens.css';
+@import './reset.css';
+@import './layout.css';
+@import './navbar.css';
+@import './sidebar.css';
+@import './planner.css';
+@import './cards.css';
+@import './modals.css';
+@import './homepage.css';
+@import './responsive.css';
+@import './financial.css';
+
