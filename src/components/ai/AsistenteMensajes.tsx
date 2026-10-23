@@ -1,0 +1,122 @@
+import { Fragment, type ReactNode } from 'react';
+import {
+  AlertTriangle, Bot, CircleCheck, GitBranch, Gauge, OctagonAlert, RefreshCw, Route, Target, Wallet,
+} from 'lucide-react';
+import type { AISeccion, Nivel } from '../../application/ai/contracts';
+import { partirPorCodigos } from './asistenteLogica';
+import type { MensajeChat } from './controladorAsistente';
+
+const ICONO_SECCION: Record<AISeccion['tipo'], ReactNode> = {
+  financiero: <Wallet size={17} aria-hidden="true" />,
+  carga: <Gauge size={17} aria-hidden="true" />,
+  ruta: <Route size={17} aria-hidden="true" />,
+  whatIf: <GitBranch size={17} aria-hidden="true" />,
+  electivos: <Target size={17} aria-hidden="true" />,
+};
+
+const NIVEL: Record<Nivel, { texto: string; icono: ReactNode }> = {
+  ok: { texto: 'Bien', icono: <CircleCheck size={14} aria-hidden="true" /> },
+  atencion: { texto: 'Atención', icono: <AlertTriangle size={14} aria-hidden="true" /> },
+  riesgo: { texto: 'Riesgo', icono: <OctagonAlert size={14} aria-hidden="true" /> },
+};
+
+/** Texto plano de la IA: saltos de línea como <br>, nunca HTML; resalta los códigos de curso. */
+export function TextoPlano({ texto, codigos = [] }: { texto: string; codigos?: string[] }) {
+  return <>{texto.split('\n').map((linea, indice) => <Fragment key={indice}>
+    {indice > 0 && <br />}
+    {partirPorCodigos(linea, codigos).map((parte, posicion) => parte.codigo
+      ? <mark key={posicion} className="ia-codigo">{parte.texto}</mark>
+      : <Fragment key={posicion}>{parte.texto}</Fragment>)}
+  </Fragment>)}</>;
+}
+
+interface CursosProps {
+  codigos: string[];
+  nombres: Map<string, string>;
+}
+
+function CursosResaltados({ codigos, nombres }: CursosProps) {
+  if (!codigos.length) return null;
+  return <ul className="ia-cursos" aria-label="Cursos mencionados">
+    {codigos.map((codigo) => <li key={codigo}><span>{nombres.get(codigo) ?? codigo}</span> <mark className="ia-codigo">{codigo}</mark></li>)}
+  </ul>;
+}
+
+function Chips({ preguntas, onElegir, deshabilitado }: { preguntas: string[]; onElegir: (texto: string) => void; deshabilitado: boolean }) {
+  if (!preguntas.length) return null;
+  return <div className="ia-chips" role="group" aria-label="Preguntas sugeridas">
+    {preguntas.map((pregunta) => <button key={pregunta} type="button" className="ia-chip" disabled={deshabilitado} onClick={() => onElegir(pregunta)}>{pregunta}</button>)}
+  </div>;
+}
+
+export function TarjetaSeccion({ seccion, nombres }: { seccion: AISeccion; nombres: Map<string, string> }) {
+  const nivel = NIVEL[seccion.nivel];
+  return <article className={`ia-seccion ia-nivel-${seccion.nivel}`} aria-label={`${seccion.titulo}: ${nivel.texto}`}>
+    <header>
+      <span className="ia-seccion-icono">{ICONO_SECCION[seccion.tipo]}</span>
+      <h3>{seccion.titulo}</h3>
+      <span className="ia-nivel">{nivel.icono}{nivel.texto}</span>
+    </header>
+    <p><TextoPlano texto={seccion.detalle} codigos={seccion.cursos} /></p>
+    {seccion.acciones.length > 0 && <ul className="ia-acciones">{seccion.acciones.map((accion) => <li key={accion}>{accion}</li>)}</ul>}
+    <CursosResaltados codigos={seccion.cursos} nombres={nombres} />
+  </article>;
+}
+
+interface MensajesProps {
+  mensajes: MensajeChat[];
+  nombres: Map<string, string>;
+  enviando: boolean;
+  deshabilitado: boolean;
+  onPreguntar: (texto: string) => void;
+  onReintentar: (id: number) => void;
+}
+
+export function AsistenteMensajes({ mensajes, nombres, enviando, deshabilitado, onPreguntar, onReintentar }: MensajesProps) {
+  const ultimo = mensajes.at(-1);
+  return <>
+    {mensajes.map((mensaje) => {
+      if (mensaje.rol === 'user') {
+        return <div key={mensaje.id} className="ia-fila ia-fila-user">
+          <div className="ia-burbuja ia-burbuja-user">
+            {mensaje.foco && <span className="ia-burbuja-foco">📎 {mensaje.foco.etiqueta}</span>}
+            <TextoPlano texto={mensaje.texto} />
+          </div>
+        </div>;
+      }
+      const esUltimo = mensaje === ultimo;
+      if (mensaje.tipo === 'error') {
+        return <div key={mensaje.id} className="ia-fila">
+          <div className="ia-burbuja ia-burbuja-bot ia-burbuja-error" role="alert">
+            <p>{mensaje.mensaje}</p>
+            <button type="button" className="ia-reintentar" disabled={deshabilitado} onClick={() => onReintentar(mensaje.id)}>
+              <RefreshCw size={15} aria-hidden="true" /> Reintentar
+            </button>
+          </div>
+        </div>;
+      }
+      if (mensaje.tipo === 'analisis') {
+        return <div key={mensaje.id} className="ia-fila">
+          <div className="ia-analisis">
+            <div className="ia-burbuja ia-burbuja-bot"><TextoPlano texto={mensaje.analisis.resumen} /></div>
+            {mensaje.analisis.secciones.map((seccion, indice) => <TarjetaSeccion key={`${seccion.tipo}-${indice}`} seccion={seccion} nombres={nombres} />)}
+            <p className="ia-nota">Costos referenciales (tarifario 2026): verifícalos en el portal de la UTP antes de pagar.</p>
+            {esUltimo && <Chips preguntas={mensaje.analisis.preguntasSugeridas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
+          </div>
+        </div>;
+      }
+      return <div key={mensaje.id} className="ia-fila">
+        <div className="ia-columna">
+          <div className="ia-burbuja ia-burbuja-bot">
+            <p><TextoPlano texto={mensaje.texto} codigos={mensaje.cursos} /></p>
+            <CursosResaltados codigos={mensaje.cursos} nombres={nombres} />
+          </div>
+          {esUltimo && <Chips preguntas={mensaje.preguntas} onElegir={onPreguntar} deshabilitado={deshabilitado} />}
+        </div>
+      </div>;
+    })}
+    {enviando && <div className="ia-fila" role="status" aria-live="polite">
+      <div className="ia-burbuja ia-burbuja-bot ia-escribiendo"><Bot size={15} aria-hidden="true" /><span>escribiendo…</span><span className="ia-puntos" aria-hidden="true"><i /><i /><i /></span></div>
+    </div>}
+  </>;
+}
