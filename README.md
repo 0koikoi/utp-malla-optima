@@ -1,5 +1,24 @@
 # React + TypeScript + Vite
 
+## Asistente académico IA
+
+Botón flotante (abajo a la derecha) que analiza el plan y responde preguntas sobre carga, costos,
+jalados, ruta y electivos. Arquitectura:
+
+```
+GitHub Pages (este frontend) ──▶ proxy en Vercel (ai-proxy/) ──▶ API de DeepSeek
+```
+
+- `src/application/ai/buildAIContext.ts` calcula TODO lo numérico y lógico (créditos, 4 escenarios de
+  pago, nivel de carga, what-if, ruta, ventana de jalados). La IA solo redacta. No se envía el nombre
+  del archivo ni datos personales.
+- `src/application/ai/contracts.ts` (Zod) define petición y respuestas; los códigos de curso que no
+  existan en el contexto se descartan. `ai-proxy/src/contracts.ts` es una copia verificada por test.
+- La API key y el prompt del sistema viven solo en `ai-proxy/` (ver `ai-proxy/README.md`).
+- `VITE_AI_ENDPOINT`: URL del proxy. Vacía en `pnpm dev` → mock local sin red. En el deploy se toma de
+  la variable de Actions `vars.VITE_AI_ENDPOINT` (Settings → Secrets and variables → Actions → Variables).
+- Sin clave de DeepSeek el proxy responde en modo mock con los datos reales del contexto.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
