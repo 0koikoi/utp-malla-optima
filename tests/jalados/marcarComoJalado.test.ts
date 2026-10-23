@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { parseUTPExcel } from '../../src/adapters/utpExcelAdapter';
 import { crearPeriodoRegular } from '../../src/domain/rules/academicPeriodRules';
 import { esPlanificadoInvalido } from '../../src/domain/services/prerequisiteService';
+import { simularJalado } from '../../src/domain/services/whatIfService';
 import { UniversityFinancialRulesProvider } from '../../src/financial/rules/UniversityFinancialRulesProvider';
 import { FinancialPlanningService } from '../../src/financial/services/FinancialPlanningService';
 import { FinancialConfigurationProvider } from '../../src/infrastructure/configuration/FinancialConfigurationProvider';
@@ -69,6 +70,18 @@ describe('marcarComoJalado / desmarcarJalado con el 8vo en ciclo-8', () => {
     expect(ciclo8.cursos.map((item) => item.codigo)).toContain('100000S61T');
     // En el mismo ciclo no cumple para I62N: sigue inválido.
     expect(invalido('100000I62N')).toBe(true);
+  });
+
+  it('el toast muestra la misma lista que simularJalado (también descendientes transitivos)', async () => {
+    expect(await ctx.store.getState().moverCursoAPeriodo('100000S02I', crearPeriodoRegular(9))).toBe(true);
+    const esperado = simularJalado('100000S61T', ctx.store.getState().cursos).planificadosInvalidos.map((item) => item.codigo);
+    expect(esperado).toEqual(['100000I62N', '100000S02I']);
+    const invalidos = await ctx.store.getState().marcarComoJalado('100000S61T');
+    expect(invalidos?.map((item) => item.codigo)).toEqual(esperado);
+    expect(ctx.store.getState().notificacionMovimiento?.faltantes).toEqual([
+      { codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS' },
+      { codigo: '100000S02I', nombre: 'GESTIÓN DEL CONOCIMIENTO' },
+    ]);
   });
 
   it('solo aplica a cursos EN_CURSO', async () => {

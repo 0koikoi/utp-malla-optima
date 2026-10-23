@@ -5,6 +5,7 @@ import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../do
 import { cursoBloqueado, esJaladoSinReplanificar, ordenarCursos } from '../domain/rules/courseRules';
 import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
+import { simularJalado } from '../domain/services/whatIfService';
 import {
   destinoJaladoPermitido, devolverJaladoAOrigen, esCursoJalado, esRegresoAlOrigen, jaladosFaltantes,
   mensajeJaladoObligatorio,
@@ -30,7 +31,10 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       ubicacion: 'periodo' as const, ciclo: cursoActual.ciclo, tipoPeriodo: cursoActual.tipoPeriodo };
     const cursosActualizados = ordenarCursos(state.cursos.map((curso) =>
       curso.codigo === codigo ? { ...curso, ...cambios } : curso));
-    const invalidos = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
+    // Misma lista que la vista previa del modal: los descendientes planificados.
+    const nombres = new Map(state.cursos.map((curso) => [curso.codigo, curso.nombre]));
+    const invalidos = simularJalado(codigo, state.cursos).planificadosInvalidos
+      .map((item) => ({ codigo: item.codigo, nombre: nombres.get(item.codigo) ?? item.codigo }));
     try {
       await repos.courses.update(codigo, cambios);
       set({ cursos: cursosActualizados, cursoAMover: null,
