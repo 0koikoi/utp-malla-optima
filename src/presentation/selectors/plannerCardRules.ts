@@ -42,3 +42,19 @@ export const resumenCicloPasado = (cursos: Curso[], cicloActual: number | null) 
     creditosJalados: llevados.filter((curso) => curso.jalado).reduce((suma, curso) => suma + curso.creditos, 0),
   };
 };
+
+/**
+ * Contadores del encabezado. Un jalado que sigue en su ciclo original cuenta
+ * como pendiente; llevados + planificados + pendientes + enCurso = total.
+ */
+export const contarAvance = (cursos: Curso[], cicloActual: number | null) => {
+  const sinReplanificar = (curso: Curso) => esJaladoSinReplanificar(curso, cicloActual);
+  return {
+    llevados: cursos.filter((curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO').length,
+    enCurso: cursos.filter((curso) => curso.estado === 'EN_CURSO').length,
+    planificados: cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
+      !sinReplanificar(curso)).length,
+    pendientes: cursos.filter((curso) => curso.estado === 'PENDIENTE' &&
+      (curso.ubicacion === 'banco' || sinReplanificar(curso))).length,
+  };
+};

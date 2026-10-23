@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAcademicStore } from '../store/useAcademicStore';
 import { exportPlanPNG } from '../services/exportPlanPNG';
 import { obtenerCiclosDisponibles, obtenerSiguienteCiclo } from '../domain/rules/cycleRules';
-import { esJaladoSinReplanificar } from '../domain/rules/courseRules';
+import { contarAvance } from '../presentation/selectors/plannerCardRules';
 import { FinancialConfigurationProvider } from '../infrastructure/configuration/FinancialConfigurationProvider';
 import { useTheme } from './useTheme';
 import { useTutorialState } from './useTutorialState';
@@ -48,9 +48,7 @@ export function useAppController() {
   const mostrarAyuda = mostrarTutorialInicial || modalAyuda;
   const mostrarConfiguracion = !mostrarAyuda && (modalContexto || (sinContexto && tutorialCompletado));
   const pendientesBanco = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'banco');
-  const llevados = cursos.filter((curso) => curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO').length;
-  const planificados = cursos.filter((curso) => curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' &&
-    !esJaladoSinReplanificar(curso, cicloActual)).length;
+  const avance = contarAvance(cursos, cicloActual);
   const creditosElectivos = cursos.filter((curso) => curso.tipo === 'ELECTIVO' &&
     (curso.estado === 'APROBADO' || curso.estado === 'CONVALIDADO' || curso.ubicacion === 'periodo'))
     .reduce((suma, curso) => suma + curso.creditos, 0);
@@ -82,7 +80,7 @@ export function useAppController() {
     menuMovil, setMenuMovil, cicloInicioVisible, setCicloInicioVisible,
     mostrarVeranos, setMostrarVeranos, exportando, errorExportar,
     sinMalla, mostrarTutorialInicial, mostrarAyuda, mostrarConfiguracion,
-    pendientesBanco, llevados, planificados, creditosElectivos,
+    pendientesBanco, avance, creditosElectivos,
     ciclosDisponibles, inicioVisible, ciclos, siguienteCiclo,
     descargarPNG, finalizarTutorialInicial,
   };
