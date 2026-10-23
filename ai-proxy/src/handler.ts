@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { costoEstimadoUsd, esHorarioPico, sumarUso, USO_VACIO, type UsoTokens } from './consumo.js';
-import { AIRequestSchema, MENSAJE_LIMITE, parsearRespuesta, type AIErrorCodigo, type AIErrorResponse } from './contracts.js';
-import { ErrorProveedor, llamarDeepSeek, MODELO_POR_DEFECTO } from './deepseek.js';
+import {
+  AIRequestSchema, MENSAJE_LIMITE, MENSAJE_NO_VERIFICADA, parsearRespuesta, type AIErrorCodigo, type AIErrorResponse,
+} from './contracts.js';
+import { ErrorProveedor, llamarConVerificacion, MODELO_POR_DEFECTO, type Verificacion } from './deepseek.js';
 import {
   comprobarLimites, crearLimitadorMemoria, ipDe, leerLimites, type LimitesConfig, type RateLimiter,
 } from './limites.js';
@@ -46,6 +48,10 @@ export interface RegistroConsumo extends RegistroAsistente, UsoTokens {
   intentos: number;
   /** finish_reason de cada intento, en orden (sin contenido). */
   finish_reasons: (string | null)[];
+  /** Resultado del filtro de salida; null si la llamada falló antes. */
+  verificacion: Verificacion | null;
+  /** Solo los nombres de los chequeos que fallaron, nunca el contenido. */
+  chequeos_fallidos: string[];
   tarifa: 'normal' | 'pico';
   costo_usd: number;
 }
@@ -108,7 +114,9 @@ export const crearHandlers = (config: ConfigProxy) => {
     const inicio = Date.now();
     const origen = origenPermitido(request);
     let modo = 'desconocido';
-    let consumo: { uso: UsoTokens; intentos: number; finishReasons: (string | null)[] } | null = null;
+    let consumo: {
+      uso: UsoTokens; intentos: number; finishReasons: (string | null)[]; verificacion: Verificacion | null; chequeosFallidos: string[];
+    } | null = null;
     const terminar = (codigo: 'ok' | AIErrorCodigo, cuerpo: unknown, status: number) => {
       const base: RegistroAsistente = { evento: 'asistente', modo, codigo, duracion_ms: Date.now() - inicio, mock: config.mock };
       if (!consumo) {
@@ -116,7 +124,8 @@ export const crearHandlers = (config: ConfigProxy) => {
       } else {
         const pico = esHorarioPico(new Date(config.ahora()), config.horarioPicoUtc);
         const registro: RegistroConsumo = {
-          ...base, modelo: config.modelo, intentos: consumo.intentos, finish_reasons: consumo.finishReasons, ...consumo.uso,
+          ...base, modelo: config.modelo, intentos: consumo.intentos, finish_reasons: consumo.finishReasons,
+          verificacion: consumo.verificacion, chequeos_fallidos: consumo.chequeosFallidos, ...consumo.uso,
           tarifa: pico ? 'pico' : 'normal', costo_usd: costoEstimadoUsd(consumo.uso, pico),
         };
         config.registrar(registro);
@@ -156,10 +165,12 @@ export const crearHandlers = (config: ConfigProxy) => {
 
     const controlador = new AbortController();
     const temporizador = setTimeout(() => controlador.abort(), config.timeoutMs);
-    const acumulado = { uso: USO_VACIO, intentos: 0, finishReasons: [] as (string | null)[] };
+    const acumulado = {
+      uso: USO_VACIO, intentos: 0, finishReasons: [] as (string | null)[], verificacion: null as Verificacion | null, chequeosFallidos: [] as string[],
+    };
     consumo = acumulado;
     try {
-      const respuesta = await llamarDeepSeek(peticion.data, {
+      const resultado = await llamarConVerificacion(peticion.data, {
         apiKey: config.apiKey, modelo: config.modelo, fetch: config.fetch, signal: controlador.signal,
         alUsar: (uso, finishReason) => {
           acumulado.uso = sumarUso(acumulado.uso, uso);
@@ -167,7 +178,10 @@ export const crearHandlers = (config: ConfigProxy) => {
         },
         alIntentar: () => { acumulado.intentos += 1; },
       });
-      return terminar('ok', respuesta, 200);
+      acumulado.verificacion = resultado.verificacion;
+      acumulado.chequeosFallidos = resultado.chequeosFallidos;
+      if (!resultado.respuesta) return fallar('RESPUESTA_NO_VERIFICADA', 422, { mensaje: MENSAJE_NO_VERIFICADA });
+      return terminar('ok', resultado.respuesta, 200);
     } catch (error) {
       if (error instanceof ErrorProveedor) return fallar(error.codigo, error.status);
       return fallar('PROVEEDOR_CAIDO', 502);

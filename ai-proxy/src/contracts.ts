@@ -321,12 +321,14 @@ export type AIRespuesta = AIAnalisisResponse | AIChatResponse;
 
 export const CODIGOS_ERROR = [
   'SIN_SALDO', 'LIMITE', 'PROVEEDOR_CAIDO', 'ENTRADA_INVALIDA', 'RESPUESTA_INVALIDA', 'SIN_CONEXION', 'PAUSADO',
-  'RESPUESTA_LARGA',
+  'RESPUESTA_LARGA', 'RESPUESTA_NO_VERIFICADA',
 ] as const;
 export const AIErrorCodigoSchema = z.enum(CODIGOS_ERROR);
 export type AIErrorCodigo = z.infer<typeof AIErrorCodigoSchema>;
 
 export const MENSAJE_LIMITE = 'Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato.';
+/** Respuesta segura fija cuando el filtro de salida del proxy no pudo verificar los datos. */
+export const MENSAJE_NO_VERIFICADA = 'No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.';
 
 /** `reintentarEn` (ISO) llega con LIMITE cuando el tope es del proxy: inicio de la ventana siguiente. */
 export const AIErrorResponseSchema = z.object({

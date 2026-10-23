@@ -1,5 +1,5 @@
 import {
-  AIErrorResponseSchema, MENSAJE_LIMITE, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta,
+  AIErrorResponseSchema, MENSAJE_LIMITE, MENSAJE_NO_VERIFICADA, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta,
 } from '../../application/ai/contracts';
 import { generarRespuestaMock } from '../../application/ai/mockRespuestas';
 
@@ -26,6 +26,7 @@ export const MENSAJES_ERROR: Record<AIErrorCodigo, string> = {
   ENTRADA_INVALIDA: 'No pude enviar tu consulta. Revisa el mensaje e inténtalo otra vez.',
   RESPUESTA_INVALIDA: 'La respuesta de la IA llegó incompleta. Toca Reintentar.',
   RESPUESTA_LARGA: 'No pude terminar la respuesta, intenta preguntarlo más corto.',
+  RESPUESTA_NO_VERIFICADA: MENSAJE_NO_VERIFICADA,
 };
 
 const fallo = (error: AIErrorCodigo, mensaje = MENSAJES_ERROR[error]): ResultadoIA => ({ ok: false, error, mensaje });

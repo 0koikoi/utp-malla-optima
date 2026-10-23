@@ -1,6 +1,7 @@
 import { leerUso, type UsoTokens } from './consumo.js';
 import { esquemaRespuesta, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta } from './contracts.js';
 import { SYSTEM_PROMPT } from './systemPrompt.js';
+import { mensajeCorreccion, verificarSalida, type ChequeoSalida } from './verificacion.js';
 
 export const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 export const MODELO_POR_DEFECTO = 'deepseek-flash';
@@ -139,4 +140,37 @@ export const llamarDeepSeek = async (peticion: AIRequest, opciones: OpcionesLlam
   const segundo = await intentar(peticion, opciones, extra);
   if (segundo.tipo === 'ok') return segundo.respuesta;
   throw new ErrorProveedor(segundo.tipo === 'cortada' ? 'RESPUESTA_LARGA' : 'RESPUESTA_INVALIDA', 502);
+};
+
+/** primera: pasó el filtro de salida; regenerada: pasó tras corregirla; segura: se devuelve la respuesta fija. */
+export type Verificacion = 'primera' | 'regenerada' | 'segura';
+
+export interface ResultadoVerificado {
+  /** null si verificacion es "segura". */
+  respuesta: AIRespuesta | null;
+  verificacion: Verificacion;
+  /** Nombres de los chequeos que fallaron (sin contenido: van al log). */
+  chequeosFallidos: ChequeoSalida[];
+}
+
+/**
+ * llamarDeepSeek + filtro de salida (verificacion.ts). Si la respuesta no pasa, UNA regeneración con un mensaje
+ * del sistema que indica el error concreto; si tampoco pasa (o se corta o no es JSON válido), "segura".
+ */
+export const llamarConVerificacion = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<ResultadoVerificado> => {
+  const alumno = peticion.mensajes.filter((mensaje) => mensaje.rol === 'user').map((mensaje) => mensaje.texto);
+  const primera = await llamarDeepSeek(peticion, opciones);
+  const problemas = verificarSalida(primera, peticion.contexto, alumno);
+  if (!problemas.length) return { respuesta: primera, verificacion: 'primera', chequeosFallidos: [] };
+
+  const correccion = [
+    { role: 'assistant', content: JSON.stringify(primera) },
+    { role: 'system', content: mensajeCorreccion(problemas) },
+  ];
+  const segunda = await intentar(peticion, opciones, correccion);
+  const problemasSegunda = segunda.tipo === 'ok' ? verificarSalida(segunda.respuesta, peticion.contexto, alumno) : [];
+  const chequeosFallidos = [...new Set([...problemas, ...problemasSegunda].map((problema) => problema.chequeo))];
+  return segunda.tipo === 'ok' && !problemasSegunda.length
+    ? { respuesta: segunda.respuesta, verificacion: 'regenerada', chequeosFallidos }
+    : { respuesta: null, verificacion: 'segura', chequeosFallidos };
 };

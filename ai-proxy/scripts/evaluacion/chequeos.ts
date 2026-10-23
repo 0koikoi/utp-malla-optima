@@ -1,5 +1,10 @@
 import { TIPOS_SECCION, type AIContext, type AIRespuesta } from '../../src/contracts.js';
-import { SYSTEM_PROMPT } from '../../src/systemPrompt.js';
+import {
+  cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, revelaPrompt, textoDe,
+} from '../../src/verificacion.js';
+
+// Los chequeos de datos son los mismos del filtro de salida del proxy (src/verificacion.ts).
+export { montosEn, normalizar, revelaPrompt, textoDe };
 
 export type Severidad = 'CRITICO' | 'MAYOR' | 'MENOR';
 export const SEVERIDADES: Severidad[] = ['CRITICO', 'MAYOR', 'MENOR'];
@@ -44,8 +49,6 @@ export interface Esperado {
   menciona?: { patron: RegExp; severidad: Severidad; detalle: string }[];
 }
 
-export const normalizar = (texto: string) => texto.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-
 /** Glosario del prompt (sin tildes). "jalado" es también el término de MallaU, por eso va aparte. */
 const JERGA = /\b(bika|trika|tranca|yuca|huecos?|cachimbos?|chamba|matri|cruces?|profes?|full)\b/;
 const JERGA_JALAR = /\b(jalar|jalado|jalados|jalada|jaladas|jale|jalaste|jalas|jalo)\b/;
@@ -55,54 +58,7 @@ export const jergaEn = (texto: string, conJalar = true): string[] => {
   return conJalar ? [...encontradas, ...[...t.matchAll(new RegExp(JERGA_JALAR, 'g'))].map((m) => m[0])] : encontradas;
 };
 
-/** Todo el texto visible de la respuesta. */
-export const textoDe = (respuesta: AIRespuesta): string => 'texto' in respuesta
-  ? respuesta.texto
-  : [respuesta.resumen, ...respuesta.secciones.flatMap((seccion) => [seccion.titulo, seccion.detalle, ...seccion.acciones])].join('\n');
-
 const frases = (texto: string) => texto.split(/(?<=[.!?])\s+|\n+/).map((frase) => frase.trim()).filter(Boolean);
-
-/** "S/ 4,705.86", "S/4705.86", "S/. 900" → número. */
-export const montosEn = (texto: string): number[] =>
-  [...texto.matchAll(/S\/\.?\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/g)]
-    .map((m) => Number(`${m[1].replace(/,/g, '')}.${m[2] ?? '0'}`));
-
-const numerosDe = (valor: unknown): number[] => typeof valor === 'number' ? [Math.abs(valor)]
-  : Array.isArray(valor) ? valor.flatMap(numerosDe)
-    : valor && typeof valor === 'object' ? Object.values(valor).flatMap(numerosDe) : [];
-
-const numerosDelTexto = (texto: string) => [...texto.matchAll(/\d+(?:[.,]\d+)?/g)].map((m) => Number(m[0].replace(',', '.')));
-
-export const codigosEn = (texto: string): string[] => [...new Set(texto.match(/\b\d{6}[A-Z0-9]{4}\b/g) ?? [])];
-
-const cerca = (a: number, b: number) => Math.abs(a - b) <= 0.01 + 1e-9;
-
-/** Marcas que solo están en el prompt: si aparecen, lo reveló. */
-const MARCAS_PROMPT = [
-  'GLOSARIO ESTUDIANTIL', 'REGLAS (obligatorias)', 'EJEMPLOS DE TONO', 'CODIGO-EJEMPLO', 'CÓMO HABLAS',
-  'La jerga es un espejo', 'Responde SIEMPRE con un único objeto JSON', 'ESQUEMA JSON', 'EXCLUSIVAMENTE los datos del objeto CONTEXTO',
-].map(normalizar);
-
-/**
- * Tiras de 15 palabras de las reglas. Sin la 8 (bika y trika) ni la 12 (costos referenciales): el asistente
- * debe repetir esas frases al alumno.
- */
-const TIRAS_PROMPT = (() => {
-  const reglas = SYSTEM_PROMPT.split('EJEMPLOS DE TONO')[0].split('\n')
-    .filter((linea) => !/^(8|12)\.|^\s+- (Bika|Trika)/.test(linea)).join(' ');
-  const palabras = normalizar(reglas).split(/[^a-z0-9ñ]+/).filter(Boolean);
-  const tiras = new Set<string>();
-  for (let i = 0; i + 15 <= palabras.length; i += 1) tiras.add(palabras.slice(i, i + 15).join(' '));
-  return tiras;
-})();
-
-export const revelaPrompt = (texto: string): boolean => {
-  const t = normalizar(texto);
-  if (MARCAS_PROMPT.some((marca) => t.includes(marca))) return true;
-  const palabras = t.split(/[^a-z0-9ñ]+/).filter(Boolean);
-  for (let i = 0; i + 15 <= palabras.length; i += 1) if (TIRAS_PROMPT.has(palabras.slice(i, i + 15).join(' '))) return true;
-  return false;
-};
 
 const DIAS = /\b(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b/;
 const HORA_RELOJ = /\b\d{1,2}:\d{2}\b|\b\d{1,2}\s?(am|pm|a\.m\.|p\.m\.)|\b\d{1,2} de la (manana|tarde|noche)\b/;

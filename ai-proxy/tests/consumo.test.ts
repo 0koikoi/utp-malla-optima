@@ -77,13 +77,13 @@ describe('consumo - registro de cada llamada real', () => {
     expect(linea.includes('\n')).toBe(false);
     const registro = JSON.parse(linea);
     expect(Object.keys(registro).sort()).toEqual([
-      'codigo', 'completion_tokens', 'costo_usd', 'duracion_ms', 'evento', 'finish_reasons', 'intentos', 'mock', 'modelo', 'modo',
-      'prompt_cache_hit_tokens', 'prompt_cache_miss_tokens', 'prompt_tokens', 'reasoning_tokens', 'tarifa',
+      'chequeos_fallidos', 'codigo', 'completion_tokens', 'costo_usd', 'duracion_ms', 'evento', 'finish_reasons', 'intentos', 'mock', 'modelo', 'modo',
+      'prompt_cache_hit_tokens', 'prompt_cache_miss_tokens', 'prompt_tokens', 'reasoning_tokens', 'tarifa', 'verificacion',
     ]);
     expect(registro).toMatchObject({
       evento: 'asistente', modo: 'chat', codigo: 'ok', modelo: 'deepseek-flash', mock: false, intentos: 1,
       prompt_tokens: 10_000, prompt_cache_hit_tokens: 8_000, prompt_cache_miss_tokens: 2_000, completion_tokens: 300,
-      tarifa: 'normal', costo_usd: 0.000504, finish_reasons: [null], reasoning_tokens: 0,
+      tarifa: 'normal', costo_usd: 0.000504, finish_reasons: [null], reasoning_tokens: 0, verificacion: 'primera', chequeos_fallidos: [],
     });
     for (const prohibido of ['mi dato privado', '100000', '203.0.113.7', CLAVE, 'CONTEXTO', 'catalogo']) {
       expect(linea).not.toContain(prohibido);

@@ -51,6 +51,7 @@ describe('HttpAIClient', () => {
     [{ error: 'LIMITE' }, 429, 'LIMITE'],
     [{ error: 'RESPUESTA_INVALIDA' }, 502, 'RESPUESTA_INVALIDA'],
     [{ error: 'RESPUESTA_LARGA' }, 502, 'RESPUESTA_LARGA'],
+    [{ error: 'RESPUESTA_NO_VERIFICADA', mensaje: 'No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.' }, 422, 'RESPUESTA_NO_VERIFICADA'],
     [{ error: 'ENTRADA_INVALIDA' }, 400, 'ENTRADA_INVALIDA'],
     ['<html>', 504, 'PROVEEDOR_CAIDO'],
     ['<html>', 429, 'LIMITE'],
@@ -60,8 +61,9 @@ describe('HttpAIClient', () => {
     expect(resultado).toEqual({ ok: false, error: codigo, mensaje: MENSAJES_ERROR[codigo] });
   });
 
-  it('RESPUESTA_LARGA pide preguntar más corto', () => {
+  it('RESPUESTA_LARGA pide preguntar más corto; RESPUESTA_NO_VERIFICADA muestra la respuesta segura fija', () => {
     expect(MENSAJES_ERROR.RESPUESTA_LARGA).toBe('No pude terminar la respuesta, intenta preguntarlo más corto.');
+    expect(MENSAJES_ERROR.RESPUESTA_NO_VERIFICADA).toBe('No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.');
   });
 
   it('una respuesta 200 fuera del contrato → RESPUESTA_INVALIDA', async () => {
