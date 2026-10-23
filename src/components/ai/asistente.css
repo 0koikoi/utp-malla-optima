@@ -1,0 +1,71 @@
+/*
+ * Asistente IA — tokens de color.
+ * Modo claro: reutiliza las variables de tokens.css cuando su valor coincide
+ * con la paleta del asistente; el resto son valores propios. El modo oscuro
+ * sigue al toggle de la app (:root[data-theme="dark"]); las variables oscuras
+ * del proyecto no coinciden con esta paleta, así que se definen aquí.
+ * tests/ai/asistenteColores.test.ts verifica el contraste AA.
+ */
+:root {
+  --ia-bg:             var(--bg-surface-subtle);  /* #F8FAFC */
+  --ia-head-bg:        var(--bg-dark-1);          /* #0F172A */
+  --ia-head-t:         var(--t-white);            /* #FFFFFF */
+  --ia-head-muted:     #CBD5E1;
+  --ia-bot-bg:         var(--bg-surface);         /* #FFFFFF */
+  --ia-bot-border:     var(--border-subtle);      /* #E2E8F0 */
+  --ia-bot-t:          var(--t-primary);          /* #0F172A */
+  --ia-muted:          #475569;
+  --ia-user-bg:        var(--bg-dark-2);          /* #1E293B */
+  --ia-user-t:         var(--t-white);
+  --ia-accent:         var(--accent);             /* #C8102E */
+  --ia-accent-hov:     #A50D26;
+  --ia-accent-t:       #FFFFFF;
+  --ia-online:         #16A34A;
+  --ia-offline:        #94A3B8;
+  --ia-ok-t:           var(--chip-apr-t);         /* #15803D */
+  --ia-ok-bg:          var(--chip-apr-bg);        /* #DCFCE7 */
+  --ia-atencion-t:     var(--amber-dark);         /* #B45309 */
+  --ia-atencion-bg:    #FEF3C7;
+  --ia-riesgo-t:       var(--rose-dark);          /* #B91C1C */
+  --ia-riesgo-bg:      #FEE2E2;
+  --ia-chip-bg:        #FFFFFF;
+  --ia-chip-border:    #CBD5E1;
+  --ia-chip-t:         #0F172A;
+  --ia-input-bg:       #FFFFFF;
+  --ia-input-border:   #CBD5E1;
+  --ia-input-t:        #0F172A;
+  --ia-code-bg:        #F1F5F9;
+  --ia-shadow:         0 18px 40px -8px rgba(15, 23, 42, 0.35), 0 6px 14px -6px rgba(15, 23, 42, 0.2);
+}
+
+:root[data-theme="dark"] {
+  --ia-bg:             var(--bg-page);            /* #0B1220 */
+  --ia-head-bg:        #111827;
+  --ia-head-t:         #FFFFFF;
+  --ia-head-muted:     #CBD5E1;
+  --ia-bot-bg:         #1E293B;
+  --ia-bot-border:     #334155;
+  --ia-bot-t:          #E2E8F0;
+  --ia-muted:          #CBD5E1;
+  --ia-user-bg:        #334155;
+  --ia-user-t:         #F8FAFC;
+  --ia-accent:         #E11D48;
+  --ia-accent-hov:     #F43F5E;
+  --ia-accent-t:       #FFFFFF;
+  --ia-online:         #22C55E;
+  --ia-offline:        #64748B;
+  --ia-ok-t:           #4ADE80;
+  --ia-ok-bg:          #052E16;
+  --ia-atencion-t:     #FBBF24;
+  --ia-atencion-bg:    #451A03;
+  --ia-riesgo-t:       #F87171;
+  --ia-riesgo-bg:      #450A0A;
+  --ia-chip-bg:        #1E293B;
+  --ia-chip-border:    #475569;
+  --ia-chip-t:         #E2E8F0;
+  --ia-input-bg:       #111827;
+  --ia-input-border:   #475569;
+  --ia-input-t:        #F8FAFC;
+  --ia-code-bg:        #0F172A;
+  --ia-shadow:         0 18px 40px -8px rgba(0, 0, 0, 0.6);
+}
