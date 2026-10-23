@@ -106,6 +106,7 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
   };
   const mostrarTooltip = (element: HTMLButtonElement) => setTooltip(posicionPopover(element));
   const esEnCurso = curso.estado === 'EN_CURSO';
+  const tieneEstado = curso.estado === 'CONVALIDADO' || esEnCurso || Boolean(curso.jalado) || invalido;
 
   const clases = [
     'curso-card',
@@ -120,6 +121,7 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
     curso.tipoPeriodo === 'VERANO' && curso.ubicacion === 'periodo' ? 'curso-verano' : '',
     permiteRetiroRapido ? 'con-retiro-rapido' : '',
     compacto ? 'compacto' : '',
+    tieneEstado ? 'con-estado' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -192,27 +194,30 @@ const CourseCardBase = ({ curso, compacto = false }: Props) => {
           </span>
         </div>
 
-        {curso.estado === 'CONVALIDADO' && (
-          <div className="curso-estado-chip">
-            <CircleCheck size={11} /> Convalidado
-          </div>
-        )}
-        {curso.estado === 'EN_CURSO' && (
-          <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
-        )}
-        {curso.jalado && (
-          <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /> Jalado
-            {ventanaRecuperacion && esJaladoSinReplanificar(curso, cicloActual) && ` · llevar en ${ventanaRecuperacion}`}</div>
-        )}
-        {invalido && (
-          motivoInvalido === 'JALADO_PENDIENTE'
-            ? <div className="curso-estado-chip invalido-chip" title="Primero debes llevar tus cursos jalados en su ventana de recuperación.">
-              <AlertTriangle size={11} /> Falta llevar curso jalado
+        {/* Etiquetas de estado: línea propia entre los chips y la fila de íconos. */}
+        {tieneEstado && <div className="curso-estados">
+          {curso.estado === 'CONVALIDADO' && (
+            <div className="curso-estado-chip">
+              <CircleCheck size={11} /> Convalidado
             </div>
-            : <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">
-              <AlertTriangle size={11} /> Prerrequisito sin cumplir
-            </div>
-        )}
+          )}
+          {curso.estado === 'EN_CURSO' && (
+            <div className="curso-estado-chip en-curso-chip"><Clock3 size={11} /> En curso</div>
+          )}
+          {curso.jalado && (
+            <div className="curso-estado-chip jalado-chip"><RotateCcw size={11} /><span>Jalado
+              {ventanaRecuperacion && esJaladoSinReplanificar(curso, cicloActual) && ` · llevar en ${ventanaRecuperacion}`}</span></div>
+          )}
+          {invalido && (
+            motivoInvalido === 'JALADO_PENDIENTE'
+              ? <div className="curso-estado-chip invalido-chip" title="Primero debes llevar tus cursos jalados en su ventana de recuperación.">
+                <AlertTriangle size={11} /><span>Falta llevar curso jalado</span>
+              </div>
+              : <div className="curso-estado-chip invalido-chip" title="Sus prerrequisitos no se cumplen en este periodo. Muévelo o replanifica el prerrequisito.">
+                <AlertTriangle size={11} /><span>Prerrequisito sin cumplir</span>
+              </div>
+          )}
+        </div>}
       </div>
       {confirmarJalado && <JaladoModal curso={curso} onClose={() => setConfirmarJalado(false)} />}
 

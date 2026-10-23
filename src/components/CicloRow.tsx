@@ -186,8 +186,8 @@ const CicloRowBase = ({ numCiclo, cursos, tipoPeriodo = 'REGULAR', habilitado = 
       >
         {jaladosPendientes.length > 0 && (
           <div className="jalado-recovery-banner" role="alert">
-            <span><AlertTriangle size={13} /> {jaladosPendientes.map((texto, indice) => indice % 2 === 0
-              ? <span key={indice}>Debes llevar primero <b>{texto}</b> {jaladosPendientes[indice + 1]}. </span> : null)}</span>
+            <p className="jalado-recovery-text"><AlertTriangle size={13} /> {jaladosPendientes.map((texto, indice) => indice % 2 === 0
+              ? <span key={indice}>Debes llevar primero <b>{texto}</b> {jaladosPendientes[indice + 1]}. </span> : null)}</p>
             <button type="button" disabled={agregandoJalados} onClick={() => {
               setAgregandoJalados(true);
               void agregarJaladosARecuperacion(periodo).finally(() => setAgregandoJalados(false));
