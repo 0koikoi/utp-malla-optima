@@ -7,6 +7,7 @@ import { determinarTotalCiclos, normalizarTotalCiclos, normalizarCiclosExcluidos
 import { obtenerAsignacionesConservadas } from '../preservedPlanningAssignments';
 import { periodoBloqueadoPorCicloActual } from '../../rules/academicContextRules';
 import { esJaladoSinReplanificar } from '../../rules/courseRules';
+import { esCursoJalado } from '../../rules/jaladoRules';
 import { prerrequisitosCumplidos } from './prerequisiteChecks';
 import { horasValidas, motivosNoPlanificado } from './unplannedReasons';
 import type { CicloPlanificadoResumen, ExplicacionPlan, OpcionesPlanificacion, ResultadoPlanificacionAutomatica } from './types';
@@ -33,12 +34,21 @@ export const generarPlanificacionAutomatica = (
       curso.ubicacion = 'banco';
     }
   }
+  // Regla UTP: los jalados van primero, todos en el periodo de recuperación (el ciclo siguiente al actual).
+  const periodoRecuperacion = cicloActual > 0 ? crearPeriodoRegular(cicloActual + 1) : null;
+  const jalados = periodoRecuperacion ? cursosBase.filter(esCursoJalado) : [];
+  for (const curso of jalados) {
+    curso.ciclo = periodoRecuperacion!.cicloReferencia;
+    curso.tipoPeriodo = 'REGULAR';
+    curso.ubicacion = 'periodo';
+  }
   const electivoCubierto = cursosBase.some((curso) => curso.tipo === 'ELECTIVO' &&
-    (ESTADOS_COMPLETADOS.has(curso.estado) || curso.estado === 'EN_CURSO' ||
+    (ESTADOS_COMPLETADOS.has(curso.estado) || curso.estado === 'EN_CURSO' || esCursoJalado(curso) ||
       curso.estado === 'PENDIENTE' && curso.ubicacion === 'periodo' && cicloActual > 0 &&
       !esJaladoSinReplanificar(curso, cicloActual) &&
       periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), cicloActual)));
-  const electivos = cursosBase.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE')
+  const electivos = cursosBase.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE' &&
+    !esCursoJalado(curso))
     .sort((a, b) => (horasValidas(a) ? a.horasSemanales : Infinity) - (horasValidas(b) ? b.horasSemanales : Infinity) ||
       b.creditos - a.creditos || a.codigo.localeCompare(b.codigo));
   const electivoElegido = electivoCubierto ? undefined : electivos[0];
@@ -54,14 +64,19 @@ export const generarPlanificacionAutomatica = (
     .filter((periodo) => periodo.cicloReferencia >= cicloInicio);
   const ultimoPeriodo = periodos.at(-1);
   const { conservados, asignaciones } = obtenerAsignacionesConservadas(cursosBase, cicloActual, opciones.periodoIngreso);
+  const nuevasAsignaciones = new Map<string, PeriodoAcademico>();
+  for (const curso of jalados) {
+    conservados.add(curso.codigo);
+    asignaciones.set(curso.codigo, periodoRecuperacion!);
+    nuevasAsignaciones.set(curso.codigo, periodoRecuperacion!);
+  }
   const pendientes = cursosBase.filter((curso) => curso.estado === 'PENDIENTE' &&
     curso.tipo !== 'ELECTIVO' && !conservados.has(curso.codigo));
   const restantes = new Map(pendientes.map((curso) => [curso.codigo, curso]));
-  const nuevasAsignaciones = new Map<string, PeriodoAcademico>();
   const ciclos: CicloPlanificadoResumen[] = [];
 
   for (const periodo of periodos) {
-    if (restantes.size === 0) break;
+    if (restantes.size === 0 && periodo.id !== periodoRecuperacion?.id) break;
     const cargaConservada = cursosBase.filter((curso) => curso.ubicacion === 'periodo' &&
       (curso.estado === 'EN_CURSO' || (curso.estado === 'PENDIENTE' && conservados.has(curso.codigo))) &&
       obtenerPeriodoCurso(curso).id === periodo.id);
@@ -84,7 +99,8 @@ export const generarPlanificacionAutomatica = (
       seleccionados.push(...seleccion.cursos);
       horasDisponibles -= seleccion.horas;
     }
-    if (seleccionados.length === 0) continue;
+    const jaladosPeriodo = cargaConservada.filter(esCursoJalado);
+    if (seleccionados.length === 0 && jaladosPeriodo.length === 0) continue;
     for (const curso of seleccionados) {
       nuevasAsignaciones.set(curso.codigo, periodo);
       asignaciones.set(curso.codigo, periodo);
@@ -96,7 +112,7 @@ export const generarPlanificacionAutomatica = (
       creditos: cursosPeriodo.reduce((suma, curso) => suma + curso.creditos, 0),
       horasEfectivas: calcularHorasEfectivas(cursosPeriodo, 'REGULAR'),
       impacto: seleccionados.reduce((suma, curso) => suma + (prioridades.get(curso.codigo)?.impacto ?? 0), 0),
-      cursos: seleccionados.map((curso) => ({
+      cursos: [...jaladosPeriodo, ...seleccionados].map((curso) => ({
         codigo: curso.codigo, nombre: curso.nombre, creditos: curso.creditos,
         impacto: prioridades.get(curso.codigo)?.impacto ?? 0,
       })),
