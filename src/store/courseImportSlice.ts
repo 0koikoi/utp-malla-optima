@@ -1,8 +1,10 @@
 import type { AcademicRepositories } from '../application/ports/AcademicRepositories';
 import { cursoBloqueado, normalizarCurso, ordenarCursos } from '../domain/rules/courseRules';
 import { ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
+import { ubicarJaladosAdelantados } from '../domain/rules/jaladoRules';
 import { CICLOS_INICIALES, determinarTotalCiclos, normalizarCiclosExcluidos, normalizarTotalCiclos } from '../domain/rules/cycleRules';
 import { migrateLegacyFinancialRulesReference } from '../financial/rules/financialRulesCompatibility';
+import { VERSION_PARSER } from '../config/parserVersion';
 import type { AcademicSlice, AcademicStore } from './types';
 
 type CourseImportSlice = Pick<AcademicStore,
@@ -20,11 +22,12 @@ export const createCourseImportSlice = (repos: AcademicRepositories): AcademicSl
         ...normalizado,
         ciclo: normalizado.cicloOrigen,
         tipoPeriodo: 'REGULAR' as const,
-        ubicacion: cursoBloqueado(normalizado) ? 'periodo' as const : 'banco' as const,
+        ubicacion: cursoBloqueado(normalizado) || normalizado.jalado ? 'periodo' as const : 'banco' as const,
       };
     }));
     const cursosNormalizados = state.cicloActual
-      ? ordenarCursos(ubicarAvanceEnCicloActual(base, state.cicloActual, state.periodoIngreso))
+      ? ordenarCursos(ubicarJaladosAdelantados(
+        ubicarAvanceEnCicloActual(base, state.cicloActual, state.periodoIngreso), state.cicloActual))
       : base;
     const totalCiclos = normalizarTotalCiclos(Math.max(CICLOS_INICIALES, state.cicloActual ?? 1));
 
@@ -34,6 +37,7 @@ export const createCourseImportSlice = (repos: AcademicRepositories): AcademicSl
         ...(state.tarifario ? { universidadId: state.tarifario.universidadId } : {}),
         disciplinaActiva: state.disciplinaActiva,
         nombreArchivoCargado: nombreArchivo,
+        versionParser: VERSION_PARSER,
         totalCiclos,
         ciclosExcluidos: [],
       });
@@ -86,7 +90,15 @@ export const createCourseImportSlice = (repos: AcademicRepositories): AcademicSl
     const ciclosExcluidos = normalizarCiclosExcluidos(profileDB?.ciclosExcluidos).filter((ciclo) =>
       ciclo > (cicloActual ?? 0) && !cursos.some((curso) =>
         curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' && curso.ciclo === ciclo));
+    // Mallas importadas con un parser anterior: se recomienda una sola vez volver a subir el Excel.
+    const datosDesactualizados = cursos.length > 0 && (profileDB?.versionParser ?? 1) < VERSION_PARSER &&
+      (profileDB?.avisoVersionParser ?? 0) < VERSION_PARSER;
+    if (datosDesactualizados) await repos.profile.save({ avisoVersionParser: VERSION_PARSER });
     set({ cursos, tarifario,
+      ...(datosDesactualizados ? { notificacionMovimiento: {
+        tipo: 'DATOS_DESACTUALIZADOS' as const, cursoNombre: profileDB?.nombreArchivoCargado ?? 'Tu malla',
+        mensaje: 'se importó con una versión anterior de MallaU. Vuelve a subir tu Excel: antes los cursos DESAPROBADO quedaban como APROBADO.',
+      } } : {}),
       disciplinaActiva: profileDB?.disciplinaActiva ?? get().disciplinaActiva,
       nombreArchivoCargado: profileDB?.nombreArchivoCargado ?? null,
       periodoIngreso: profileDB?.periodoIngreso ?? null, cicloActual,

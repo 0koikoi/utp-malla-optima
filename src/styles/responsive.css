@@ -204,6 +204,8 @@
     scrollbar-width: none;
   }
   .tier-dropzone::-webkit-scrollbar { display: none; }
+  /* Con el aviso de jalados la fila se parte: el aviso ocupa todo el ancho y las tarjetas van debajo. */
+  .tier-dropzone:has(.jalado-recovery-banner) { flex-wrap: wrap; }
 
   /* Cards de cursos en planificador: ancho fijo para scroll horizontal */
   .tier-dropzone:not(#pozo-cursos) .curso-card {

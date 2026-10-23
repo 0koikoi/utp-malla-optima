@@ -2,42 +2,68 @@ import type { AcademicRepositories } from '../application/ports/AcademicReposito
 import { moveCourseUseCase } from '../application/usecases/moveCourseUseCase';
 import { crearPeriodoRegular, crearPeriodoVerano, obtenerPeriodoCurso } from '../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
-import { cursoBloqueado, ordenarCursos } from '../domain/rules/courseRules';
+import { cursoBloqueado, esJaladoSinReplanificar, ordenarCursos } from '../domain/rules/courseRules';
 import { obtenerHorasSinRecargo } from '../domain/rules/planningRules';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
+import { simularJalado } from '../domain/services/whatIfService';
 import {
-  notificacionDesdeResultado, notificacionErrorPersistencia,
+  destinoJaladoPermitido, devolverJaladoAOrigen, esCursoJalado, esRegresoAlOrigen, jaladosFaltantes,
+  mensajeJaladoObligatorio, planificadosSinJalado, textoVentana, ventanaJalado,
+} from '../domain/rules/jaladoRules';
+import {
+  notificacionDesdeResultado, notificacionErrorPersistencia, notificacionJalado, notificacionJaladoRetirado,
   notificacionPeriodoBloqueado, notificacionPorConflictos,
 } from '../presentation/messages/movementMessages';
 import type { AcademicSlice, AcademicStore } from './types';
 
 type CourseActionsSlice = Pick<AcademicStore,
-  'updateEstadoCurso' | 'moverCursoAPeriodo' | 'moverCursoACiclo' |
-  'moverCursoAVerano' | 'moverCursoABanco' | 'reiniciarPlanificacion'>;
+  'marcarComoJalado' | 'desmarcarJalado' | 'moverCursoAPeriodo' | 'moverCursoACiclo' |
+  'moverCursoAVerano' | 'moverCursoABanco' | 'agregarJaladosARecuperacion' | 'reiniciarPlanificacion'>;
 
 export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicSlice<CourseActionsSlice> => (set, get) => ({
-  updateEstadoCurso: async (codigo, nuevoEstado) => {
+  marcarComoJalado: async (codigo) => {
     const state = get();
     const cursoActual = state.cursos.find((curso) => curso.codigo === codigo);
-    if (!cursoActual) return;
-    const ubicacion = cursoBloqueado({ ...cursoActual, estado: nuevoEstado })
-      ? 'periodo' as const : cursoActual.ubicacion;
-    const cursosActualizados = ordenarCursos(state.cursos.map((curso) => {
-      if (curso.codigo !== codigo) return curso;
-      const actualizado = { ...curso, estado: nuevoEstado, ubicacion };
-      return state.cicloActual
-        ? ubicarAvanceEnCicloActual([actualizado], state.cicloActual, state.periodoIngreso)[0]
-        : actualizado;
-    }));
-    const actualizado = cursosActualizados.find((curso) => curso.codigo === codigo)!;
+    if (!cursoActual || cursoActual.estado !== 'EN_CURSO') return null;
+    // Queda en su ciclo, desbloqueado para moverse; no se mueve ningún otro curso.
+    const cambios = { estado: 'PENDIENTE' as const, jalado: true, cicloJalado: cursoActual.ciclo,
+      ubicacion: 'periodo' as const, ciclo: cursoActual.ciclo, tipoPeriodo: cursoActual.tipoPeriodo };
+    const cursosActualizados = ordenarCursos(state.cursos.map((curso) =>
+      curso.codigo === codigo ? { ...curso, ...cambios } : curso));
+    // Misma lista que la vista previa del modal: los descendientes planificados.
+    const nombres = new Map(state.cursos.map((curso) => [curso.codigo, curso.nombre]));
+    const invalidos = simularJalado(codigo, state.cursos).planificadosInvalidos
+      .map((item) => ({ codigo: item.codigo, nombre: nombres.get(item.codigo) ?? item.codigo }));
     try {
-      await repos.courses.update(codigo, {
-        estado: nuevoEstado, ubicacion: actualizado.ubicacion,
-        ciclo: actualizado.ciclo, tipoPeriodo: actualizado.tipoPeriodo,
-      });
-      set({ cursos: cursosActualizados });
+      await repos.courses.update(codigo, cambios);
+      set({ cursos: cursosActualizados, cursoAMover: null,
+        notificacionMovimiento: notificacionJalado(cursoActual, invalidos,
+          textoVentana(ventanaJalado({ ...cursoActual, ...cambios }, cursosActualizados, state))) });
+      return invalidos;
     } catch {
       set({ notificacionMovimiento: notificacionErrorPersistencia(cursoActual.nombre) });
+      return null;
+    }
+  },
+
+  desmarcarJalado: async (codigo) => {
+    const state = get();
+    const cursoActual = state.cursos.find((curso) => curso.codigo === codigo);
+    if (!cursoActual?.jalado) return false;
+    const enCurso = { ...cursoActual, estado: 'EN_CURSO' as const, jalado: undefined, cicloJalado: undefined,
+      ubicacion: 'periodo' as const };
+    const restaurado = state.cicloActual
+      ? ubicarAvanceEnCicloActual([enCurso], state.cicloActual, state.periodoIngreso)[0] : enCurso;
+    const cursosActualizados = ordenarCursos(state.cursos.map((curso) => curso.codigo === codigo ? restaurado : curso));
+    try {
+      await repos.courses.update(codigo, { estado: 'EN_CURSO', jalado: undefined, cicloJalado: undefined,
+        ubicacion: restaurado.ubicacion,
+        ciclo: restaurado.ciclo, tipoPeriodo: restaurado.tipoPeriodo });
+      set({ cursos: cursosActualizados, cursoAMover: null, notificacionMovimiento: null });
+      return true;
+    } catch {
+      set({ notificacionMovimiento: notificacionErrorPersistencia(cursoActual.nombre) });
+      return false;
     }
   },
 
@@ -58,13 +84,18 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     const actualizado = cursosActualizados.find((item) => item.codigo === codigo)!;
     const afectados = detectarNuevosConflictosDescendientes(state.cursos, cursosActualizados, codigo, state);
     const avisoHoras = notificacionDesdeResultado(curso, periodo, resultado);
+    // Sacar un jalado de su ventana invalida lo planificado desde allí.
+    const avisoJalado = esRegresoAlOrigen(curso, periodo, state.cursos, state)
+      ? notificacionJaladoRetirado(curso.nombre, planificadosSinJalado(cursosActualizados, state),
+        textoVentana(ventanaJalado(curso, cursosActualizados, state)))
+      : null;
     try {
       await repos.courses.update(codigo, {
         ciclo: actualizado.ciclo, tipoPeriodo: actualizado.tipoPeriodo,
         ubicacion: actualizado.ubicacion,
       });
       set({ cursos: cursosActualizados, cursoAMover: null,
-        notificacionMovimiento: notificacionPorConflictos(curso.nombre, afectados, 'mover', avisoHoras) });
+        notificacionMovimiento: avisoJalado ?? notificacionPorConflictos(curso.nombre, afectados, 'mover', avisoHoras) });
       return true;
     } catch {
       set({ notificacionMovimiento: notificacionErrorPersistencia(curso.nombre) });
@@ -86,7 +117,12 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
       set({ notificacionMovimiento: { tipo: 'INMOVIBLE', cursoNombre: curso.nombre } });
       return false;
     }
-    if (state.cicloActual && curso.ubicacion === 'periodo' &&
+    if (!destinoJaladoPermitido(curso, 'banco', state.cursos, state)) {
+      set({ notificacionMovimiento: { tipo: 'JALADO_OBLIGATORIO', cursoNombre: curso.nombre,
+        mensaje: mensajeJaladoObligatorio(curso, state.cursos, state) } });
+      return false;
+    }
+    if (state.cicloActual && curso.ubicacion === 'periodo' && !esJaladoSinReplanificar(curso, state.cicloActual) &&
         periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), state.cicloActual)) {
       set({ notificacionMovimiento: notificacionPeriodoBloqueado(curso.nombre) });
       return false;
@@ -108,12 +144,27 @@ export const createCourseActionsSlice = (repos: AcademicRepositories): AcademicS
     }
   },
 
+  agregarJaladosARecuperacion: async (destino) => {
+    const state = get();
+    let todos = true;
+    for (const jalado of jaladosFaltantes(state.cursos, state)) {
+      // Sin destino, cada jalado va al ciclo regular de su ventana.
+      const ventana = ventanaJalado(jalado, state.cursos, state);
+      const objetivo = destino ? ventana.find((periodo) => periodo.id === destino.id) : ventana.at(-1);
+      if (!objetivo) continue;
+      todos = await get().moverCursoAPeriodo(jalado.codigo, objetivo) && todos;
+    }
+    return todos;
+  },
+
   reiniciarPlanificacion: async () => {
     const state = get();
     const cursosActualizados = ordenarCursos(state.cursos.map((curso) => {
       if (curso.estado !== 'PENDIENTE' ||
           (state.cicloActual && curso.ubicacion === 'periodo' &&
            periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), state.cicloActual))) return curso;
+      // Un jalado replanificado vuelve a su ciclo original, no al banco.
+      if (esCursoJalado(curso) && state.cicloActual) return devolverJaladoAOrigen(curso, state.cicloActual);
       return { ...curso, ciclo: curso.cicloOrigen, tipoPeriodo: 'REGULAR' as const, ubicacion: 'banco' as const };
     }));
     try {

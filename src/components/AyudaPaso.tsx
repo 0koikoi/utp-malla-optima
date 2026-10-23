@@ -196,7 +196,7 @@ function HerramientasPaso() {
     </div>
     <div className="help-tools-grid">
       <Herramienta icono={<Upload size={22} />} nombre="Subir / Actualizar Excel">Carga el archivo de UTP+. Actualizarlo reinicia la planificación manual: guarda un respaldo antes si quieres conservarla.</Herramienta>
-      <Herramienta icono={<CircleCheck size={22} />} nombre="Avance">“Llevados” son aprobados o convalidados; “planificados”, pendientes ya ubicados; “pendientes”, los que siguen en el banco.</Herramienta>
+      <Herramienta icono={<CircleCheck size={22} />} nombre="Avance">“Llevados” son aprobados o convalidados; “en curso”, los del ciclo actual; “planificados”, pendientes ya ubicados; “pendientes”, los que siguen en el banco y los jalados aún no replanificados.</Herramienta>
       <Herramienta icono={<Layers size={22} />} nombre="Electivos">Compara tus créditos electivos llevados o ubicados con el mínimo de {MINIMO_CREDITOS_ELECTIVOS} cr. Las otras alternativas pueden quedarse en el banco.</Herramienta>
       <Herramienta icono={<Settings2 size={22} />} nombre="Configuración">Indica marzo o agosto como mes de ingreso y el ciclo que estás cursando. Así se ubican tu avance y los veranos disponibles.</Herramienta>
       <Herramienta icono={<RotateCcw size={22} />} nombre="Limpiar plan">Devuelve los pendientes de periodos futuros al banco. Conserva los cursos aprobados, los cursos en curso y los periodos cerrados.</Herramienta>

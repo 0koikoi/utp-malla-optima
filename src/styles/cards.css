@@ -491,3 +491,23 @@
 
 .curso-card.curso-verano { box-shadow: 0 0 0 1px var(--amber-border), var(--shadow-card); }
 .ctag.ctag-verano { color: var(--amber-dark); background: var(--amber-tint); border: 1px solid var(--amber-border); }
+
+/* ── Cursos jalados e inválidos ── */
+/* Menú fijo del (i) en tarjetas EN_CURSO: recibe clics a diferencia del tooltip. */
+.curso-tooltip.curso-tooltip-menu { pointer-events: auto; }
+.curso-jalar-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border: 1px solid var(--rose-border); border-radius: 5px; background: transparent; color: var(--rose-border); font-size: 0.72rem; font-weight: 750; cursor: pointer; }
+.curso-jalar-btn:hover { background: var(--rose-subtle, rgba(239, 35, 60, 0.08)); }
+.curso-card.curso-jalado { border-left-color: var(--rose-primary); }
+.curso-estado-chip.jalado-chip { color: var(--rose-primary); }
+.curso-card.curso-invalido { border-color: var(--amber-primary); border-left-color: var(--amber-primary); }
+.curso-estado-chip.invalido-chip { color: var(--amber-dark); }
+
+/* Etiquetas de estado en su propia línea, a todo el ancho y con salto de línea;
+   la tarjeta reserva abajo el alto de la fila de íconos (absoluta) para no taparlas. */
+.curso-estados { display: flex; flex-direction: column; gap: 2px; width: 100%; margin-top: 4px; }
+.curso-estados .curso-estado-chip { display: flex; align-items: flex-start; width: 100%; margin-top: 0; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.curso-estados .curso-estado-chip svg { flex-shrink: 0; margin-top: 1px; }
+.curso-card.con-estado,
+#pozo-cursos .curso-card.con-estado { padding-bottom: 28px; }
+/* Con la fila de íconos debajo de las etiquetas, los chips ya no necesitan reservarle espacio. */
+.curso-card.con-estado .curso-tags { padding-right: 0; }

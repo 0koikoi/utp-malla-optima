@@ -1,6 +1,7 @@
 import type { Curso } from '../../types/academic';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
+import { esJaladoSinReplanificar } from '../../domain/rules/courseRules';
 import type { Tarifario } from '../../types/financial';
 import type { FinancialPeriod, FinancialSummary } from '../models/FinancialPeriod';
 import type { UniversityFinancialRules } from '../rules/UniversityFinancialRules';
@@ -28,7 +29,8 @@ export class FinancialEngine {
     const agrupados = new Map<string, Curso[]>();
 
     cursos
-      .filter((curso) => curso.ubicacion === 'periodo' && curso.estado === 'PENDIENTE')
+      .filter((curso) => curso.ubicacion === 'periodo' && curso.estado === 'PENDIENTE' &&
+        !esJaladoSinReplanificar(curso, opciones.cicloActual))
       // El verano del ciclo actual sigue cotizándose; solo se excluyen los regulares bloqueados.
       .filter((curso) => !opciones.cicloActual || curso.tipoPeriodo !== 'REGULAR' ||
         !periodoBloqueadoPorCicloActual(obtenerPeriodoCurso(curso), opciones.cicloActual))

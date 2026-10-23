@@ -34,7 +34,7 @@ function MainNav({ app }: { app: AppController }) {
       <button type="button" className="nav-control-btn" onClick={() => app.setModalCarga(true)}><Upload size={14} /> {app.nombreArchivoCargado ? 'Actualizar Excel' : 'Subir Excel'}</button>
     </div>
     <div className="nav-divider" />
-    <div className="nav-group"><span className="nav-group-label">Avance</span><span className="nav-progress">{app.llevados} llevados · {app.planificados} planificados · {app.pendientesBanco.length} pendientes</span></div>
+    <div className="nav-group"><span className="nav-group-label">Avance</span><span className="nav-progress">{app.avance.llevados} llevados · {app.avance.enCurso} en curso · {app.avance.planificados} planificados · {app.avance.pendientes} pendientes</span></div>
     <div className="nav-divider" />
     <div className="nav-group" title={`Créditos electivos mínimos: ${MINIMO_CREDITOS_ELECTIVOS}`}><span className="nav-group-label">Electivos</span><span className="nav-chip-electivos">{formatCredits(app.creditosElectivos)} / {MINIMO_CREDITOS_ELECTIVOS} cr</span></div>
     <div className="nav-spacer" />

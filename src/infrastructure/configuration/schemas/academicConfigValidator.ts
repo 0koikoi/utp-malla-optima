@@ -33,6 +33,7 @@ export const AcademicConfigSchema: z.ZodType<AcademicConfig> = z
   .object({
     limitesAcademicos: AcademicLimitsSchema.optional(),
     verano: SummerAcademicConfigSchema.optional(),
+    jaladoPermiteVerano: z.boolean().optional(),
   })
   .strict();
 

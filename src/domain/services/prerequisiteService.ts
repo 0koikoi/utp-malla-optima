@@ -4,12 +4,15 @@ import {
   determinarPrimerPeriodoPlanificable, obtenerPeriodoCurso,
 } from '../rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual, permiteVeranoDespuesDe } from '../rules/academicContextRules';
+import { esJaladoSinReplanificar } from '../rules/courseRules';
+import { faltaJaladoParaPlanificado } from '../rules/jaladoRules';
 
 const ESTADOS_CUMPLIDOS = new Set(['APROBADO', 'CONVALIDADO']);
 
 export interface ContextoPrerrequisitos {
   cicloActual?: number | null;
   periodoIngreso?: PeriodoIngreso | null;
+  jaladoPermiteVerano?: boolean;
 }
 
 /** Ciclo actual explícito o, si no se configuró, el ciclo que concentra los cursos EN_CURSO. */
@@ -22,6 +25,7 @@ const resolverCicloActual = (cursos: Curso[], contexto: ContextoPrerrequisitos):
  * b) es EN_CURSO y el destino es posterior al ciclo actual (el plan asume que se aprobará);
  * c) es PENDIENTE y está ubicado en un periodo anterior al destino que no está bloqueado; o
  * d) no existe en la malla (nivelación / requisito externo).
+ * Un curso jalado que sigue en su ciclo original nunca cumple.
  */
 export const prerrequisitoCumplido = (
   codigo: string,
@@ -39,7 +43,7 @@ export const prerrequisitoCumplido = (
     return periodoDestino.orden > periodoActual.orden;
   }
 
-  if (requisito.ubicacion !== 'periodo') return false;
+  if (requisito.ubicacion !== 'periodo' || esJaladoSinReplanificar(requisito, cicloActual)) return false;
   const periodoRequisito = obtenerPeriodoCurso(requisito);
   if (cicloActual && periodoBloqueadoPorCicloActual(periodoRequisito, cicloActual)) return false;
   return periodoRequisito.orden < periodoDestino.orden;
@@ -90,13 +94,29 @@ export const validarPrerequisitosParaPeriodo = (
   return { valido: faltantes.length === 0, faltantes };
 };
 
-/** Compatibilidad con llamadas antiguas que solo conocen ciclos regulares. */
-export const validarPrerequisitosParaCiclo = (
+/**
+ * Un pendiente planificado es inválido si sus prerrequisitos no se cumplen para
+ * su propio periodo (p. ej. tras marcar un prerrequisito como jalado). No se
+ * mueve: solo se marca en la tarjeta.
+ */
+export const motivoPlanificadoInvalido = (
   curso: Curso,
   todosLosCursos: Curso[],
-  cicloDestino: number
-): { valido: boolean; faltantes: CursoReferencia[] } =>
-  validarPrerequisitosParaPeriodo(curso, todosLosCursos, crearPeriodoRegular(cicloDestino));
+  contexto: ContextoPrerrequisitos = {}
+): 'JALADO_PENDIENTE' | 'PRERREQUISITOS' | null => {
+  if (curso.estado !== 'PENDIENTE' || curso.ubicacion !== 'periodo' ||
+      esJaladoSinReplanificar(curso, resolverCicloActual(todosLosCursos, contexto))) return null;
+  // Regla UTP: un jalado fuera de su ventana bloquea este periodo.
+  if (faltaJaladoParaPlanificado(curso, todosLosCursos, contexto)) return 'JALADO_PENDIENTE';
+  return validarPrerequisitosParaPeriodo(curso, todosLosCursos, obtenerPeriodoCurso(curso), contexto).valido
+    ? null : 'PRERREQUISITOS';
+};
+
+export const esPlanificadoInvalido = (
+  curso: Curso,
+  todosLosCursos: Curso[],
+  contexto: ContextoPrerrequisitos = {}
+): boolean => motivoPlanificadoInvalido(curso, todosLosCursos, contexto) !== null;
 
 /** Cursos planificados que pierden una secuencia válida tras cambiar otra asignación. */
 export const detectarNuevosConflictosDescendientes = (
@@ -134,39 +154,4 @@ export const construirGrafoAcademico = (cursos: Curso[]): Map<string, string[]> 
   });
 
   return grafo;
-};
-
-/** Ordenamiento topológico básico para conocer el orden académico posible. */
-export const obtenerOrdenTopologico = (cursos: Curso[]): string[] => {
-  const grafo = construirGrafoAcademico(cursos);
-  const grados = new Map<string, number>();
-
-  cursos.forEach((curso) => grados.set(curso.codigo, 0));
-
-  grafo.forEach((dependientes) => {
-    dependientes.forEach((dependiente) => {
-      grados.set(dependiente, (grados.get(dependiente) ?? 0) + 1);
-    });
-  });
-
-  const cola = [...grados.entries()]
-    .filter(([, grado]) => grado === 0)
-    .map(([codigo]) => codigo);
-
-  const resultado: string[] = [];
-
-  while (cola.length) {
-    const actual = cola.shift()!;
-    resultado.push(actual);
-
-    (grafo.get(actual) ?? []).forEach((siguiente) => {
-      grados.set(siguiente, grados.get(siguiente)! - 1);
-
-      if (grados.get(siguiente) === 0) {
-        cola.push(siguiente);
-      }
-    });
-  }
-
-  return resultado;
 };

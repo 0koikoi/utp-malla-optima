@@ -3,6 +3,7 @@ import { DEFAULT_PROFILE } from '../config/defaultProfile';
 import { detectarNuevosConflictosDescendientes } from '../domain/services/prerequisiteService';
 import { cursoBloqueado, ordenarCursos } from '../domain/rules/courseRules';
 import { ubicarAvanceEnCicloActual } from '../domain/rules/academicContextRules';
+import { ubicarJaladosAdelantados } from '../domain/rules/jaladoRules';
 import { determinarPeriodoEnCurso } from '../domain/rules/academicPeriodRules';
 import { CICLOS_INICIALES, MAXIMO_CICLOS, determinarTotalCiclos, normalizarCiclosExcluidos, obtenerSiguienteCiclo } from '../domain/rules/cycleRules';
 import { notificacionPorConflictos } from '../presentation/messages/movementMessages';
@@ -82,7 +83,10 @@ export const createProfileSlice = (repos: AcademicRepositories): AcademicSlice<P
   setContextoAcademico: async (periodoIngreso, ciclo) => {
     const state = get();
     const cicloActual = Math.max(1, Math.min(MAXIMO_CICLOS, Math.trunc(ciclo)));
-    const cursos = ordenarCursos(ubicarAvanceEnCicloActual(state.cursos, cicloActual, periodoIngreso));
+    const ubicados = ubicarAvanceEnCicloActual(state.cursos, cicloActual, periodoIngreso);
+    // Solo si cambia el ciclo actual, para no sacar un jalado que el estudiante ya replanificó.
+    const cursos = ordenarCursos(state.cicloActual === cicloActual
+      ? ubicados : ubicarJaladosAdelantados(ubicados, cicloActual));
     const totalCiclos = determinarTotalCiclos(cursos, Math.max(state.totalCiclos, cicloActual));
     const ciclosExcluidos = state.ciclosExcluidos.filter((numero) => numero > cicloActual &&
       !cursos.some((curso) => curso.ubicacion === 'periodo' && curso.tipoPeriodo === 'REGULAR' && curso.ciclo === numero));
