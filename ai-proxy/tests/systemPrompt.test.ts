@@ -41,6 +41,11 @@ describe('prompt del sistema', () => {
     expect(lineas.find((linea) => linea.startsWith('14. '))).toContain('y ofrece ayuda con su plan, sin cifras.');
     expect(SYSTEM_PROMPT).not.toContain('carga en horas');
     expect(SYSTEM_PROMPT).not.toContain('no te pases de carga');
+    // Ejemplos 3 (reemplazado) y 5 (nuevo): el pago único nunca como cuota mensual.
+    expect(lineas).toContain('{"texto":"Con lo que planificaste para el Ciclo 5, la cuota mensual más baja es S/ 742.10, con pronto pago de Interbank o Scotiabank. Con S/ 700 al mes te faltarían S/ 42.10. Si quieres bajar la cuota, puedo decirte qué curso sacar y con cuántas horas quedarías.","cursos":[],"preguntasSugeridas":["¿Qué curso me conviene sacar?","¿Cómo funciona el pago único?"]}');
+    expect(lineas).toContain('Alumno: "y si hago pago único, ¿me alcanza con 900 al mes?"');
+    expect(lineas).toContain('{"texto":"El pago único no es mensual: pagas todo el ciclo de una vez. En tu plan del Ciclo 5 serían S/ 3,700.50 al inicio, y te ahorras S/ 279.50 frente a pagar sin descuento. Si prefieres pagar mes a mes, la cuota más baja es S/ 742.10.","cursos":[],"preguntasSugeridas":["¿Qué me conviene más?","¿Cuánto es la matrícula?"]}');
+    expect(SYSTEM_PROMPT).not.toContain('bajas de 24 h a 21 h');
     // Huella del texto completo: cualquier cambio de redacción debe ser intencional.
     expect(createHash('sha256').update(SYSTEM_PROMPT).digest('hex')).toMatchSnapshot();
   });
@@ -60,7 +65,7 @@ describe('prompt del sistema', () => {
 
   it('los ejemplos de tono son JSON válido según el contrato del modo chat', () => {
     const ejemplos = SYSTEM_PROMPT.split('\n').filter((linea) => linea.startsWith('{"texto"'));
-    expect(ejemplos).toHaveLength(4);
+    expect(ejemplos).toHaveLength(5);
     for (const ejemplo of ejemplos) expect(AIChatResponseSchema.safeParse(JSON.parse(ejemplo)).success).toBe(true);
   });
 

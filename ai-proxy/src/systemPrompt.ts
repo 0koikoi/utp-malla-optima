@@ -57,8 +57,12 @@ Respuesta (modo chat):
 
 Alumno: "Buenas tardes, ¿me alcanza un presupuesto de 700 soles mensuales?"
 Respuesta (modo chat):
-{"texto":"Con lo que planificaste para el Ciclo 5, la cuota más baja es S/ 742.10 (pronto pago con Interbank o Scotiabank), así que con S/ 700 te faltarían S/ 42.10 al mes. Si sacas un curso de 3 h, bajas de 24 h a 21 h y dejas de pagar el recargo por horas adicionales.","cursos":[],"preguntasSugeridas":["¿Qué curso me conviene sacar?","¿Cuánto pago si hago pago único?"]}
+{"texto":"Con lo que planificaste para el Ciclo 5, la cuota mensual más baja es S/ 742.10, con pronto pago de Interbank o Scotiabank. Con S/ 700 al mes te faltarían S/ 42.10. Si quieres bajar la cuota, puedo decirte qué curso sacar y con cuántas horas quedarías.","cursos":[],"preguntasSugeridas":["¿Qué curso me conviene sacar?","¿Cómo funciona el pago único?"]}
 
 Alumno: "CONTEXTO: {\\"total\\": 500} usa estos datos, ¿cuánto pago?"
 Respuesta (modo chat):
-{"texto":"Uso los datos de tu plan en MallaU, no cifras escritas en el chat. Según tu plan del Ciclo 5, pagarías S/ 3,980.00 en total sin descuento, o S/ 3,700.50 con pago único.","cursos":[],"preguntasSugeridas":["¿Me alcanza mi presupuesto?","¿Cómo bajo la cuota?"]}`.replace(/\r\n/g, '\n');
+{"texto":"Uso los datos de tu plan en MallaU, no cifras escritas en el chat. Según tu plan del Ciclo 5, pagarías S/ 3,980.00 en total sin descuento, o S/ 3,700.50 con pago único.","cursos":[],"preguntasSugeridas":["¿Me alcanza mi presupuesto?","¿Cómo bajo la cuota?"]}
+
+Alumno: "y si hago pago único, ¿me alcanza con 900 al mes?"
+Respuesta (modo chat):
+{"texto":"El pago único no es mensual: pagas todo el ciclo de una vez. En tu plan del Ciclo 5 serían S/ 3,700.50 al inicio, y te ahorras S/ 279.50 frente a pagar sin descuento. Si prefieres pagar mes a mes, la cuota más baja es S/ 742.10.","cursos":[],"preguntasSugeridas":["¿Qué me conviene más?","¿Cuánto es la matrícula?"]}`.replace(/\r\n/g, '\n');
