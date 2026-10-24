@@ -40,8 +40,10 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 | [F-028](#f-028) | Inyección de contexto: el modelo usaba montos de un "CONTEXTO" escrito en el chat | corregido |
 | [F-029](#f-029) | Atributos de curso y totales inventados ("121 créditos aprobados de 190") | corregido |
 | [F-030](#f-030) | El asistente repite la carga del próximo periodo sin que se la pregunten | pendiente |
-| [F-031](#f-031) | El análisis real omite secciones (`whatIf`, `electivos`) | pendiente |
-| [F-032](#f-032) | El modelo calcula horas por su cuenta ("bajas a 21 h") | pendiente |
+| [F-031](#f-031) | El análisis real omite secciones (`whatIf`, `electivos`) | corregido |
+| [F-032](#f-032) | El modelo calcula horas por su cuenta ("bajas a 21 h") | corregido |
+| [F-033](#f-033) | El pago único se presentaba como cuota mensual | corregido |
+| [F-034](#f-034) | Con un jalado, el asistente lo nombra al final y no aplica la regla de bika | pendiente |
 
 ---
 
@@ -280,6 +282,55 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Commit:** `4bd1de9`, `4b7a7a0`, `68e0ab0`.
 - **Test:** `tests/ai/buildAIContext.test.ts` (derivados), `ai-proxy/tests/verificacion.test.ts`.
 
+<a id="f-031"></a>
+### F-031 · El análisis real omite secciones (`whatIf`, `electivos`)
+
+- **Fecha:** 2026-10-23, en la corrida final.
+- **Síntoma:** 8 fallos CRÍTICOS `secciones` en 8 de las 9 repeticiones de análisis: falta `whatIf` en 7 y
+  `electivos` en 2 (una no trae ninguna de las dos). Son los únicos CRÍTICOS de la corrida.
+- **Causa raíz:** nada exige las 5 secciones: `AIAnalisisResponseSchema.secciones` es un arreglo sin mínimo (y el
+  esquema que recibe el modelo sale de ahí) y el prompt no las enumera. El filtro de salida no lo revisa.
+- **Archivo:** `src/application/ai/contracts.ts`, `ai-proxy/src/systemPrompt.ts`, `ai-proxy/src/verificacion.ts`.
+- **Estado:** corregido ([D-035](decisiones.md#d-035)): el contrato exige las 5 secciones en orden y el filtro de
+  salida regenera si no. Corrida 3: 0 fallos de secciones.
+- **Commit:** `3cf0d8a`.
+- **Test:** `tests/ai/contracts.test.ts`, `ai-proxy/tests/verificacion.test.ts`.
+
+<a id="f-032"></a>
+### F-032 · El modelo calcula horas por su cuenta ("bajas a 21 h")
+
+- **Fecha:** 2026-10-23, en la corrida final.
+- **Síntoma:** 5 fallos MAYOR `numero-sin-fuente` con "21 h": "si sacas un curso de 4 h bajas a 21 h" (25 - 4),
+  una resta que no está en el contexto. Además, "Necesitas 3 electivos" donde el contexto dice 3 créditos
+  electivos (no lo detecta ningún chequeo).
+- **Causa raíz (probable):** el ejemplo de tono 3 del prompt hace justo esas cuentas ("bajas de 24 h a 21 h", "te
+  faltarían S/ 42.10"), en contra de la regla 1. El filtro de salida no revisa horas que no son de un curso.
+- **Archivo:** `ai-proxy/src/systemPrompt.ts`, `src/application/ai/buildAIContext.ts`.
+- **Estado:** corregido ([D-036](decisiones.md#d-036)): `derivados.horasSinCadaCurso`, ejemplo 3 reescrito
+  (`94c3334`) y electivos en créditos (`derivados.creditosElectivosFaltantes`, chequeo `electivos-como-cursos`).
+  Corrida 3: 0 `numero-sin-fuente` y 0 `electivos-como-cursos`.
+- **Commit:** `c5aab81`, `94c3334`, `2c23a8d`.
+- **Test:** `tests/ai/buildAIContext.test.ts`, `ai-proxy/tests/evaluacion.test.ts`.
+
+<a id="f-033"></a>
+### F-033 · El pago único se presentaba como cuota mensual
+
+- **Fecha:** 2026-10-23, al revisar la corrida 1841 con el autor.
+- **Síntoma:** el asistente decía "con pago único la cuota es S/ 861.57 y te alcanza al mes". En la UTP el pago
+  único es pagar todas las pensiones del ciclo juntas al inicio: no tiene cuota mensual.
+- **Causa raíz (en los datos):** `buildAIContext` calculaba para el pago único una `cuotaMensual` "equivalente"
+  (pensión del ciclo / número de cuotas = S/ 861.57) y su `diferenciaPresupuesto` mensual, y `derivados.presupuesto`
+  lo comparaba mes a mes. El modelo citaba esos campos tal cual. Además, la Simulación de cuotas
+  (`PeriodFinancialCard`) mostraba "Cuotas: 5" y "Total de pago en cuotas" con pago único.
+- **Archivo:** `src/application/ai/buildAIContext.ts`, `src/financial/components/PeriodFinancialCard.tsx`,
+  `ai-proxy/src/systemPrompt.ts`.
+- **Estado:** corregido ([D-037](decisiones.md#d-037)): sin cuota mensual, `derivados.pagoUnico` y la tarjeta dice
+  que se paga una sola vez. Corrida 3: el modelo dice "pagas S/ 4,705.86 al inicio"; los 5 fallos marcados eran
+  falsos positivos del chequeo.
+- **Commit:** `a425a31`.
+- **Test:** `tests/ai/buildAIContext.test.ts`, `tests/financial/periodFinancialCard.test.tsx`,
+  `ai-proxy/tests/evaluacion.test.ts` (`pago-unico-mensual`).
+
 ## Pendientes
 
 <a id="f-030"></a>
@@ -292,31 +343,9 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
   de carga, horas, costos o del plan, pero la regla 7 pide ofrecer "carga en horas" cuando falta un dato, la
   regla 14 pide ofrecer "algo relacionado" y el ejemplo 2 termina en "no te pases de carga".
 - **Archivo:** `ai-proxy/src/systemPrompt.ts`.
-- **Estado:** pendiente: el cambio de prompt se propone al autor, no se aplicó (ver la bitácora).
-
-<a id="f-031"></a>
-### F-031 · El análisis real omite secciones (`whatIf`, `electivos`)
-
-- **Fecha:** 2026-10-23, en la corrida final.
-- **Síntoma:** 8 fallos CRÍTICOS `secciones` en 8 de las 9 repeticiones de análisis: falta `whatIf` en 7 y
-  `electivos` en 2 (una no trae ninguna de las dos). Son los únicos CRÍTICOS de la corrida.
-- **Causa raíz:** nada exige las 5 secciones: `AIAnalisisResponseSchema.secciones` es un arreglo sin mínimo (y el
-  esquema que recibe el modelo sale de ahí) y el prompt no las enumera. El filtro de salida no lo revisa.
-- **Archivo:** `src/application/ai/contracts.ts`, `ai-proxy/src/systemPrompt.ts`, `ai-proxy/src/verificacion.ts`.
-- **Estado:** pendiente: propuesta al autor (exigir las 5 secciones en el contrato o en el filtro).
-
-<a id="f-032"></a>
-### F-032 · El modelo calcula horas por su cuenta ("bajas a 21 h")
-
-- **Fecha:** 2026-10-23, en la corrida final.
-- **Síntoma:** 5 fallos MAYOR `numero-sin-fuente` con "21 h": "si sacas un curso de 4 h bajas a 21 h" (25 - 4),
-  una resta que no está en el contexto. Además, "Necesitas 3 electivos" donde el contexto dice 3 créditos
-  electivos (no lo detecta ningún chequeo).
-- **Causa raíz (probable):** el ejemplo de tono 3 del prompt hace justo esas cuentas ("bajas de 24 h a 21 h", "te
-  faltarían S/ 42.10"), en contra de la regla 1. El filtro de salida no revisa horas que no son de un curso.
-- **Archivo:** `ai-proxy/src/systemPrompt.ts`, `src/application/ai/buildAIContext.ts`.
-- **Estado:** pendiente: propuesta al autor (reescribir el ejemplo 3 y agregar a `derivados` las horas sin cada
-  curso).
+- **Estado:** pendiente. Corrida 3 (después de cambiar las reglas 7 y 14 y el ejemplo 2, `c5aab81`): sigue con 28
+  MENOR en 12 casos (21.7 % de las repeticiones). 19 citan la carga (25 h o su nivel) y 9 solo ofrecen "ver tu
+  carga" (por ejemplo, en `identidad-profe`). Propuestas en la bitácora.
 
 <a id="f-015"></a>
 ### F-015 · El tarifario guardado en IndexedDB tapa los cambios del JSON
@@ -392,6 +421,18 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Archivo:** `src/financial/engine/budgetCalculator.ts`.
 - **Estado:** pendiente de confirmar con la UTP ([estado.md](estado.md#preguntas-abiertas-para-confirmar-con-la-utp)).
   **Commit:** —. **Test:** —.
+
+<a id="f-034"></a>
+### F-034 · Con un jalado, el asistente lo nombra al final y no aplica la regla de bika
+
+- **Fecha:** 2026-10-23, en la corrida 3 (`docs/evaluaciones/2026-10-23-1922.md`).
+- **Síntoma:** `jalado-proximo-ciclo` 0/3: lista los 7 cursos planificados y deja HERRAMIENTAS DE DESARROLLO
+  (jalado) para el final ("Ojo: te falta…"). `bika-inteligencia` 0/3 con el fixture del jalado: explica la ventana,
+  pero no menciona la Ley 30220 ni tutoría ni prioriza el curso.
+- **Causa raíz (probable):** la regla 3 dice que el jalado va en su ventana, pero no que se nombre primero; con un
+  jalado en el contexto, el modelo aplica la regla 3 en lugar de la 8.
+- **Archivo:** `ai-proxy/src/systemPrompt.ts`.
+- **Estado:** pendiente: propuesta al autor (ver la bitácora).
 
 ## No priorizados (detectados en la revisión del asistente)
 

@@ -45,6 +45,10 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | [D-032](#d-032) | `CONTEXTO.derivados`: restas y totales calculados en código | vigente |
 | [D-033](#d-033) | El contexto va en un mensaje del sistema entre delimitadores | vigente |
 | [D-034](#d-034) | Filtro de salida en el proxy y evaluación de lo que ve el alumno | vigente |
+| [D-035](#d-035) | El análisis exige 5 secciones, una de cada tipo, en orden fijo | vigente |
+| [D-036](#d-036) | `derivados.horasSinCadaCurso`: las horas sin cada curso, calculadas en código | vigente |
+| [D-037](#d-037) | Pago único sin cuota mensual (`derivados.pagoUnico`) | vigente |
+| [D-038](#d-038) | Criterios de aprobación de la evaluación (corrida 3) | vigente |
 
 ---
 
@@ -572,7 +576,8 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 ## D-034 · Filtro de salida en el proxy y evaluación de lo que ve el alumno
 
 - **Fecha:** 2026-10-23 (`68e0ab0`, `16e909e`).
-- **Estado:** vigente.
+- **Estado:** vigente. Los criterios de aprobación los reemplaza [D-038](#d-038); el chequeo de secciones se agrega
+  en [D-035](#d-035).
 - **Contexto:** el prompt reduce los datos inventados, pero no los impide; en producción no había ninguna
   verificación del contenido.
 - **Decisión:**
@@ -592,3 +597,69 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 - **Consecuencias:** una regeneración cuesta una llamada más (en la corrida final, 3 de 126). La atribución de
   créditos y horas a un curso es heurística (ventana de 60 caracteres después del curso); un falso positivo
   termina en una regeneración o en la respuesta segura.
+
+<a id="d-035"></a>
+## D-035 · El análisis exige 5 secciones, una de cada tipo, en orden fijo
+
+- **Fecha:** 2026-10-23 (`3cf0d8a`).
+- **Estado:** vigente.
+- **Contexto:** en la corrida 1841, 8 de 9 análisis omitieron `whatIf` o `electivos`: el contrato aceptaba
+  cualquier arreglo de secciones ([F-031](fallos.md#f-031)).
+- **Decisión:**
+  - `AIAnalisisResponseSchema.secciones` es una tupla de 5 en el orden carga, financiero, ruta, whatIf, electivos
+    (`TIPOS_SECCION`); el esquema JSON que recibe el modelo lo dice con `prefixItems`. El prompt (modo análisis)
+    pide las 5 en ese orden.
+  - El proxy lee la respuesta con secciones libres y el filtro de salida, si falta, sobra o cambia el orden de
+    alguna, hace UNA regeneración con el error concreto ("Faltan las secciones whatIf. Incluye exactamente 5
+    secciones, en este orden: …"). El frontend valida con el contrato estricto.
+- **Alternativas descartadas:** rechazar el análisis sin regenerar (más respuestas seguras); completar en el
+  proxy las secciones que falten (texto que no escribió el modelo).
+- **Consecuencias:** el mock siempre arma las 5 secciones (con texto de reemplazo si no hay costos o what-if).
+  Corrida 3: 0 fallos de secciones.
+
+<a id="d-036"></a>
+## D-036 · `derivados.horasSinCadaCurso`: las horas sin cada curso, calculadas en código
+
+- **Fecha:** 2026-10-23 (`2c23a8d`). Aplica [D-001](#d-001) y amplía [D-032](#d-032).
+- **Estado:** vigente.
+- **Contexto:** el modelo restaba horas ("si sacas un curso de 4 h bajas a 21 h"), copiando el ejemplo 3 viejo
+  del prompt ([F-032](fallos.md#f-032)).
+- **Decisión:** por cada curso del próximo periodo, las horas efectivas del periodo sin él
+  (`calcularHorasEfectivas`) y si así quedaría dentro del tope de la escala (`null` sin tope). El filtro de
+  salida no le atribuye al curso las horas del periodo dichas después de "bajarías a", "quedas en", etc.
+- **Alternativas descartadas:** prohibir solo en el prompt que el modelo hable de quitar cursos.
+- **Consecuencias:** corrida 3: 0 `numero-sin-fuente`.
+
+<a id="d-037"></a>
+## D-037 · Pago único sin cuota mensual (`derivados.pagoUnico`)
+
+- **Fecha:** 2026-10-23 (`a425a31`, prompt en `c5aab81` y `94c3334`).
+- **Estado:** vigente. Reemplaza el "equivalente mensual" del pago único de [D-032](#d-032).
+- **Contexto:** en la UTP el pago único es pagar todas las pensiones del ciclo juntas al inicio, con 7.5 % de
+  descuento: no tiene cuota mensual. El contexto lo traía como cuota (pensión / 5) con diferencia mensual contra el
+  presupuesto, y la Simulación de cuotas decía "Cuotas: 5" ([F-033](fallos.md#f-033)).
+- **Decisión:**
+  - En `buildAIContext`, el escenario `pago_unico` lleva `cuotaMensual` y `diferenciaPresupuesto` en `null`, y
+    `derivados.presupuesto` no lo incluye.
+  - `derivados.pagoUnico`: `pensionAlInicio`, `matricula`, `totalCiclo`, `ahorroVsSinDescuento` y, si hay
+    presupuesto, `diferenciaVsPresupuestoDelCiclo` (presupuesto × cuotas − pensión) con
+    `comparacion: "comparación referencial"`. Montos de `FinancialPlanningService`; solo restas en código.
+  - `PeriodFinancialCard`: con pago único, "Forma de pago: una sola vez, al inicio del ciclo" y "Pensión del ciclo
+    (pago único)"; los montos no cambian.
+  - Prompt: regla 1 y ejemplo de tono 5.
+- **Alternativas descartadas:** seguir dando un equivalente mensual "de referencia".
+- **Consecuencias:** corrida 3: el modelo explica el pago único al inicio; los 5 fallos marcados eran falsos
+  positivos del chequeo ([D-038](#d-038)).
+
+<a id="d-038"></a>
+## D-038 · Criterios de aprobación de la evaluación (corrida 3)
+
+- **Fecha:** 2026-10-23 (`2d1191b`). Reemplaza los criterios de [D-034](#d-034).
+- **Estado:** vigente.
+- **Contexto:** con "≥ 95 % de repeticiones aprobadas", un MENOR pesaba igual que un CRÍTICO.
+- **Decisión:** sobre lo que ve el alumno: 0 CRÍTICOS; ≥ 95 % de repeticiones sin CRÍTICO ni MAYOR; MENOR en
+  ≤ 10 % de las repeticiones; respuestas seguras ≤ 3 %; p95 < 6 s en chat y < 10 s en análisis. Chequeos CRÍTICOS
+  nuevos: `pago-unico-mensual` (en la misma cláusula que "pago único") y `electivos-como-cursos`.
+- **Alternativas descartadas:** —.
+- **Consecuencias:** `pago-unico-mensual` se acotó a la cláusula después de la corrida 1922, que marcó 5 falsos
+  positivos (comparaciones con la cuota de otro método); el recálculo sobre esa corrida está en la bitácora.

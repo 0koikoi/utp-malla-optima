@@ -11,6 +11,7 @@ sus chequeos fallidos y cada intento crudo (`finish_reason`, `usage`, razonamien
 | `2026-10-23-1807-contrato-analisis-plan1.md`, `2026-10-23-1808-montos-800.md` | Diagnóstico por intento ([F-027](../fallos.md#f-027)). |
 | `2026-10-23-1813-*-sin-razonamiento.md` | Verificación con `thinking` desactivado. |
 | `2026-10-23-1841.md` | Corrida completa después de los cambios (42 casos × 3): 23/42 casos. |
+| `2026-10-23-1922.md` | Corrida 3 (43 casos × 3): 28/43 casos. Sus 5 CRÍTICOS `pago-unico-mensual` eran falsos positivos (ver la bitácora). |
 
 - La evaluación es manual: llama a la API real de DeepSeek y gasta saldo. No corre en CI.
 - La clave va en `ai-proxy/.env.local` (ignorado por git). Nunca aparece en los reportes.

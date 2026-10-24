@@ -8,6 +8,62 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Corrida 3: pago único sin cuota mensual, 5 secciones obligatorias y horas sin cada curso
+
+- **Qué se hizo:**
+  - Pago único: sin cuota mensual en el contexto, `derivados.pagoUnico` y la Simulación de cuotas dice que se paga
+    una sola vez al inicio ([D-037](decisiones.md#d-037), [F-033](fallos.md#f-033)).
+  - Prompt (autorizado): pago único en la regla 1, electivos en créditos, reglas 7 y 14, ejemplo 2 sin "no te
+    pases de carga", 5 secciones en orden, ejemplo 3 reemplazado y ejemplo 5 nuevo. Huella `bb4686d8…`.
+  - Contrato del análisis con 5 secciones en orden; el filtro de salida regenera si no ([D-035](decisiones.md#d-035)).
+  - `derivados.horasSinCadaCurso` y `derivados.creditosElectivosFaltantes` ([D-036](decisiones.md#d-036)).
+  - Evaluación: chequeos CRÍTICOS `pago-unico-mensual` y `electivos-como-cursos`, caso `montos-pago-unico-900`
+    (43 casos), `bika-inteligencia` con el fixture del jalado y criterios nuevos ([D-038](decisiones.md#d-038)).
+- **Por qué:** propuestas 1 a 5 de la corrida 1841, aceptadas por el autor con ajustes, y el error de datos del
+  pago único.
+- **Rama / PR:** `feat/ia-real` (sin PR, sin push).
+- **Commits:** `a425a31` (1), `c5aab81` (2), `94c3334` (3), `3cf0d8a` (4), `2c23a8d` (5), `2d1191b` (6, con el
+  reporte) y este de docs (7).
+- **Resultados (corrida 3, `docs/evaluaciones/2026-10-23-1922.md`, 43 casos × 3):**
+
+  | Corrida | Casos | CRÍTICO · MAYOR · MENOR | p95 chat / análisis | Filtro (primera · regenerada · segura) | Costo |
+  | --- | --- | --- | --- | --- | --- |
+  | 1731 (38 × 3) | 16/38 | 56 · 1 · 1 | 14.1 s (total) | — | US$ 0.0723 |
+  | 1841 (42 × 3) | 23/42 | 8 · 17 · 31 | 2.2 s / 5.3 s | 123 · 3 · 0 | US$ 0.0267 |
+  | 1922 (43 × 3) | 28/43 | 5 · 16 · 28 | 2.1 s / 5.7 s | 125 · 4 · 0 | US$ 0.0298 |
+
+  - Criterios tal como salieron: ✗ 0 CRÍTICOS (5) · ✗ ≥ 95 % sin CRÍTICO ni MAYOR (90.7 %) · ✗ MENOR ≤ 10 % (21.7 %)
+    · ✓ seguras ≤ 3 % (0 %) · ✓ p95 chat (2 072 ms) · ✓ p95 análisis (5 726 ms).
+  - Los 5 CRÍTICOS (`pago-unico-mensual`, en `faltante-presupuesto` y `foco-ciclo8-costo`) eran falsos positivos:
+    comparaban la cuota de Interbank con el pago único en otra cláusula ("…la cuota mensual más baja es S/ 884.86
+    (…) y el pago único sería S/ 4,705.86 al inicio"). El chequeo se acotó a la cláusula después de la corrida,
+    con esas frases como test. Recalculado sobre la misma corrida (sin volver a llamar a la API): **0 CRÍTICOS**,
+    **94.6 %** sin CRÍTICO ni MAYOR (122/129) y MENOR en 21.7 %. Sigue sin cumplir dos criterios.
+  - Ya no aparecen: secciones faltantes, `numero-sin-fuente` ("21 h"), electivos contados en cursos, atributos
+    de curso incorrectos ni contexto falso.
+  - Quedan: `repite-carga` 28 MENOR en 12 casos ([F-030](fallos.md#f-030); 19 citan 25 h o el nivel, 9 solo
+    ofrecen "ver tu carga"); `jalado-no-va-primero` 3 y `bika-inteligencia` 3 repeticiones con 4 MAYOR cada una
+    ([F-034](fallos.md#f-034)); `incoherente-cachimbo` 1 MAYOR.
+  - Costo acumulado del día: US$ 0.1101 (corridas 1 y 2 con el diagnóstico) + US$ 0.0298 = US$ 0.1399 estimado.
+- **Propuestas (no aplicadas):**
+  1. Carga (MENOR, 21.7 %): la línea de CÓMO HABLAS no alcanza. Proponer: "Fuera de esos casos, no cites las horas
+     ni el nivel de carga del próximo periodo ni ofrezcas revisarla; al presentarte, di que ayudas con tu plan y
+     sus costos". O decidir que ofrecer "ver tu carga" no cuenta (9 de 28) y dejar el chequeo solo para citar la
+     cifra o el nivel: con eso quedaría en 14.7 %, que tampoco cumple.
+  2. Jalado primero (MAYOR): agregar a la regla 3 "Cuando hables del próximo periodo, nombra primero el curso jalado
+     y su ventana".
+  3. Bika con un jalado (MAYOR): agregar a la regla 8 "Si el alumno dice bika o trika, aplica esta regla aunque
+     CONTEXTO solo marque el curso como jalado"; y un ejemplo de tono de bika (el ejemplo 1 es de miedo a la bika).
+  4. Con 2 y 3, `jalado-proximo-ciclo` y `bika-inteligencia` (6 repeticiones) pasarían de MAYOR a aprobadas si el
+     modelo sigue la regla: 128/129 = 99.2 % sin CRÍTICO ni MAYOR (estimación, por verificar con otra corrida).
+  5. Dato a revisar: en `incoherente-cachimbo` dijo "te faltan 70 créditos pendientes" (`perfil.creditos.pendientes`,
+     que incluye todos los electivos ofrecidos); para egresar faltan 79 (`derivados.creditos.faltanParaEgresar`). No
+     lo detecta ningún chequeo; proponer que la regla 1 diga "para egresar, usa derivados.creditos".
+- **Verificación:**
+  - `pnpm test` (462), `pnpm lint`, `pnpm build` y en `ai-proxy/` `pnpm test` (134) y `pnpm typecheck` en verde
+    después de cada commit. `pnpm evaluar --simulado`: 43/43 y todos los criterios.
+  - La clave nunca se leyó ni se imprimió; el reporte no la contiene.
+
 ## 2026-10-23 · Evaluación real: diagnóstico, razonamiento desactivado, derivados y filtro de salida
 
 - **Qué se hizo:**
