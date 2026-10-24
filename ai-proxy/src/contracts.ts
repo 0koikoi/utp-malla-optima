@@ -131,6 +131,8 @@ const DerivadosSchema = z.object({
     diferenciaVsPresupuestoDelCiclo: monto.nullable(),
     comparacion: z.literal('comparación referencial').nullable(),
   }).nullable(),
+  /** Créditos de electivos que faltan aprobar para el mínimo (los electivos se cuentan en créditos, no en cursos). */
+  creditosElectivosFaltantes: z.number(),
   creditos: z.object({
     /** Suma de los créditos de todos los cursos de la malla (incluye todos los electivos ofrecidos). */
     totalMalla: z.number(),

@@ -318,6 +318,7 @@ export const calcularDerivados = (
       }];
     }),
     pagoUnico: pagoUnicoDe(escenarios, presupuesto, pensionAlInicio),
+    creditosElectivosFaltantes: positivo(MINIMO_CREDITOS_ELECTIVOS - electivosAprobados),
     creditos: {
       totalMalla: sumar(cursos, 'creditos'),
       obligatorios: sumar(obligatorios, 'creditos'),

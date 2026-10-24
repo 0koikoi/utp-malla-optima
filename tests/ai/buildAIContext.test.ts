@@ -56,6 +56,8 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
       diferenciaVsPresupuestoDelCiclo: 192.14, comparacion: 'comparación referencial',
     });
     expect(buildAIContext(store.getState()).derivados.pagoUnico).toMatchObject({ diferenciaVsPresupuestoDelCiclo: null, comparacion: null });
+    // Ningún electivo aprobado: faltan los 3 créditos del mínimo.
+    expect(derivados.creditosElectivosFaltantes).toBe(3);
     // 197 obligatorios + 3 electivos mínimos (academic.json); 121 aprobados o convalidados; 19 en curso.
     expect(derivados.creditos).toEqual({
       totalMalla: 210, obligatorios: 197, electivosMinimos: 3, paraEgresar: 200, aprobadosQueCuentan: 121, enCurso: 19,

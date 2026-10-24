@@ -1055,6 +1055,7 @@
       "diferenciaVsPresupuestoDelCiclo": null,
       "comparacion": null
     },
+    "creditosElectivosFaltantes": 3,
     "creditos": {
       "totalMalla": 210,
       "obligatorios": 197,

@@ -606,6 +606,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       "paraEgresar": 200,
       "totalMalla": 210,
     },
+    "creditosElectivosFaltantes": 3,
     "cursosProximoPeriodo": [
       {
         "bloquearia": [],
@@ -1791,6 +1792,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       "paraEgresar": 200,
       "totalMalla": 210,
     },
+    "creditosElectivosFaltantes": 3,
     "cursosProximoPeriodo": [
       {
         "bloquearia": [],
