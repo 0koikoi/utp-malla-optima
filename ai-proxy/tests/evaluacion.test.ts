@@ -5,6 +5,7 @@ import { ejecutarCli, leerEnvLocal, leerFixture, parsearArgumentos, type Entorno
 import { codigoDeSalida, criterios, evaluar, peticionDe, percentil, resultadosFiltro, type ResultadoLlamada } from '../scripts/evaluacion/ejecutar.js';
 import { nombreReporte } from '../scripts/evaluacion/reporte.js';
 import { USO_VACIO } from '../src/consumo.js';
+import { aplicarMontoDelAlumno } from '../src/presupuesto.js';
 import { AIRequestSchema, type AIChatResponse } from '../src/contracts.js';
 import { construirCuerpo, DEEPSEEK_URL } from '../src/deepseek.js';
 import { SYSTEM_PROMPT } from '../src/systemPrompt.js';
@@ -41,12 +42,13 @@ describe('evaluación - casos', () => {
 });
 
 describe('evaluación - chequeos', () => {
-  it('montos: todo "S/ x" debe estar en el contexto (±0.01) o en el mensaje del alumno', () => {
+  it('montos: todo "S/ x" debe estar en el contexto (±0.01); el del alumno, solo con aplicarMontoDelAlumno', () => {
     expect(montosEn('S/ 4,705.86, S/4705.86 y S/. 900')).toEqual([4705.86, 4705.86, 900]);
     expect(fallosDe('Pagarías S/ 4,705.86 con pago único.')).toEqual([]);
     expect(fallosDe('Pagarías S/ 4,705.87.')).toEqual([]);
     expect(fallosDe('Pagarías S/ 4,800.00.')).toEqual(['CRITICO:monto-inexistente']);
-    expect(fallosDe('Con S/ 800 no te alcanza.', {}, ['¿me alcanza con 800?'])).toEqual([]);
+    expect(fallosDe('Con S/ 800 no te alcanza.', {}, ['¿me alcanza con 800?'])).toEqual(['CRITICO:monto-inexistente']);
+    expect(fallosDe('Con S/ 800 no te alcanza.', {}, ['¿me alcanza con 800?'], aplicarMontoDelAlumno(plan1, '¿me alcanza con 800?'))).toEqual([]);
   });
 
   it('códigos: los inventados son CRÍTICOS, también si venían en "cursos" antes de filtrarlos', () => {

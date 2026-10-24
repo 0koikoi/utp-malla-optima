@@ -8,4 +8,8 @@ describe('archivos compartidos con ai-proxy', () => {
   it('ai-proxy/src/mockRespuestas.ts es idéntico a src/application/ai/mockRespuestas.ts', () => {
     expect(leer('../../ai-proxy/src/mockRespuestas.ts')).toBe(leer('../../src/application/ai/mockRespuestas.ts'));
   });
+
+  it('ai-proxy/src/presupuesto.ts es idéntico a src/application/ai/presupuesto.ts', () => {
+    expect(leer('../../ai-proxy/src/presupuesto.ts')).toBe(leer('../../src/application/ai/presupuesto.ts'));
+  });
 });

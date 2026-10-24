@@ -1,6 +1,7 @@
 import { leerUso, type UsoTokens } from './consumo.js';
 import { esquemaRespuesta, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta } from './contracts.js';
 import { SYSTEM_PROMPT } from './systemPrompt.js';
+import { aplicarMontoDelAlumno } from './presupuesto.js';
 import { mensajeCorreccion, verificarSalida, type ChequeoSalida } from './verificacion.js';
 
 export const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
@@ -158,10 +159,18 @@ export interface ResultadoVerificado {
  * llamarDeepSeek + filtro de salida (verificacion.ts). Si la respuesta no pasa, UNA regeneración con un mensaje
  * del sistema que indica el error concreto; si tampoco pasa (o se corta o no es JSON válido), "segura".
  */
-export const llamarConVerificacion = async (peticion: AIRequest, opciones: OpcionesLlamada): Promise<ResultadoVerificado> => {
-  const alumno = peticion.mensajes.filter((mensaje) => mensaje.rol === 'user').map((mensaje) => mensaje.texto);
+/** Chat: el monto del último mensaje del alumno es su presupuesto para esa pregunta (aplicarMontoDelAlumno, D-001). */
+export const conMontoDelAlumno = (peticion: AIRequest): AIRequest => {
+  if (peticion.modo !== 'chat') return peticion;
+  const ultimo = [...peticion.mensajes].reverse().find((mensaje) => mensaje.rol === 'user')?.texto ?? '';
+  return { ...peticion, contexto: aplicarMontoDelAlumno(peticion.contexto, ultimo) };
+};
+
+export const llamarConVerificacion = async (original: AIRequest, opciones: OpcionesLlamada): Promise<ResultadoVerificado> => {
+  // Antes de llamar al modelo y antes del filtro de salida: así "te faltan S/ 84.86 con 800" tiene fuente.
+  const peticion = conMontoDelAlumno(original);
   const primera = await llamarDeepSeek(peticion, opciones);
-  const problemas = verificarSalida(primera, peticion.contexto, alumno);
+  const problemas = verificarSalida(primera, peticion.contexto);
   if (!problemas.length) return { respuesta: primera, verificacion: 'primera', chequeosFallidos: [] };
 
   const correccion = [
@@ -169,7 +178,7 @@ export const llamarConVerificacion = async (peticion: AIRequest, opciones: Opcio
     { role: 'system', content: mensajeCorreccion(problemas) },
   ];
   const segunda = await intentar(peticion, opciones, correccion);
-  const problemasSegunda = segunda.tipo === 'ok' ? verificarSalida(segunda.respuesta, peticion.contexto, alumno) : [];
+  const problemasSegunda = segunda.tipo === 'ok' ? verificarSalida(segunda.respuesta, peticion.contexto) : [];
   const chequeosFallidos = [...new Set([...problemas, ...problemasSegunda].map((problema) => problema.chequeo))];
   return segunda.tipo === 'ok' && !problemasSegunda.length
     ? { respuesta: segunda.respuesta, verificacion: 'regenerada', chequeosFallidos }

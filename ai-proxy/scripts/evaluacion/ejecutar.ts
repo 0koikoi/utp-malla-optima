@@ -1,6 +1,7 @@
 import type { AIContext, AIErrorCodigo, AIRequest, AIRespuesta } from '../../src/contracts.js';
 import { costoEstimadoUsd, sumarUso, USO_VACIO, type UsoTokens } from '../../src/consumo.js';
 import type { IntentoCrudo, Verificacion } from '../../src/deepseek.js';
+import { aplicarMontoDelAlumno } from '../../src/presupuesto.js';
 import type { Caso, Fixture } from './casos.js';
 import { chequear, type Fallo, type Severidad } from './chequeos.js';
 
@@ -111,7 +112,8 @@ export const evaluar = async (opciones: OpcionesEvaluacion): Promise<ResultadoEv
           : llamada.error && llamada.error !== 'RESPUESTA_INVALIDA'
             ? [{ severidad: 'CRITICO' as Severidad, chequeo: 'error-proveedor', detalle: `La llamada falló con ${llamada.error}.` }]
             : chequear({
-          modo: caso.modo, contexto, mensajes: caso.mensajes, esperado: caso.esperado,
+          // Lo mismo que ve el modelo: el monto del último mensaje como presupuesto (llamarConVerificacion).
+          modo: caso.modo, contexto: caso.modo === 'chat' ? aplicarMontoDelAlumno(contexto, caso.mensajes.at(-1) ?? '') : contexto, mensajes: caso.mensajes, esperado: caso.esperado,
           respuesta: llamada.respuesta, codigosCrudos: codigosCrudos(llamada.crudo),
         });
       filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, detalle: llamada.detalle ?? [], verificacion: llamada.verificacion ?? null, chequeosFiltro: llamada.chequeosFiltro ?? [], fallos });

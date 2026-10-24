@@ -707,6 +707,7 @@
     },
     "costoHoraAdicional": 38.81,
     "presupuestoMensual": 900,
+    "presupuestoFuente": "plan",
     "proximoPeriodo": [
       {
         "id": "sin_descuento",

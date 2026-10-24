@@ -194,22 +194,16 @@ export interface ProblemaSalida {
 
 const soles = (monto: number) => `S/ ${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 
-/**
- * Montos que el alumno escribió en una pregunta normal ("¿me alcanza con 800?") se pueden repetir. Si el
- * mensaje trae un JSON o la palabra CONTEXTO (contexto falso, regla 15), sus cifras no cuentan.
- */
-export const montosDelAlumno = (mensajes: string[]): number[] =>
-  mensajes.filter((mensaje) => !/[{}]|contexto/i.test(mensaje)).flatMap(numerosDelTexto);
-
 /** Lo que el filtro exige a cada respuesta real antes de devolverla. */
-export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext, mensajesAlumno: string[] = []): ProblemaSalida[] => {
+export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext): ProblemaSalida[] => {
   const texto = textoDe(respuesta);
   const problemas: ProblemaSalida[] = [];
   if ('secciones' in respuesta) {
     const error = errorSecciones(respuesta.secciones.map((seccion) => seccion.tipo));
     if (error) problemas.push({ chequeo: 'secciones', detalle: error });
   }
-  const permitidos = [...numerosDe(contexto), ...montosDelAlumno(mensajesAlumno)];
+  // El monto que escribió el alumno ya está en el contexto (aplicarMontoDelAlumno): no hay excepción por el mensaje.
+  const permitidos = numerosDe(contexto);
   for (const monto of [...new Set(montosEn(texto))]) {
     if (!permitidos.some((numero) => cerca(numero, monto))) problemas.push({ chequeo: 'monto', detalle: `Usaste ${soles(monto)}, que no está en CONTEXTO.` });
   }

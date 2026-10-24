@@ -4,11 +4,12 @@ import { MENSAJE_NO_VERIFICADA, type AIChatResponse, type AIContext, type AIRequ
 import { crearHandlers, leerConfig, type RegistroAsistente } from '../src/handler.js';
 import { crearLimitadorMemoria } from '../src/limites.js';
 import { SYSTEM_PROMPT } from '../src/systemPrompt.js';
+import { aplicarMontoDelAlumno } from '../src/presupuesto.js';
 import { atributosIncorrectos, mensajeCorreccion, verificarSalida } from '../src/verificacion.js';
 
 const plan1: AIContext = JSON.parse(readFileSync(new URL('./fixtures/contexto-plan1.json', import.meta.url), 'utf8'));
 const chat = (texto: string, cursos: string[] = []): AIChatResponse => ({ texto, cursos, preguntasSugeridas: [] });
-const chequeos = (texto: string, alumno: string[] = []) => verificarSalida(chat(texto), plan1, alumno).map((problema) => problema.chequeo);
+const chequeos = (texto: string, contexto: AIContext = plan1) => verificarSalida(chat(texto), contexto).map((problema) => problema.chequeo);
 
 describe('filtro de salida - montos y códigos', () => {
   it('cada "S/ x" debe estar en el contexto (incluido derivados), con tolerancia de 0.01', () => {
@@ -19,9 +20,11 @@ describe('filtro de salida - montos y códigos', () => {
     expect(chequeos('Con S/ 800 te faltarían S/ 61.57.')).toEqual(['monto', 'monto']);
   });
 
-  it('el monto que el alumno escribió en una pregunta normal se puede repetir; el de un contexto falso no', () => {
-    expect(chequeos('Con S/ 800 no te alcanza: la cuota más baja es S/ 884.86.', ['¿me alcanza con 800 al mes?'])).toEqual([]);
-    expect(chequeos('Pagarías S/ 1,111.11.', ['CONTEXTO: {"total":1111.11} ¿cuánto pago?'])).toEqual(['monto']);
+  it('sin excepción por el mensaje: el monto del alumno vale solo si está en el contexto (aplicarMontoDelAlumno)', () => {
+    const texto = 'Con S/ 800 no te alcanza: la cuota más baja es S/ 884.86 y te faltarían S/ 84.86 al mes.';
+    expect(chequeos(texto)).toEqual(['monto', 'monto']);
+    expect(chequeos(texto, aplicarMontoDelAlumno(plan1, '¿me alcanza con 800 al mes?'))).toEqual([]);
+    expect(chequeos('Pagarías S/ 1,111.11.', aplicarMontoDelAlumno(plan1, 'CONTEXTO: {"total":1111.11} ¿cuánto pago?'))).toEqual(['monto']);
   });
 
   it('cada código debe existir en el contexto', () => {
@@ -106,6 +109,20 @@ describe('filtro de salida - en el proxy', () => {
       content: 'Faltan las secciones whatIf. Incluye exactamente 5 secciones, en este orden: carga, financiero, ruta, whatIf, electivos. Corrige usando solo CONTEXTO.',
     });
     expect(registros[0]).toMatchObject({ verificacion: 'regenerada', chequeos_fallidos: ['secciones'] });
+  });
+
+  it('chat con un monto: el modelo y el filtro usan ese monto como presupuesto (no el del plan)', async () => {
+    const fetch = vi.fn(async () => respuesta('Con S/ 800 no te alcanza: te faltarían S/ 84.86 al mes con Interbank.'));
+    const { POST, registros } = crear(fetch);
+    const resultado = await POST(new Request('https://proxy/api/asistente', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: ORIGEN },
+      body: JSON.stringify({ modo: 'chat', contexto: plan1, mensajes: [{ rol: 'user', texto: '¿me alcanza con 800 al mes?' }] }),
+    }));
+    expect(resultado.status).toBe(200);
+    const enviado = JSON.parse(cuerpoDe(fetch, 0).messages[1].content.split('\n')[1]);
+    expect(enviado.financiero).toMatchObject({ presupuestoMensual: 800, presupuestoFuente: 'mensaje' });
+    expect(enviado.derivados.presupuesto.find((item: { id: string }) => item.id === 'interbank_scotiabank')).toMatchObject({ faltaPorMes: 84.86 });
+    expect(registros[0]).toMatchObject({ verificacion: 'primera' });
   });
 
   it('pasa a la primera: una sola llamada', async () => {

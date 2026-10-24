@@ -882,6 +882,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
         "total": 4705.86,
       },
     ],
+    "presupuestoFuente": null,
     "presupuestoMensual": null,
     "proximoPeriodo": [
       {
@@ -2114,6 +2115,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
         "total": 4705.86,
       },
     ],
+    "presupuestoFuente": null,
     "presupuestoMensual": null,
     "proximoPeriodo": [
       {

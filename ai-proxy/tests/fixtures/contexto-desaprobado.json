@@ -616,6 +616,7 @@
     },
     "costoHoraAdicional": 38.81,
     "presupuestoMensual": null,
+    "presupuestoFuente": null,
     "proximoPeriodo": [],
     "planCompleto": [
       {

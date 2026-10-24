@@ -275,6 +275,8 @@ export const AIContextSchema = z.object({
     metodoPagoElegido: z.object({ id: z.string(), nombre: z.string() }),
     costoHoraAdicional: monto.nullable(),
     presupuestoMensual: monto.nullable(),
+    /** "plan": el presupuesto del alumno en MallaU; "mensaje": el monto que escribió en su último mensaje. */
+    presupuestoFuente: z.enum(['plan', 'mensaje']).nullable(),
     proximoPeriodo: z.array(EscenarioPeriodoSchema),
     planCompleto: z.array(EscenarioPlanSchema),
   }).nullable(),

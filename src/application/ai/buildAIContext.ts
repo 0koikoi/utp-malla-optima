@@ -17,6 +17,7 @@ import { generateOptimalPlanUseCase } from '../usecases/generateOptimalPlanUseCa
 import type {
   AICarga, AIContext, AICursoPlanificado, AIDerivados, AIEscenarioPeriodo, AIFoco, AIFocoContexto, AIWhatIf,
 } from './contracts';
+import { pagoUnicoDe, positivo, presupuestoPorEscenario, r2 } from './presupuesto';
 
 /**
  * Contexto del asistente IA. Función PURA: lee el estado del store y devuelve
@@ -41,7 +42,6 @@ const AREAS: Record<string, { area: string; confirmado: boolean }> = electivosAr
 const COMPLETADOS = new Set(['APROBADO', 'CONVALIDADO']);
 const ESCENARIOS = ['sin_descuento', 'interbank_scotiabank', 'bcp_bbva', 'pago_unico'] as const;
 
-const r2 = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
 const sumar = (cursos: Curso[], campo: 'creditos' | 'horasSemanales') => r2(cursos.reduce((suma, curso) => suma + curso[campo], 0));
 const ubicacionDe = (curso: Curso) => curso.ubicacion === 'banco' ? 'banco' : obtenerPeriodoCurso(curso).id;
 
@@ -258,22 +258,6 @@ const construirFoco = (
   };
 };
 
-const positivo = (valor: number) => r2(Math.max(0, valor));
-
-/** derivados.pagoUnico: solo restas hechas en código sobre los montos de FinancialPlanningService. */
-const pagoUnicoDe = (escenarios: AIEscenarioPeriodo[], presupuesto: number | null, pensionAlInicio: number | null): AIDerivados['pagoUnico'] => {
-  const unico = escenarios.find((escenario) => escenario.id === 'pago_unico');
-  const sinDescuento = escenarios.find((escenario) => escenario.id === 'sin_descuento');
-  if (!unico || !sinDescuento || pensionAlInicio === null) return null;
-  return {
-    pensionAlInicio,
-    matricula: unico.matricula,
-    totalCiclo: unico.total,
-    ahorroVsSinDescuento: r2(sinDescuento.total - unico.total),
-    diferenciaVsPresupuestoDelCiclo: presupuesto === null ? null : r2(presupuesto * unico.numeroCuotas - pensionAlInicio),
-    comparacion: presupuesto === null ? null : 'comparación referencial',
-  };
-};
 
 /**
  * CONTEXTO.derivados: las restas y totales que la IA no debe hacer (D-001).
@@ -304,21 +288,7 @@ export const calcularDerivados = (
       sobreRecomendadas: positivo(carga.horas - carga.limiteRecomendado),
       margenRecomendadas: positivo(carga.limiteRecomendado - carga.horas),
     },
-    presupuesto: presupuesto === null ? null : escenarios.flatMap((escenario) => {
-      if (escenario.cuotaMensual === null) return [];
-      const diferenciaMes = r2(presupuesto - escenario.cuotaMensual);
-      const diferenciaCiclo = r2(diferenciaMes * escenario.numeroCuotas);
-      return [{
-        id: escenario.id,
-        alcanza: diferenciaMes >= 0,
-        diferenciaMes,
-        faltaPorMes: positivo(-diferenciaMes),
-        sobraPorMes: positivo(diferenciaMes),
-        diferenciaCiclo,
-        faltaPorCiclo: positivo(-diferenciaCiclo),
-        sobraPorCiclo: positivo(diferenciaCiclo),
-      }];
-    }),
+    presupuesto: presupuestoPorEscenario(escenarios, presupuesto),
     pagoUnico: pagoUnicoDe(escenarios, presupuesto, pensionAlInicio),
     // "Si sacas X bajas a N h": la resta la hace el código, con las horas efectivas del periodo.
     horasSinCadaCurso: cursosProximos.map((curso) => {
@@ -477,6 +447,7 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
       metodoPagoElegido: { id: estado.metodoPago, nombre: metodo?.nombre ?? estado.metodoPago },
       costoHoraAdicional: tarifas?.costoHoraAdicional ?? null,
       presupuestoMensual: presupuesto,
+      presupuestoFuente: presupuesto === null ? null : 'plan',
       proximoPeriodo: escenariosProximos,
       planCompleto: ESCENARIOS.map((id) => ({
         id, nombre: nombreEscenario(id, tarifario), total: r2(calcularEscenario(id, entorno).totalGeneral),

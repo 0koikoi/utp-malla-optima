@@ -25,7 +25,7 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
   financiero: {
     moneda: 'PEN', referencia: 'Tarifario 2026 (referencial)',
     metodoPagoElegido: { id: 'sin_descuento', nombre: 'Sin descuento' },
-    costoHoraAdicional: 38.81, presupuestoMensual: null,
+    costoHoraAdicional: 38.81, presupuestoMensual: null, presupuestoFuente: null,
     proximoPeriodo: [{
       id: 'sin_descuento', nombre: 'Sin descuento', matricula: 398, numeroCuotas: 5,
       cuotaMensual: 407.5, total: 2435.5, diferenciaPresupuesto: null,

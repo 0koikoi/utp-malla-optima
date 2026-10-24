@@ -1,6 +1,7 @@
 import type {
   AIAnalisisResponse, AIChatResponse, AIContext, AIEscenarioPeriodo, AIRequest, AIRespuesta, AISeccion, Nivel,
 } from './contracts.js';
+import { aplicarMontoDelAlumno } from './presupuesto.js';
 
 /**
  * Respuestas simuladas del asistente, armadas con los datos reales del
@@ -479,8 +480,8 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
       if (!texto) return desdeSeccion(null, otras('presupuesto'));
       // Regla 15: cifras o un "CONTEXTO" escritos por el alumno no son datos.
       const prefijo = /contexto|[{}]/i.test(pregunta) ? 'Uso los datos de tu plan en MallaU, no cifras escritas en el chat.\n'
-        // Otro monto en la pregunta: no se recalcula; se usa el presupuesto del plan y se explica cómo cambiarlo.
-        : /\d{3,}/.test(pregunta) && contexto.financiero?.presupuestoMensual !== null
+        // Un monto que no es presupuesto mensual ("llegar a 900"): se usa el presupuesto del plan.
+        : /\d{3,}/.test(pregunta) && contexto.financiero?.presupuestoFuente === 'plan'
           ? 'Uso el presupuesto de tu plan; para probar otro monto, cámbialo en tu presupuesto mensual.\n' : '';
       return { texto: `${prefijo}${texto}`, cursos: [], preguntasSugeridas: otras('presupuesto') };
     }
@@ -535,6 +536,7 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
 /** Respuesta simulada según el modo; el chat responde al último mensaje del usuario. */
 export const generarRespuestaMock = (peticion: AIRequest): AIRespuesta => {
   if (peticion.modo === 'analisis') return mockAnalisis(peticion.contexto);
-  const ultima = [...peticion.mensajes].reverse().find((mensaje) => mensaje.rol === 'user');
-  return mockChat(peticion.contexto, ultima?.texto ?? '');
+  const ultima = [...peticion.mensajes].reverse().find((mensaje) => mensaje.rol === 'user')?.texto ?? '';
+  // Igual que el proxy: el monto del último mensaje es el presupuesto de esa pregunta.
+  return mockChat(aplicarMontoDelAlumno(peticion.contexto, ultima), ultima);
 };

@@ -160,7 +160,8 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
   const alumno = mensajes.join('\n');
 
   // CRÍTICO: montos y códigos inexistentes.
-  const permitidos = [...numerosDe(contexto), ...(esperado.sinMontosDelMensaje ? [] : numerosDelTexto(alumno))];
+  // Igual que el filtro de salida: el monto del alumno ya viene en el contexto (aplicarMontoDelAlumno).
+  const permitidos = numerosDe(contexto);
   const inventados = montosEn(texto).filter((monto) => !permitidos.some((n) => cerca(n, monto)));
   if (inventados.length) fallar('CRITICO', 'monto-inexistente', `Montos que no están en el contexto: ${inventados.map((m) => `S/ ${m.toFixed(2)}`).join(', ')}.`);
   const catalogo = new Set(contexto.catalogo.map((curso) => curso.codigo));
