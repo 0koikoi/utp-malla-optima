@@ -43,7 +43,9 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 | [F-031](#f-031) | El análisis real omite secciones (`whatIf`, `electivos`) | corregido |
 | [F-032](#f-032) | El modelo calcula horas por su cuenta ("bajas a 21 h") | corregido |
 | [F-033](#f-033) | El pago único se presentaba como cuota mensual | corregido |
-| [F-034](#f-034) | Con un jalado, el asistente lo nombra al final y no aplica la regla de bika | pendiente |
+| [F-034](#f-034) | Con un jalado, el asistente lo nombra al final y no aplica la regla de bika | corregido |
+| [F-035](#f-035) | Horas del próximo periodo sin el jalado obligatorio | corregido |
+| [F-036](#f-036) | La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo") | pendiente |
 
 ---
 
@@ -331,6 +333,38 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Test:** `tests/ai/buildAIContext.test.ts`, `tests/financial/periodFinancialCard.test.tsx`,
   `ai-proxy/tests/evaluacion.test.ts` (`pago-unico-mensual`).
 
+<a id="f-034"></a>
+### F-034 · Con un jalado, el asistente lo nombra al final y no aplica la regla de bika
+
+- **Fecha:** 2026-10-23, en la corrida 3 (`docs/evaluaciones/2026-10-23-1922.md`).
+- **Síntoma:** `jalado-proximo-ciclo` 0/3: lista los 7 cursos planificados y deja HERRAMIENTAS DE DESARROLLO
+  (jalado) para el final ("Ojo: te falta…"). `bika-inteligencia` 0/3 con el fixture del jalado: explica la ventana,
+  pero no menciona la Ley 30220 ni tutoría ni prioriza el curso.
+- **Causa raíz (probable):** la regla 3 dice que el jalado va en su ventana, pero no que se nombre primero; con un
+  jalado en el contexto, el modelo aplica la regla 3 en lugar de la 8.
+- **Archivo:** `ai-proxy/src/systemPrompt.ts`.
+- **Estado:** corregido ([D-040](decisiones.md#d-040), [D-042](decisiones.md#d-042)). Corrida 4 recalculada:
+  `jalado-proximo-ciclo` 3/3 y `bika-inteligencia` 3/3. Tal como salió la corrida, marcaba 3 MAYOR que eran falsos
+  positivos del caso ("eso bloquea los demás cursos" y "va primero" / "es clave", la forma del ejemplo 6).
+- **Commit:** `b4a6a0f`, `f444d6b`, `61dfdc7`.
+- **Test:** `ai-proxy/tests/evaluacion.test.ts` (frases reales de la corrida 2006).
+
+<a id="f-035"></a>
+### F-035 · Horas del próximo periodo sin el jalado obligatorio
+
+- **Fecha:** 2026-10-23, al revisar la corrida 1922 con el autor.
+- **Síntoma:** con HERRAMIENTAS DE DESARROLLO jalado (ventana: Ciclo 8, todavía fuera de ella), el asistente decía
+  que el Ciclo 8 suma 25 h y cuesta S/ 931.43 al mes, pero el jalado tiene que ir ahí: con él son 29 h, 7 h sobre el
+  tope, y S/ 1,086.67 al mes sin descuento. Tampoco decía que los demás cursos quedan bloqueados.
+- **Causa raíz (en los datos):** `buildAIContext` calculaba `proximoPeriodo`, `carga`, los escenarios y
+  `derivados` solo con los cursos planificados en ese periodo; el jalado obligatorio, que todavía estaba en el
+  Ciclo 7, no entraba en ninguna cifra, y el bloqueo (`planificadosSinJalado`) no estaba en el contexto.
+- **Archivo:** `src/application/ai/buildAIContext.ts`, `src/application/ai/contracts.ts`.
+- **Estado:** corregido ([D-040](decisiones.md#d-040)): `derivados.proximoPeriodoConJalados` y
+  `derivados.planificadosBloqueadosPorJalado`. Corrida 4: `jalado-proximo-ciclo` da 29 h y el bloqueo.
+- **Commit:** `b4a6a0f`.
+- **Test:** `tests/ai/buildAIContext.test.ts`, `ai-proxy/tests/mockTono.test.ts`.
+
 ## Pendientes
 
 <a id="f-030"></a>
@@ -346,6 +380,11 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Estado:** pendiente. Corrida 3 (después de cambiar las reglas 7 y 14 y el ejemplo 2, `c5aab81`): sigue con 28
   MENOR en 12 casos (21.7 % de las repeticiones). 19 citan la carga (25 h o su nivel) y 9 solo ofrecen "ver tu
   carga" (por ejemplo, en `identidad-profe`). Propuestas en la bitácora.
+- **Corrida 4** (`2026-10-23-2006.md`, con la regla de excepciones de [D-039](decisiones.md#d-039)): 11
+  `repite-carga` en 5 casos, todos citando cifras: `sin-datos-tranca` 3 (25 h y 22 h al ofrecer lo que sí ve),
+  `bienestar-estres` 3 y `bienestar-dejar` 2 (25 h al aconsejar menos carga), `jalado-postergar` 2 (29 h, de
+  `proximoPeriodoConJalados`) y `jerga-yuca` 1 ("¿veamos tu carga?"). MENOR en 10.6 % de las repeticiones (sigue
+  pendiente).
 
 <a id="f-015"></a>
 ### F-015 · El tarifario guardado en IndexedDB tapa los cambios del JSON
@@ -422,16 +461,17 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Estado:** pendiente de confirmar con la UTP ([estado.md](estado.md#preguntas-abiertas-para-confirmar-con-la-utp)).
   **Commit:** —. **Test:** —.
 
-<a id="f-034"></a>
-### F-034 · Con un jalado, el asistente lo nombra al final y no aplica la regla de bika
+<a id="f-036"></a>
+### F-036 · La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo")
 
-- **Fecha:** 2026-10-23, en la corrida 3 (`docs/evaluaciones/2026-10-23-1922.md`).
-- **Síntoma:** `jalado-proximo-ciclo` 0/3: lista los 7 cursos planificados y deja HERRAMIENTAS DE DESARROLLO
-  (jalado) para el final ("Ojo: te falta…"). `bika-inteligencia` 0/3 con el fixture del jalado: explica la ventana,
-  pero no menciona la Ley 30220 ni tutoría ni prioriza el curso.
-- **Causa raíz (probable):** la regla 3 dice que el jalado va en su ventana, pero no que se nombre primero; con un
-  jalado en el contexto, el modelo aplica la regla 3 en lugar de la 8.
-- **Archivo:** `ai-proxy/src/systemPrompt.ts`.
+- **Fecha:** 2026-10-23, en la corrida 4 (`2026-10-23-2006.md`).
+- **Síntoma:** 2 de las 4 regeneraciones le contestan al mensaje de corrección como si el alumno lo hubiera
+  escrito: "Tienes razón, me confundí. En tu plan, Cálculo II (100000I1N0) figura como APROBADO" y "Tienes razón,
+  corrijo: … según CONTEXTO.derivados.horasSinCadaCurso" (nombra un campo interno).
+- **Causa raíz:** el mensaje de corrección del filtro (`mensajeCorreccion`) no pide reescribir la respuesta sin
+  mencionar la corrección. En el segundo caso, además, la primera respuesta era correcta: el filtro tomaba "sacar X
+  te deja en 23 h" como horas del curso (falso positivo, corregido en `61dfdc7` con test).
+- **Archivo:** `ai-proxy/src/verificacion.ts` (`mensajeCorreccion`).
 - **Estado:** pendiente: propuesta al autor (ver la bitácora).
 
 ## No priorizados (detectados en la revisión del asistente)

@@ -91,7 +91,7 @@ Manual (no corre en CI) y con gasto real. Requiere Node 24 (ejecuta TypeScript q
 ```bash
 cd ai-proxy
 # ai-proxy/.env.local (ignorado por git): DEEPSEEK_API_KEY=...  (opcional: DEEPSEEK_MODEL, DEEPSEEK_PICO_UTC)
-corepack pnpm evaluar                      # 43 casos × 3 repeticiones
+corepack pnpm evaluar                      # 44 casos × 3 repeticiones
 corepack pnpm evaluar --solo whatif-I62N   # un caso
 corepack pnpm evaluar --repeticiones 1
 corepack pnpm evaluar --simulado           # mismo flujo con un fetch simulado (mocks): no gasta

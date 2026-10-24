@@ -49,6 +49,10 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | [D-036](#d-036) | `derivados.horasSinCadaCurso`: las horas sin cada curso, calculadas en código | vigente |
 | [D-037](#d-037) | Pago único sin cuota mensual (`derivados.pagoUnico`) | vigente |
 | [D-038](#d-038) | Criterios de aprobación de la evaluación (corrida 3) | vigente |
+| [D-039](#d-039) | La carga se menciona con excepciones: trabajo, estrés o un jalado, sin cifras | vigente |
+| [D-040](#d-040) | El jalado va primero, con el próximo periodo calculado con él (`proximoPeriodoConJalados`) | vigente |
+| [D-041](#d-041) | `perfil.creditos.pendientes` pasa a `pendientesEnMalla` | vigente |
+| [D-042](#d-042) | Bika y trika con un jalado: regla 8 completa y ejemplo de tono 6 | vigente |
 
 ---
 
@@ -663,3 +667,61 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 - **Alternativas descartadas:** —.
 - **Consecuencias:** `pago-unico-mensual` se acotó a la cláusula después de la corrida 1922, que marcó 5 falsos
   positivos (comparaciones con la cuota de otro método); el recálculo sobre esa corrida está en la bitácora.
+
+<a id="d-039"></a>
+## D-039 · La carga se menciona con excepciones: trabajo, estrés o un jalado, sin cifras
+
+- **Fecha:** 2026-10-23 (`f444d6b` prompt, `61dfdc7` evaluación).
+- **Estado:** vigente. Reemplaza la línea de la carga de CÓMO HABLAS de 2026-10-23 (`4b7a7a0`).
+- **Contexto:** con la regla anterior, el modelo seguía citando o "ofreciendo revisar" la carga fuera de tema
+  (28 MENOR en la corrida 1922), y la regla chocaba con aconsejar menos carga a quien trabaja o jaló.
+- **Decisión:** la carga (horas, nivel o número de cursos) se menciona si la pregunta trata de carga, horas,
+  costos o del plan, en el análisis, o si el alumno cuenta que trabaja, que está estresado o que jaló; en esos
+  últimos casos se recomienda menos carga sin repetir cifras. Fuera de eso, ni cifras ni ofrecer revisarla; al
+  presentarse, "su plan y sus costos". El chequeo `repite-carga` sigue la misma regla.
+- **Alternativas descartadas:** prohibir la palabra "carga" (impide el consejo de la regla 8).
+- **Consecuencias:** corrida 4: 11 `repite-carga` (de 28). Los que quedan citan cifras (25 h, 22 h, 29 h).
+
+<a id="d-040"></a>
+## D-040 · El jalado va primero, con el próximo periodo calculado con él (`proximoPeriodoConJalados`)
+
+- **Fecha:** 2026-10-23 (`b4a6a0f` datos, `f444d6b` prompt). Aplica [D-001](#d-001).
+- **Estado:** vigente.
+- **Contexto:** con un jalado fuera de su ventana, el contexto describía el próximo periodo sin él (25 h), aunque
+  tiene que ir ahí ([F-035](fallos.md#f-035)); el modelo lo nombraba al final ([F-034](fallos.md#f-034)).
+- **Decisión:**
+  - `derivados.proximoPeriodoConJalados`: los jalados fuera de su ventana cuya ventana incluye el próximo periodo,
+    puestos en él; horas, créditos, si supera el tope y las 24 h, la cuota de cada escenario y el bloque de pago
+    único, con `calcularHorasEfectivas` y `FinancialPlanningService`.
+  - `derivados.planificadosBloqueadosPorJalado`: `planificadosSinJalado` del dominio (la misma regla que la app),
+    filtrado al próximo periodo.
+  - Regla 3: nombrar primero el jalado y su ventana, decir que los demás quedan bloqueados hasta agregarlo y usar
+    esos derivados para horas y costos.
+- **Alternativas descartadas:** dejar que el modelo sume las horas del jalado.
+- **Consecuencias:** corrida 4 (recalculada): `jalado-proximo-ciclo` 3/3, con 29 h en lugar de 25 h.
+
+<a id="d-041"></a>
+## D-041 · `perfil.creditos.pendientes` pasa a `pendientesEnMalla`
+
+- **Fecha:** 2026-10-23 (`019b1ce`).
+- **Estado:** vigente.
+- **Contexto:** "te faltan 70 créditos pendientes" en la corrida 1922: el modelo usó `pendientes` (todos los cursos
+  pendientes, incluidos todos los electivos ofrecidos) como lo que falta para egresar (79).
+- **Decisión:** el campo se llama `pendientesEnMalla` (mismo significado); la regla 1 dice que para egresar se usa
+  `derivados.creditos.faltanParaEgresar`. Chequeo `creditos-faltantes` en `incoherente-cachimbo`.
+- **Alternativas descartadas:** quitar el campo (lo usa el mock y sirve como dato del avance).
+- **Consecuencias:** corrida 4: 0 `creditos-faltantes`.
+
+<a id="d-042"></a>
+## D-042 · Bika y trika con un jalado: regla 8 completa y ejemplo de tono 6
+
+- **Fecha:** 2026-10-23 (`f444d6b`).
+- **Estado:** vigente. Amplía [D-024](#d-024).
+- **Contexto:** con el curso marcado como jalado, el modelo aplicaba la regla 3 (ventana) y omitía la 8 (ley,
+  tutoría, priorizar, menos carga): `bika-inteligencia` 0/3 en la corrida 1922.
+- **Decisión:** al inicio de la regla 8, aplicarla aunque CONTEXTO solo diga jalado, con ventana, riesgo según la
+  ley, priorizar, menos carga y tutoría en la misma respuesta. Ejemplo de tono 6 ("hice bika en estadística"),
+  ficticio, con `CODIGO-EJEMPLO-2`.
+- **Alternativas descartadas:** que el alumno marque las veces que jaló (MallaU no guarda intentos).
+- **Consecuencias:** corrida 4 (recalculada): `bika-inteligencia` 3/3 y `trika-herramientas` con todo lo pedido,
+  pero en 83 a 88 palabras (MENOR `chat-largo` 3/3).

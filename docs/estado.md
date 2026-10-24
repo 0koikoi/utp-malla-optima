@@ -38,6 +38,8 @@ git está marcado **(por verificar)**.
     segura fija ([D-034](decisiones.md#d-034)); el análisis exige 5 secciones en orden ([D-035](decisiones.md#d-035)).
   - Pago único sin cuota mensual: se paga todo al inicio, en el asistente y en la Simulación de cuotas
     ([D-037](decisiones.md#d-037)); horas sin cada curso en `derivados` ([D-036](decisiones.md#d-036)).
+  - Con un jalado fuera de su ventana, el próximo periodo se calcula con él y se informa qué queda bloqueado
+    ([D-040](decisiones.md#d-040)); la carga se menciona con excepciones ([D-039](decisiones.md#d-039)).
 
 ## De mock a real
 
@@ -54,12 +56,13 @@ git está marcado **(por verificar)**.
   | Primera (`2026-10-23-1731.md`) | 16/38 | 51 % | 56 | 14.1 s | US$ 0.0723 |
   | Segunda (`2026-10-23-1841.md`) | 23/42 | 63.5 % | 8 | 4.0 s | US$ 0.0267 |
   | Tercera (`2026-10-23-1922.md`) | 28/43 | 72.1 % | 5 (0 recalculado) | 4.8 s | US$ 0.0298 |
+  | Cuarta (`2026-10-23-2006.md`) | 33/44 | 83.3 % | 0 | 4.7 s | US$ 0.0295 |
 
 - **Criterios de aprobación** ([D-038](decisiones.md#d-038)): 0 CRÍTICOS, ≥ 95 % de repeticiones sin CRÍTICO ni
-  MAYOR, MENOR en ≤ 10 %, seguras ≤ 3 %, p95 < 6 s en chat y < 10 s en análisis. **No se cumplen** todavía. En la
-  tercera corrida, recalculada con el chequeo de pago único corregido: 0 CRÍTICOS (cumple), 94.6 % sin CRÍTICO ni
-  MAYOR (falla por poco: el jalado y la bika, [F-034](fallos.md#f-034)) y MENOR en 21.7 % (falla: la carga,
-  [F-030](fallos.md#f-030)). Seguras 0 % y latencia (chat 2.1 s, análisis 5.7 s) cumplen.
+  MAYOR, MENOR en ≤ 10 %, seguras ≤ 3 %, p95 < 6 s en chat y < 10 s en análisis. **No se cumplen** todavía, por una
+  repetición: en la cuarta corrida, recalculada con los falsos positivos corregidos, 0 CRÍTICOS, 99.2 % sin CRÍTICO
+  ni MAYOR, seguras 0.8 % y latencia (chat 2.2 s, análisis 6.0 s) cumplen; MENOR en 10.6 % (14 de 132) no cumple
+  (la carga con cifras, [F-030](fallos.md#f-030), y la trika en más de 80 palabras).
 - Las propuestas de cambio al prompt y al contrato están en la [bitácora](bitacora.md); no se aplican sin el autor.
   Recomendación: no activar la clave en producción hasta cumplirlos (la decisión es del autor).
 
@@ -67,9 +70,9 @@ git está marcado **(por verificar)**.
 
 | Proyecto | Archivos | Tests | Comando |
 | --- | --- | --- | --- |
-| Frontend (`tests/`) | 39 | 328 | `pnpm vitest run --exclude 'ai-proxy/**'` |
-| Proxy (`ai-proxy/tests/`) | 7 | 134 | `cd ai-proxy && pnpm test` |
-| Todo (raíz) | 46 | 462 | `pnpm test` (Vitest también recoge `ai-proxy/tests`) |
+| Frontend (`tests/`) | 39 | 329 | `pnpm vitest run --exclude 'ai-proxy/**'` |
+| Proxy (`ai-proxy/tests/`) | 7 | 137 | `cd ai-proxy && pnpm test` |
+| Todo (raíz) | 46 | 466 | `pnpm test` (Vitest también recoge `ai-proxy/tests`) |
 
 Además: `pnpm lint`, `pnpm build`, `pnpm verify:base` y `cd ai-proxy && pnpm typecheck`. Correr `pnpm test`
 dos veces seguidas deja `git status` limpio ([F-026](fallos.md#f-026)).
@@ -137,8 +140,9 @@ Otro dato abierto: la franja del horario pico de DeepSeek (precio doble) **(por 
 
 ## Próximos pasos
 
-1. Revisar con el autor las propuestas de la corrida 3 en la [bitácora](bitacora.md) (carga, jalado primero, bika
-   con un jalado y créditos para egresar) y volver a correr `pnpm evaluar` hasta cumplir los criterios.
+1. Revisar con el autor las propuestas de la corrida 4 en la [bitácora](bitacora.md) (cifras del jalado en
+   `repite-carga`, extensión de la trika, carga en sin datos y bienestar, mensaje de corrección y ejemplo 3) y volver
+   a correr `pnpm evaluar` hasta cumplir los criterios.
 2. Crear y conectar los dos proyectos de Vercel con las variables por entorno; agregar Upstash.
 3. Abrir el PR de `feat/ia-real` hacia `main`.
 4. Resolver las preguntas abiertas con la UTP.

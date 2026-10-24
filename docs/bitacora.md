@@ -8,6 +8,61 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Corrida 4: jalado en el próximo periodo, carga con excepciones y bika con jalado
+
+- **Qué se hizo:**
+  - `derivados.proximoPeriodoConJalados` y `derivados.planificadosBloqueadosPorJalado` ([D-040](decisiones.md#d-040),
+    [F-035](fallos.md#f-035)).
+  - `perfil.creditos.pendientes` → `pendientesEnMalla` ([D-041](decisiones.md#d-041)).
+  - Prompt (autorizado): carga con excepciones ([D-039](decisiones.md#d-039)), jalado primero (regla 3), bika con
+    jalado (regla 8), créditos para egresar (regla 1) y ejemplo de tono 6 ([D-042](decisiones.md#d-042)). Huella
+    `6bead691…`.
+  - Evaluación: excepciones de `repite-carga`, `jalado-proximo-ciclo` con cifras de `proximoPeriodoConJalados`, caso
+    `trika-herramientas` (44 casos) y `creditos-faltantes` en `incoherente-cachimbo`. Criterios de D-038.
+- **Por qué:** propuestas 1, 2, 3 y 5 de la corrida 1922, aceptadas por el autor con ajustes.
+- **Rama / PR:** `feat/ia-real` (sin PR, sin push).
+- **Commits:** `b4a6a0f` (1), `019b1ce` (2), `f444d6b` (3), `61dfdc7` (4, con el reporte) y este de docs (5).
+- **Resultados (corrida 4, `docs/evaluaciones/2026-10-23-2006.md`, 44 casos × 3):**
+
+  | Corrida | Casos | CRÍTICO · MAYOR · MENOR | Sin CRÍTICO ni MAYOR | Con MENOR | Seguras | p95 chat / análisis | Costo |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | 1922 (recalculada) | 28/43 | 0 · 16 · 28 | 94.6 % | 21.7 % | 0 % | 2.1 s / 5.7 s | US$ 0.0298 |
+  | 2006 tal como salió | 33/44 | 0 · 8 · 14 | 93.9 % | 10.6 % | 0.8 % | 2.2 s / 6.0 s | US$ 0.0295 |
+  | 2006 recalculada | — | 0 · 1 · 14 | 99.2 % | 10.6 % | 0.8 % | igual | — |
+
+  - Criterios (recalculada): ✓ 0 CRÍTICOS · ✓ ≥ 95 % sin CRÍTICO ni MAYOR (99.2 %) · ✗ MENOR en ≤ 10 % (10.6 %:
+    14 de 132; con 13 cumpliría) · ✓ seguras ≤ 3 % (0.8 %) · ✓ p95 chat (2 242 ms) · ✓ p95 análisis (6 028 ms).
+  - Falsos positivos corregidos después de la corrida, con las frases reales como test: "eso bloquea los demás
+    cursos" y "va primero" / "es clave" (casos), "estás cargado" y "estás pasado" (`contradice-carga`), y en el
+    filtro de salida "sacar X te deja en 23 h" (se atribuía al curso y regeneró una respuesta correcta). El
+    recálculo vuelve a aplicar el filtro y los chequeos a los intentos guardados en el reporte, sin llamar a la API:
+    solo cambian esas 7 repeticiones; las otras 125 dan los mismos fallos.
+  - Filtro de salida: 127 a la primera, 4 regeneradas (3 por montos, 2 por atributos de curso; una de estas era el
+    falso positivo) y 1 respuesta segura (`montos-800`: "te faltarían S/ 84.86", una resta del modelo).
+  - MENOR que quedan (14): `repite-carga` 11 citando cifras (`sin-datos-tranca` 3, `bienestar-estres` 3,
+    `bienestar-dejar` 2, `jalado-postergar` 2 con las 29 h de `proximoPeriodoConJalados`, `jerga-yuca` 1) y
+    `chat-largo` 3 (`trika-herramientas`, 83 a 88 palabras con todo lo que pide la regla 8).
+  - Costo acumulado del día: US$ 0.1399 + US$ 0.0295 = US$ 0.1694 estimado.
+- **Propuestas (no aplicadas):**
+  1. `jalado-postergar` (2 MENOR): la pregunta es sobre un jalado y las 29 h salen de `proximoPeriodoConJalados`,
+     como pide la regla 3. Proponer que `repite-carga` acepte cifras de `proximoPeriodoConJalados` cuando la
+     pregunta nombra un curso jalado. Con eso, MENOR en 9.1 % (12/132) y la corrida cumpliría todo.
+  2. Trika (3 MENOR): la regla 8 pide cinco cosas más lo propio de la trika; no entran en 80 palabras. Proponer
+     hasta 100 palabras para bika y trika (prompt y chequeo) o acortar el texto de la trika en la regla 8.
+  3. Carga con cifras en sin datos y bienestar (8 MENOR): la regla 7 aún dice "ofrece lo que sí puedes: las horas de
+     cada curso…" y el modelo da el total del periodo. Proponer en la regla 7 "sin dar el total de horas del
+     periodo", y en la regla 10 "lo práctico, sin cifras".
+  4. Regeneraciones (F-036): cambiar `mensajeCorreccion` para terminar con "Escribe de nuevo tu respuesta para el
+     alumno, como si fuera la primera: no menciones esta corrección, CONTEXTO ni nombres de campos", y que el filtro
+     de salida marque nombres de campos ("CONTEXTO.", "derivados.") como el chequeo de delimitadores.
+  5. `montos-800` (1 segura): el modelo calcula "te faltarían S/ 84.86" con un monto del alumno, como hace el
+     ejemplo 3 ("Con S/ 700 al mes te faltarían S/ 42.10"). Decidir si el ejemplo 3 debe dejar esa resta (el filtro
+     la bloquea porque 42.10 no saldría de CONTEXTO) o decir solo "no te alcanza: la cuota más baja es S/ 742.10".
+- **Verificación:**
+  - `pnpm test` (466), `pnpm lint`, `pnpm build` y en `ai-proxy/` `pnpm test` (137) y `pnpm typecheck` en verde
+    después de cada commit. `pnpm evaluar --simulado`: 44/44 y todos los criterios.
+  - La clave nunca se leyó ni se imprimió; el reporte no la contiene.
+
 ## 2026-10-23 · Corrida 3: pago único sin cuota mensual, 5 secciones obligatorias y horas sin cada curso
 
 - **Qué se hizo:**
