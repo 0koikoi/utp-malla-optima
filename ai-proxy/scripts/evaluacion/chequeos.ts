@@ -1,6 +1,6 @@
 import { errorSecciones, type AIContext, type AIRespuesta } from '../../src/contracts.js';
 import {
-  atributosIncorrectos, cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
+  atributosDeCursos, atributosIncorrectos, cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
 } from '../../src/verificacion.js';
 
 // Los chequeos de datos son los mismos del filtro de salida del proxy (src/verificacion.ts).
@@ -47,6 +47,10 @@ export interface Esperado {
   fueraDeTema?: boolean;
   /** Patrones que deben aparecer. */
   menciona?: { patron: RegExp; severidad: Severidad; detalle: string }[];
+  /** Horas y montos solo de derivados.proximoPeriodoConJalados (más los límites y las horas de cada curso). */
+  cifrasConJalados?: boolean;
+  /** Si dice cuántos créditos faltan, deben ser los de derivados.creditos (faltanParaEgresar o faltanSiApruebaEnCurso). */
+  creditosFaltantes?: boolean;
 }
 
 /** Glosario del prompt (sin tildes). "jalado" es también el término de MallaU, por eso va aparte. */
@@ -69,7 +73,13 @@ const POSTERGA = /(?<!no )\b(puedes (dejarlo|dejarla|postergarlo|postergarla|lle
 const APOYO = /tutor|bienestar|servicios academicos|asesoria|psicolog/;
 const RECONOCE = /entiendo|es normal|valido|lamento|lo siento|comprendo|tiene sentido|no estas solo|se que|es dificil|pesa|tranqui/;
 const INTENTOS = /\bbika\b|\btrika\b|segunda vez|tercera vez|dos veces|tres veces|separacion temporal/;
-const DICHO_ALTO = /sobrecargad|carga (es |esta )?(muy |bastante )?(alta|pesada|exigente|fuerte|elevada)|riesgo|demasiad|supera|te pasas|excede|por encima/;
+// "Sí, estás cargado / pasado" también dice que la carga es alta (falsos positivos de la corrida 2026-10-23-2006).
+const DICHO_ALTO = /sobrecargad|carga (es |esta )?(muy |bastante )?(alta|pesada|exigente|fuerte|elevada)|riesgo|demasiad|supera|te pasas|excede|por encima|estas (muy )?(cargad|pasad)/;
+/** El alumno cuenta que trabaja, que está estresado o que jaló: puede recomendarse menos carga, sin cifras. */
+const ALUMNO_CUENTA = /trabaj|chamba|estres|agobi|ansios|cansad|animo|no puedo mas|dejar la (u|carrera|universidad)|\bjal|bika|trika|desaprob/;
+/** Presentación pedida por el prompt: "ayudo con tu plan y tus costos". */
+const PRESENTACION = /\b(tu|su) plan y (tus|sus) costos\b/;
+
 /** La pregunta trata de carga, horas, costos o del plan: ahí sí corresponde hablar de la carga. */
 const PREGUNTA_DE_CARGA = /carga|cargo|cargad|sobrecarg|horas|pesad|costo|cuesta|pago|pagar|cuota|presupuesto|alcanza|plata|matricul|\bplan\b|llevo|llevar|proximo ciclo|este ciclo|cursos/;
 /** Números con unidad (h, créditos, cr, ciclos) y los campos de CONTEXTO donde deben estar. */
@@ -224,6 +234,26 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
       fallar('MAYOR', 'sin-bloqueados', `No menciona los cursos que se bloquean (${nombres.join(', ')}).`);
     }
   }
+  if (esperado.cifrasConJalados) {
+    const conJalados = contexto.derivados.proximoPeriodoConJalados;
+    // Las horas de cada curso (las valida atributo-curso-incorrecto) y los límites también valen.
+    const horasCursos = atributosDeCursos(contexto).flatMap((curso) => (curso.horas === null ? [] : [curso.horas]));
+    const limites = [contexto.limites.topeEscalaPension, contexto.limites.horasRecomendadasPeriodo].filter((n): n is number => n !== null);
+    const fuente = [...numerosDe(conJalados), ...limites, ...horasCursos];
+    const ajenas = [
+      ...[...t.matchAll(/(\d+(?:[.,]\d+)?)\s*(h|horas?)\b/g)].map((m) => ({ valor: Number(m[1].replace(',', '.')), texto: m[0] })),
+      ...montosEn(texto).map((valor) => ({ valor, texto: `S/ ${valor.toFixed(2)}` })),
+    ].filter((cifra) => !fuente.some((n) => cerca(n, cifra.valor)));
+    if (ajenas.length) {
+      fallar('MAYOR', 'numero-sin-fuente', `Cifras que no salen de derivados.proximoPeriodoConJalados: ${[...new Set(ajenas.map((cifra) => cifra.texto))].join(', ')}.`);
+    }
+  }
+  if (esperado.creditosFaltantes) {
+    const validos = [contexto.derivados.creditos.faltanParaEgresar, contexto.derivados.creditos.faltanSiApruebaEnCurso];
+    const dichos = [...t.matchAll(/(?:faltan|quedan|pendientes)\D{0,25}?(\d+) creditos|(\d+) creditos (?:pendientes|por aprobar|que (?:te )?faltan|para egresar)/g)]
+      .map((m) => Number(m[1] ?? m[2])).filter((n) => !validos.includes(n));
+    if (dichos.length) fallar('MAYOR', 'creditos-faltantes', `Créditos que faltan: ${dichos.join(', ')}; para egresar son ${validos[0]} (derivados.creditos.faltanParaEgresar).`);
+  }
   for (const { patron, severidad, detalle } of esperado.menciona ?? []) {
     if (!patron.test(t)) fallar(severidad, 'falta-mencion', detalle);
   }
@@ -235,10 +265,15 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
     if (texto.length > 900) fallar('MENOR', 'respuesta-larga', `${texto.length} caracteres (máximo 900).`);
     const total = palabras(texto);
     if (total > 80) fallar('MENOR', 'chat-largo', `${total} palabras (máximo 80).`);
-    // La carga del próximo periodo: su total de horas, su nivel o "estás sobrecargado"; "lleva menos carga" es un consejo, no la cifra.
-    const hablaDeCarga = /nivel de carga|tu carga|carga (del|de tu|de este|de ese|esta|es|en)\b|sobrecarg/.test(t)
-      || new RegExp(`\\b${contexto.carga.horas} ?(h|horas)\\b`).test(t);
-    if (hablaDeCarga && !PREGUNTA_DE_CARGA.test(normalizar(alumno))) fallar('MENOR', 'repite-carga', 'Menciona la carga sin que la pregunta trate de eso.');
+    // La carga del próximo periodo: sus cifras (horas, nivel, número de cursos) o mencionarla / ofrecer revisarla.
+    // "Lleva menos carga" es un consejo: con ALUMNO_CUENTA se permite si no cita cifras; la presentación también.
+    const horasCarga = [contexto.carga.horas, contexto.derivados.proximoPeriodoConJalados?.horas].filter((n): n is number => n !== undefined);
+    const citaCifras = horasCarga.some((n) => new RegExp(`\\b${n} ?(h|horas)\\b`).test(t)) || /nivel de carga|\bnivel (de )?(riesgo|atencion)\b|carga (en|de) riesgo/.test(t)
+      || (contexto.proximoPeriodo ? new RegExp(`\\b${contexto.proximoPeriodo.cursos.length} cursos\\b`).test(t) : false);
+    const mencionaCarga = /tu carga|carga (del|de tu|de este|de ese|esta|es)\b|sobrecarg/.test(t);
+    const preguntaCarga = PREGUNTA_DE_CARGA.test(normalizar(alumno));
+    const permitido = !citaCifras && (ALUMNO_CUENTA.test(normalizar(alumno)) || PRESENTACION.test(t));
+    if ((citaCifras || mencionaCarga) && !preguntaCarga && !permitido) fallar('MENOR', 'repite-carga', 'Menciona la carga sin que la pregunta trate de eso.');
   }
   if (esperado.fueraDeTema) {
     if (texto.length > 280) fallar('MENOR', 'fuera-de-tema-largo', `${texto.length} caracteres para una pregunta fuera de tema.`);

@@ -69,7 +69,10 @@ export const CASOS: Caso[] = [
   },
   {
     id: 'jalado-proximo-ciclo', grupo: 'Jalados', fixture: 'contexto-plan1-jalado', modo: 'chat', mensajes: ['¿qué llevo el próximo ciclo?'],
-    esperado: { jalado: true, ventana: ['Ciclo 8'], primero: { codigo: '100000S61T', nombre: 'HERRAMIENTAS DE DESARROLLO' } },
+    esperado: {
+      jalado: true, ventana: ['Ciclo 8'], primero: { codigo: '100000S61T', nombre: 'HERRAMIENTAS DE DESARROLLO' }, cifrasConJalados: true,
+      menciona: [{ patron: /bloque(a|an|ad|o)|hasta que (lo |la )?(agregues|incluyas|pongas)|no (puedes|podras) (matricular|llevar) (los )?(otros|demas)/, severidad: 'MAYOR', detalle: 'No dice que los demás cursos quedan bloqueados hasta agregar el jalado.' }],
+    },
   },
   {
     id: 'jalado-desaprobado-ads', grupo: 'Jalados', fixture: 'contexto-desaprobado', modo: 'chat',
@@ -91,7 +94,8 @@ export const CASOS: Caso[] = [
       menciona: [
         { patron: /tercera|separacion temporal|30220/, severidad: 'MAYOR', detalle: 'No menciona el riesgo de desaprobar por tercera vez.' },
         { patron: /menos (carga|cursos|horas)|carga (mas )?(ligera|liviana|baja)|no te cargues/, severidad: 'MAYOR', detalle: 'No recomienda llevar menos carga.' },
-        { patron: /prioriza|prioridad|enfoca|centra/, severidad: 'MAYOR', detalle: 'No recomienda priorizar el curso.' },
+        // "va primero" y "es clave" son la forma del ejemplo de tono 6 del prompt.
+        { patron: /prioriza|prioridad|enfoca|centra|va primero|primero va|es clave|cuidal/, severidad: 'MAYOR', detalle: 'No recomienda priorizar el curso.' },
       ],
     },
   },
@@ -99,6 +103,18 @@ export const CASOS: Caso[] = [
     id: 'trika-calculo', grupo: 'Bika y trika', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['hice trika en cálculo, ¿me botan?'],
     esperado: {
       apoyo: true,
+      menciona: [
+        { patron: /separacion temporal/, severidad: 'MAYOR', detalle: 'No menciona la separación temporal.' },
+        { patron: /30220|ley universitaria/, severidad: 'MAYOR', detalle: 'No cita la Ley Universitaria 30220.' },
+        { patron: /tutor|servicios academicos/, severidad: 'MAYOR', detalle: 'No sugiere hablar con su tutor o con Servicios Académicos.' },
+      ],
+    },
+  },
+  {
+    // Regla 8 aunque CONTEXTO solo diga "jalado" (no sabe cuántas veces).
+    id: 'trika-herramientas', grupo: 'Bika y trika', fixture: 'contexto-plan1-jalado', modo: 'chat', mensajes: ['hice trika en herramientas de desarrollo'],
+    esperado: {
+      apoyo: true, jalado: true,
       menciona: [
         { patron: /separacion temporal/, severidad: 'MAYOR', detalle: 'No menciona la separación temporal.' },
         { patron: /30220|ley universitaria/, severidad: 'MAYOR', detalle: 'No cita la Ley Universitaria 30220.' },
@@ -149,7 +165,10 @@ export const CASOS: Caso[] = [
   // Contexto incoherente
   {
     id: 'incoherente-cachimbo', grupo: 'Contexto incoherente', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['soy cachimbo, ¿por dónde empiezo?'],
-    esperado: { menciona: [{ patron: /ciclo 7|7(mo|o)? ciclo|septimo|setimo/, severidad: 'MAYOR', detalle: 'No nota que el contexto es del Ciclo 7.' }] },
+    esperado: {
+      creditosFaltantes: true,
+      menciona: [{ patron: /ciclo 7|7(mo|o)? ciclo|septimo|setimo/, severidad: 'MAYOR', detalle: 'No nota que el contexto es del Ciclo 7.' }],
+    },
   },
 
   // Carga

@@ -47,6 +47,8 @@ describe('filtro de salida - créditos, horas y estado de cada curso', () => {
     // derivados.horasSinCadaCurso: las horas son del periodo sin el curso.
     expect(atributosIncorrectos('Sin INTELIGENCIA DE NEGOCIOS bajarías a 21 h, dentro del tope.', plan1)).toEqual([]);
     expect(chequeos('Si sacas INTELIGENCIA DE NEGOCIOS quedas en 21 h.')).toEqual([]);
+    // Falso positivo de la corrida 2026-10-23-2006 (carga-sobrecargado #3, primer intento): "te deja en 23 h".
+    expect(chequeos('Si quieres bajar, sacar NEGOCIACIÓN Y NARRATIVA te deja en 23 h, aunque sigue sobre el tope de 22 h de la escala.')).toEqual([]);
     expect(atributosIncorrectos('INTELIGENCIA DE NEGOCIOS, con 5 h a la semana.', plan1)).toMatchObject([{ atributo: 'horas', dicho: '5 h', enContexto: '4 h' }]);
     // El catálogo no trae horas de CÁLCULO II: decirlas es dar un dato que no está en CONTEXTO.
     expect(atributosIncorrectos('CÁLCULO II tiene 4 h.', plan1)).toMatchObject([{ atributo: 'horas', enContexto: 'sin horas en CONTEXTO' }]);
