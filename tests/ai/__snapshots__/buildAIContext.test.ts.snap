@@ -688,6 +688,50 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       "sobreTopeEscala": 3,
       "topeEscala": 22,
     },
+    "horasSinCadaCurso": [
+      {
+        "codigo": "100000S06I",
+        "horasSinElCurso": 21,
+        "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S72T",
+        "horasSinElCurso": 21,
+        "nombre": "GESTIÓN DEL SERVICIO TI",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S73T",
+        "horasSinElCurso": 21,
+        "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000H01C",
+        "horasSinElCurso": 22,
+        "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000TD09",
+        "horasSinElCurso": 21,
+        "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000I62N",
+        "horasSinElCurso": 21,
+        "nombre": "INTELIGENCIA DE NEGOCIOS",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S71T",
+        "horasSinElCurso": 23,
+        "nombre": "NEGOCIACIÓN Y NARRATIVA",
+        "quedaBajoTopeEscala": false,
+      },
+    ],
     "pagoUnico": {
       "ahorroVsSinDescuento": 349.29,
       "comparacion": null,
@@ -1874,6 +1918,50 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       "sobreTopeEscala": 3,
       "topeEscala": 22,
     },
+    "horasSinCadaCurso": [
+      {
+        "codigo": "100000S06I",
+        "horasSinElCurso": 21,
+        "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S72T",
+        "horasSinElCurso": 21,
+        "nombre": "GESTIÓN DEL SERVICIO TI",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S73T",
+        "horasSinElCurso": 21,
+        "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000H01C",
+        "horasSinElCurso": 22,
+        "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000TD09",
+        "horasSinElCurso": 21,
+        "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000I62N",
+        "horasSinElCurso": 21,
+        "nombre": "INTELIGENCIA DE NEGOCIOS",
+        "quedaBajoTopeEscala": true,
+      },
+      {
+        "codigo": "100000S71T",
+        "horasSinElCurso": 23,
+        "nombre": "NEGOCIACIÓN Y NARRATIVA",
+        "quedaBajoTopeEscala": false,
+      },
+    ],
     "pagoUnico": {
       "ahorroVsSinDescuento": 349.29,
       "comparacion": null,

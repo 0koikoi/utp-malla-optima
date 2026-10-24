@@ -131,6 +131,13 @@ const DerivadosSchema = z.object({
     diferenciaVsPresupuestoDelCiclo: monto.nullable(),
     comparacion: z.literal('comparación referencial').nullable(),
   }).nullable(),
+  /** Horas del próximo periodo si se quita cada curso, y si así quedaría dentro del tope de la escala (null sin tope). */
+  horasSinCadaCurso: z.array(z.object({
+    codigo: z.string(),
+    nombre: z.string(),
+    horasSinElCurso: z.number(),
+    quedaBajoTopeEscala: z.boolean().nullable(),
+  })),
   /** Créditos de electivos que faltan aprobar para el mínimo (los electivos se cuentan en créditos, no en cursos). */
   creditosElectivosFaltantes: z.number(),
   creditos: z.object({

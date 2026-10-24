@@ -828,6 +828,7 @@
     },
     "presupuesto": null,
     "pagoUnico": null,
+    "horasSinCadaCurso": [],
     "creditosElectivosFaltantes": 3,
     "creditos": {
       "totalMalla": 210,

@@ -1055,6 +1055,50 @@
       "diferenciaVsPresupuestoDelCiclo": null,
       "comparacion": null
     },
+    "horasSinCadaCurso": [
+      {
+        "codigo": "100000S06I",
+        "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+        "horasSinElCurso": 21,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000S72T",
+        "nombre": "GESTIÓN DEL SERVICIO TI",
+        "horasSinElCurso": 21,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000S73T",
+        "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+        "horasSinElCurso": 21,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000H01C",
+        "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+        "horasSinElCurso": 22,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000TD09",
+        "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+        "horasSinElCurso": 21,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000I62N",
+        "nombre": "INTELIGENCIA DE NEGOCIOS",
+        "horasSinElCurso": 21,
+        "quedaBajoTopeEscala": true
+      },
+      {
+        "codigo": "100000S71T",
+        "nombre": "NEGOCIACIÓN Y NARRATIVA",
+        "horasSinElCurso": 23,
+        "quedaBajoTopeEscala": false
+      }
+    ],
     "creditosElectivosFaltantes": 3,
     "creditos": {
       "totalMalla": 210,

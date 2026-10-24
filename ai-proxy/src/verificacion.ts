@@ -119,8 +119,11 @@ const mencionesDe = (t: string, cursos: AtributosCurso[]): Mencion[] => {
 
 /** Cuánto texto después de un curso se considera "junto a" él. */
 const VENTANA_ATRIBUTO = 60;
-/** Fin de lo que se dice del curso: fin de frase o el paso a un total del periodo o a un límite. */
-const FIN_DEL_CURSO = /[.;!?](\s|$)|\n|\b(el|tu|ese|este|del|al) (periodo|ciclo|verano|plan)\b|\b(en total|suma[ns]?|total|tope|recomendad[oa]s?|escala|limite)\b/;
+/**
+ * Fin de lo que se dice del curso: fin de frase, el paso a un total del periodo o a un límite, o lo que pasaría
+ * con el periodo sin el curso ("sin X bajarías a 21 h": esas horas son del periodo, derivados.horasSinCadaCurso).
+ */
+const FIN_DEL_CURSO = /[.;!?](\s|$)|\n|\b(el|tu|ese|este|del|al) (periodo|ciclo|verano|plan)\b|\b(en total|suma[ns]?|total|tope|recomendad[oa]s?|escala|limite)\b|\b(baja[ns]?|bajarias?|bajando|queda[ns]?|quedarias?|quedando|sube[ns]?|subirias?|pasa[ns]?|pasarias?)\b/;
 
 const ESTADOS: { patron: RegExp; acepta: (curso: AtributosCurso) => boolean }[] = [
   { patron: /\b(desaprobad[oa]|jalad[oa])\b/, acepta: (curso) => curso.jalado },

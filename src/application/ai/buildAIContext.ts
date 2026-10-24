@@ -281,7 +281,7 @@ const pagoUnicoDe = (escenarios: AIEscenarioPeriodo[], presupuesto: number | nul
 export const calcularDerivados = (
   cursos: Curso[], carga: AICarga, escenarios: AIEscenarioPeriodo[], presupuesto: number | null,
   cursosProximos: Curso[], whatIfProximos: Omit<AIWhatIf, 'origen'>[], ciclosRestantes: number,
-  pensionAlInicio: number | null = null,
+  pensionAlInicio: number | null = null, tipoProximo: PeriodoAcademico['tipo'] = 'REGULAR',
 ): AIDerivados => {
   const tope = carga.topeEscala;
   const obligatorios = cursos.filter((curso) => curso.tipo === 'OBLIGATORIO');
@@ -318,6 +318,11 @@ export const calcularDerivados = (
       }];
     }),
     pagoUnico: pagoUnicoDe(escenarios, presupuesto, pensionAlInicio),
+    // "Si sacas X bajas a N h": la resta la hace el código, con las horas efectivas del periodo.
+    horasSinCadaCurso: cursosProximos.map((curso) => {
+      const horasSinElCurso = r2(calcularHorasEfectivas(cursosProximos.filter((otro) => otro.codigo !== curso.codigo), tipoProximo));
+      return { codigo: curso.codigo, nombre: curso.nombre, horasSinElCurso, quedaBajoTopeEscala: tope === null ? null : horasSinElCurso <= tope };
+    }),
     creditosElectivosFaltantes: positivo(MINIMO_CREDITOS_ELECTIVOS - electivosAprobados),
     creditos: {
       totalMalla: sumar(cursos, 'creditos'),
@@ -455,7 +460,7 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     foco: construirFoco(opciones.foco, estado, prioridades, topeEscala, entorno),
     derivados: calcularDerivados(
       cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
-      siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null,
+      siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null, siguiente?.periodo.tipo,
     ),
   };
 };

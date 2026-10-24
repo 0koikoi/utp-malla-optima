@@ -56,6 +56,12 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
       diferenciaVsPresupuestoDelCiclo: 192.14, comparacion: 'comparación referencial',
     });
     expect(buildAIContext(store.getState()).derivados.pagoUnico).toMatchObject({ diferenciaVsPresupuestoDelCiclo: null, comparacion: null });
+    // Ciclo 8 con 25 h y tope de 22 h: sin un curso de 4 h queda en 21 h (bajo el tope); sin uno de 2 h, en 23 h.
+    expect(derivados.horasSinCadaCurso.find((curso) => curso.codigo === '100000I62N')).toEqual({
+      codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', horasSinElCurso: 21, quedaBajoTopeEscala: true,
+    });
+    expect(derivados.horasSinCadaCurso.find((curso) => curso.codigo === '100000S71T')).toMatchObject({ horasSinElCurso: 23, quedaBajoTopeEscala: false });
+    expect(derivados.horasSinCadaCurso).toHaveLength(7);
     // Ningún electivo aprobado: faltan los 3 créditos del mínimo.
     expect(derivados.creditosElectivosFaltantes).toBe(3);
     // 197 obligatorios + 3 electivos mínimos (academic.json); 121 aprobados o convalidados; 19 en curso.

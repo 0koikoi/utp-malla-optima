@@ -94,9 +94,14 @@ const seccionCarga = (contexto: AIContext): AISeccion => {
   const detalle = !proximoPeriodo
     ? 'Aún no tienes cursos planificados para el próximo periodo.'
     : `${proximoPeriodo.etiqueta}: ${horas(carga.horas)} y ${proximoPeriodo.totalCreditos} créditos. ${carga.motivos.join(' ') || 'La carga está dentro de lo recomendado.'}${sobreTope}`;
+  // derivados.horasSinCadaCurso: el mock tampoco resta horas.
+  const alivio = contexto.derivados.horasSinCadaCurso.find((curso) => curso.quedaBajoTopeEscala);
+  const mover = alivio && sobreTopeEscala > 0
+    ? `Sin ${alivio.nombre} bajarías a ${horas(alivio.horasSinElCurso)}, dentro del tope.`
+    : 'Mueve un curso de 4 h a otro periodo.';
   const acciones = carga.nivel === 'ok'
     ? ['Mantén un horario fijo de estudio.']
-    : ['Mueve un curso de 4 h a otro periodo.', 'Reserva tiempo para los cursos largos.', 'Revisa la ruta antes de matricularte.'];
+    : [mover, 'Reserva tiempo para los cursos largos.', 'Revisa la ruta antes de matricularte.'];
   const titulo = carga.nivel === 'riesgo' ? 'Carga muy alta' : carga.nivel === 'atencion' ? 'Carga exigente' : 'Carga equilibrada';
   return { tipo: 'carga', nivel: carga.nivel, titulo, detalle, acciones: acciones.slice(0, 3), cursos: pesados };
 };
