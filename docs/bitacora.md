@@ -8,6 +8,45 @@ Plantilla: [plantillas.md](plantillas.md#entrada-de-bitácora).
 
 ---
 
+## 2026-10-23 · Corrida 5: monto del alumno como presupuesto, nombres internos y criterios cumplidos
+
+- **Qué se hizo:**
+  - `aplicarMontoDelAlumno` en `presupuesto.ts` (compartido con el proxy): el monto del último mensaje es el
+    presupuesto de esa pregunta, con las diferencias recalculadas ([D-043](decisiones.md#d-043),
+    [F-037](fallos.md#f-037)). Se quita la excepción del filtro para montos del mensaje.
+  - Filtro de salida: nombres internos y respuestas a la corrección; el mensaje de corrección pide reescribir para el
+    alumno ([D-044](decisiones.md#d-044), [F-036](fallos.md#f-036)).
+  - Prompt (autorizado): reglas 7 y 10 sin el total ni el nivel de carga, regla 8 con 100 palabras en bika y trika
+    ([D-045](decisiones.md#d-045)) y regla 1 con el monto del alumno. Huella `dbf6a3d1…`.
+  - Evaluación: `repite-carga` con las cifras de `proximoPeriodoConJalados` si se nombra el jalado, `chat-largo` de
+    100 en bika y trika, `montos-800` sin "900", MAYOR `presupuesto-mezclado` y `nombre-interno`, caso
+    `montos-1000-tras-800` (45 casos).
+- **Por qué:** propuestas 1 a 4 de la corrida 2006 y el hallazgo del autor sobre `montos-800`.
+- **Rama / PR:** `feat/ia-real` (sin PR, sin push).
+- **Commits:** `ee81660` (1), `6a15358` (2), `c702cc9` (3), `b2c1a79` (4, con el reporte) y este de docs (5).
+- **Resultados (corrida 5, `docs/evaluaciones/2026-10-23-2054.md`, 45 casos × 3), tal como salió, sin recalcular:**
+
+  | Corrida | Casos | CRÍTICO · MAYOR · MENOR | Sin CRÍTICO ni MAYOR | Con MENOR | Seguras | p95 chat / análisis | Costo |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | 2006 (recalculada) | 33/44 | 0 · 1 · 14 | 99.2 % | 10.6 % | 0.8 % | 2.2 s / 6.0 s | US$ 0.0295 |
+  | 2054 | 38/45 | 0 · 2 · 11 | 98.5 % | 8.1 % | 0 % | 2.2 s / 5.5 s | US$ 0.0306 |
+
+  - **Criterios de D-038: se cumplen todos.** ✓ 0 CRÍTICOS · ✓ 98.5 % sin CRÍTICO ni MAYOR (133/135) · ✓ MENOR en
+    8.1 % (11/135) · ✓ seguras 0 % · ✓ p95 chat 2 205 ms · ✓ p95 análisis 5 503 ms.
+  - Filtro de salida: 133 a la primera y 2 regeneradas (en `montos-1000-tras-800`, la primera respuesta decía "Con S/
+    800…", que ya no está en el contexto; la regenerada usa solo S/ 1,000).
+  - Los 2 MAYOR son falsos positivos de los casos, en contra del resultado: "lo aprobaste" (`cursos-convalide-calculo-ii`
+    pide /aprobad/) y "tu ciclo actual es el 7" (`incoherente-cachimbo` pide "ciclo 7"). No se corrigieron.
+  - Los 11 MENOR son `repite-carga` ([F-030](fallos.md#f-030)): el modelo sigue citando 25 h o "7 cursos" en sin datos,
+    bienestar y fuera de tema, por debajo del umbral del 10 %.
+  - Costo acumulado del día: US$ 0.1694 + US$ 0.0306 = US$ 0.2000 estimado.
+- **Pendiente (no bloquea):** ampliar las dos regex de los falsos positivos; en `repite-carga`, no contar
+  "sobrecargarte" cuando la pregunta es de un jalado; seguir bajando `repite-carga` (F-030).
+- **Verificación:**
+  - `pnpm test` (476), `pnpm lint`, `pnpm build` y en `ai-proxy/` `pnpm test` (142) y `pnpm typecheck` en verde
+    después de cada commit. `pnpm evaluar --simulado`: 45/45 y todos los criterios.
+  - La clave nunca se leyó ni se imprimió; el reporte no la contiene.
+
 ## 2026-10-23 · Corrida 4: jalado en el próximo periodo, carga con excepciones y bika con jalado
 
 - **Qué se hizo:**

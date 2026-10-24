@@ -13,6 +13,7 @@ sus chequeos fallidos y cada intento crudo (`finish_reason`, `usage`, razonamien
 | `2026-10-23-1841.md` | Corrida completa después de los cambios (42 casos × 3): 23/42 casos. |
 | `2026-10-23-1922.md` | Corrida 3 (43 casos × 3): 28/43 casos. Sus 5 CRÍTICOS `pago-unico-mensual` eran falsos positivos (ver la bitácora). |
 | `2026-10-23-2006.md` | Corrida 4 (44 casos × 3): 33/44 casos, 0 CRÍTICOS. 7 repeticiones con falsos positivos, recalculadas en la bitácora. |
+| `2026-10-23-2054.md` | Corrida 5 (45 casos × 3): 38/45 casos. Cumple todos los criterios de D-038 tal como salió. |
 
 - La evaluación es manual: llama a la API real de DeepSeek y gasta saldo. No corre en CI.
 - La clave va en `ai-proxy/.env.local` (ignorado por git). Nunca aparece en los reportes.

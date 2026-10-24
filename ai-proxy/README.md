@@ -19,7 +19,9 @@ Web en Vercel ──POST /api/asistente──▶ proxy en Vercel (este proyecto)
   JSON válido según el contrato, igual. Después, `RESPUESTA_LARGA` o `RESPUESTA_INVALIDA`.
 - **Filtro de salida** (`src/verificacion.ts`) en cada respuesta real: cada `S/ x` y cada código deben estar en
   el contexto (incluido `derivados`); créditos, horas y estado dichos junto a un curso deben coincidir; sin
-  delimitadores ni fragmentos del prompt; el análisis, con sus 5 secciones en orden. Si falla, UNA regeneración con el error concreto; si vuelve a fallar,
+  delimitadores, fragmentos del prompt ni nombres internos (campos del contexto, "tienes razón, corrijo"); el
+  análisis, con sus 5 secciones en orden. Antes, en chat, `aplicarMontoDelAlumno` pone como presupuesto el monto
+  del último mensaje ("¿me alcanza con 800?"). Si falla, UNA regeneración con el error concreto; si vuelve a fallar,
   `RESPUESTA_NO_VERIFICADA` (422) con la respuesta segura fija.
 - Errores: `SIN_SALDO` (402), `LIMITE` (429), `PAUSADO` (503), `PROVEEDOR_CAIDO` (502/503/504),
   `ENTRADA_INVALIDA` (400/403/413), `RESPUESTA_INVALIDA` y `RESPUESTA_LARGA` (502), `RESPUESTA_NO_VERIFICADA` (422).
@@ -91,7 +93,7 @@ Manual (no corre en CI) y con gasto real. Requiere Node 24 (ejecuta TypeScript q
 ```bash
 cd ai-proxy
 # ai-proxy/.env.local (ignorado por git): DEEPSEEK_API_KEY=...  (opcional: DEEPSEEK_MODEL, DEEPSEEK_PICO_UTC)
-corepack pnpm evaluar                      # 44 casos × 3 repeticiones
+corepack pnpm evaluar                      # 45 casos × 3 repeticiones
 corepack pnpm evaluar --solo whatif-I62N   # un caso
 corepack pnpm evaluar --repeticiones 1
 corepack pnpm evaluar --simulado           # mismo flujo con un fetch simulado (mocks): no gasta

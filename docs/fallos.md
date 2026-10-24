@@ -45,7 +45,8 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 | [F-033](#f-033) | El pago único se presentaba como cuota mensual | corregido |
 | [F-034](#f-034) | Con un jalado, el asistente lo nombra al final y no aplica la regla de bika | corregido |
 | [F-035](#f-035) | Horas del próximo periodo sin el jalado obligatorio | corregido |
-| [F-036](#f-036) | La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo") | pendiente |
+| [F-036](#f-036) | La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo") | corregido |
+| [F-037](#f-037) | Presupuesto del chat mezclado con el del contexto | corregido |
 
 ---
 
@@ -365,6 +366,42 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Commit:** `b4a6a0f`.
 - **Test:** `tests/ai/buildAIContext.test.ts`, `ai-proxy/tests/mockTono.test.ts`.
 
+<a id="f-036"></a>
+### F-036 · La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo")
+
+- **Fecha:** 2026-10-23, en la corrida 4 (`2026-10-23-2006.md`).
+- **Síntoma:** 2 de las 4 regeneraciones le contestan al mensaje de corrección como si el alumno lo hubiera
+  escrito: "Tienes razón, me confundí. En tu plan, Cálculo II (100000I1N0) figura como APROBADO" y "Tienes razón,
+  corrijo: … según CONTEXTO.derivados.horasSinCadaCurso" (nombra un campo interno).
+- **Causa raíz:** el mensaje de corrección del filtro (`mensajeCorreccion`) no pide reescribir la respuesta sin
+  mencionar la corrección. En el segundo caso, además, la primera respuesta era correcta: el filtro tomaba "sacar X
+  te deja en 23 h" como horas del curso (falso positivo, corregido en `61dfdc7` con test).
+- **Archivo:** `ai-proxy/src/verificacion.ts` (`mensajeCorreccion`).
+- **Estado:** corregido ([D-044](decisiones.md#d-044)): el mensaje de corrección pide reescribir para el alumno y el
+  filtro regenera si hay nombres internos o una respuesta a la corrección. Corrida 5: las 2 regeneraciones salieron
+  limpias y hubo 0 `nombre-interno`.
+- **Commit:** `6a15358`.
+- **Test:** `ai-proxy/tests/verificacion.test.ts` (las dos respuestas reales de la corrida 2006).
+
+<a id="f-037"></a>
+### F-037 · Presupuesto del chat mezclado con el del contexto
+
+- **Fecha:** 2026-10-23, al revisar la corrida 2006 con el autor.
+- **Síntoma:** en `montos-800` (repeticiones 2 y 3, regeneradas): "Con S/ 800 al mes no te alcanza… y tu presupuesto
+  de S/ 900 sí alcanza". Mezclaba el monto que escribió el alumno con el del plan. En la repetición 1, la resta
+  contra 800 ("te faltarían S/ 84.86") terminó en la respuesta segura.
+- **Causa raíz (en los datos):** el contexto solo traía `presupuestoMensual` del plan (900) y las diferencias contra
+  ese monto. Para "¿me alcanza con 800?", el modelo tenía que restar por su cuenta (el filtro lo bloqueaba) o usar las
+  cifras de 900; el filtro dejaba pasar "S/ 900" porque estaba en el contexto y "S/ 800" porque venía del mensaje.
+- **Archivo:** `src/application/ai/presupuesto.ts` (dos copias), `ai-proxy/src/deepseek.ts`,
+  `ai-proxy/src/verificacion.ts`, `ai-proxy/src/systemPrompt.ts` (regla 1).
+- **Estado:** corregido ([D-043](decisiones.md#d-043)): `aplicarMontoDelAlumno` pone el monto del mensaje como
+  presupuesto antes de llamar al modelo y antes del filtro. Corrida 5: `montos-800` 3/3, sin "900", y
+  `montos-1000-tras-800` 3/3.
+- **Commit:** `ee81660`, `c702cc9`.
+- **Test:** `tests/ai/presupuesto.test.ts`, `ai-proxy/tests/verificacion.test.ts`, `ai-proxy/tests/evaluacion.test.ts`
+  (`presupuesto-mezclado`).
+
 ## Pendientes
 
 <a id="f-030"></a>
@@ -385,6 +422,12 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
   `bienestar-estres` 3 y `bienestar-dejar` 2 (25 h al aconsejar menos carga), `jalado-postergar` 2 (29 h, de
   `proximoPeriodoConJalados`) y `jerga-yuca` 1 ("¿veamos tu carga?"). MENOR en 10.6 % de las repeticiones (sigue
   pendiente).
+- **Corrida 5** (`2026-10-23-2054.md`, con las reglas 7 y 10 "sin cifras"): 11 `repite-carga`, MENOR en 8.1 % de las
+  repeticiones, dentro del criterio de [D-038](decisiones.md#d-038). Siguen: `sin-datos-tranca` 3 y `jerga-yuca` 2
+  (25 h al ofrecer lo que sí ve), `bienestar-estres` 3 ("7 cursos y 25 h", "nivel de riesgo"), `jalado-postergar` 2
+  y `fuera-tarea` 1 ("revisamos … tu carga"). En `jalado-postergar` las 29 h se aceptan, pero "sobrecargarte" cuenta
+  como mención de la carga (el chequeo no lo exceptúa aunque la pregunta sea de un jalado). Queda pendiente, por
+  debajo del umbral.
 
 <a id="f-015"></a>
 ### F-015 · El tarifario guardado en IndexedDB tapa los cambios del JSON
@@ -460,19 +503,6 @@ Plantilla: [plantillas.md](plantillas.md#fallo).
 - **Archivo:** `src/financial/engine/budgetCalculator.ts`.
 - **Estado:** pendiente de confirmar con la UTP ([estado.md](estado.md#preguntas-abiertas-para-confirmar-con-la-utp)).
   **Commit:** —. **Test:** —.
-
-<a id="f-036"></a>
-### F-036 · La respuesta regenerada le habla a la corrección ("Tienes razón, corrijo")
-
-- **Fecha:** 2026-10-23, en la corrida 4 (`2026-10-23-2006.md`).
-- **Síntoma:** 2 de las 4 regeneraciones le contestan al mensaje de corrección como si el alumno lo hubiera
-  escrito: "Tienes razón, me confundí. En tu plan, Cálculo II (100000I1N0) figura como APROBADO" y "Tienes razón,
-  corrijo: … según CONTEXTO.derivados.horasSinCadaCurso" (nombra un campo interno).
-- **Causa raíz:** el mensaje de corrección del filtro (`mensajeCorreccion`) no pide reescribir la respuesta sin
-  mencionar la corrección. En el segundo caso, además, la primera respuesta era correcta: el filtro tomaba "sacar X
-  te deja en 23 h" como horas del curso (falso positivo, corregido en `61dfdc7` con test).
-- **Archivo:** `ai-proxy/src/verificacion.ts` (`mensajeCorreccion`).
-- **Estado:** pendiente: propuesta al autor (ver la bitácora).
 
 ## No priorizados (detectados en la revisión del asistente)
 

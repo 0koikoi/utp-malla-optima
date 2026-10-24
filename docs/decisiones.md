@@ -53,6 +53,9 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
 | [D-040](#d-040) | El jalado va primero, con el próximo periodo calculado con él (`proximoPeriodoConJalados`) | vigente |
 | [D-041](#d-041) | `perfil.creditos.pendientes` pasa a `pendientesEnMalla` | vigente |
 | [D-042](#d-042) | Bika y trika con un jalado: regla 8 completa y ejemplo de tono 6 | vigente |
+| [D-043](#d-043) | El monto que escribe el alumno es su presupuesto para esa pregunta (`aplicarMontoDelAlumno`) | vigente |
+| [D-044](#d-044) | El filtro de salida marca nombres internos y respuestas a la corrección | vigente |
+| [D-045](#d-045) | Bika y trika: hasta 100 palabras | vigente |
 
 ---
 
@@ -724,4 +727,56 @@ Plantilla: [plantillas.md](plantillas.md#decisión).
   ficticio, con `CODIGO-EJEMPLO-2`.
 - **Alternativas descartadas:** que el alumno marque las veces que jaló (MallaU no guarda intentos).
 - **Consecuencias:** corrida 4 (recalculada): `bika-inteligencia` 3/3 y `trika-herramientas` con todo lo pedido,
-  pero en 83 a 88 palabras (MENOR `chat-largo` 3/3).
+  pero en 83 a 88 palabras (MENOR `chat-largo` 3/3). Ver [D-045](#d-045).
+
+<a id="d-043"></a>
+## D-043 · El monto que escribe el alumno es su presupuesto para esa pregunta (`aplicarMontoDelAlumno`)
+
+- **Fecha:** 2026-10-23 (`ee81660`, prompt en `c702cc9`). Aplica [D-001](#d-001); reemplaza la excepción de montos
+  del alumno de [D-034](#d-034).
+- **Estado:** vigente.
+- **Contexto:** con "¿me alcanza con 800?", el contexto solo traía las diferencias contra el presupuesto del plan
+  (900). El modelo restaba contra 800 (el filtro lo bloqueaba) o mezclaba los dos presupuestos
+  ([F-037](fallos.md#f-037)).
+- **Decisión:**
+  - `src/application/ai/presupuesto.ts`, compartido con el proxy como `contracts.ts` (dos copias y un test de
+    igualdad): `presupuestoPorEscenario`, `pagoUnicoDe` y `comparacionPagoUnico` (las usa `buildAIContext`) y
+    `aplicarMontoDelAlumno(contexto, mensaje)`.
+  - Si el último mensaje trae un monto mensual ("S/ 800", "800 soles", "con 800 al mes", "800 mensuales"), el
+    contexto pasa a tener ese presupuesto (`presupuestoFuente: "mensaje"`) con las diferencias recalculadas. Con JSON
+    o la palabra CONTEXTO, o sin monto, no cambia.
+  - `llamarConVerificacion` la aplica antes de llamar al modelo y antes del filtro de salida (también el mock y la
+    evaluación). El filtro ya no deja repetir montos del mensaje: si están, están en el contexto.
+  - Regla 1: "Si el alumno menciona un monto, ese es su presupuesto para esa pregunta: no menciones otro
+    presupuesto." Chequeo MAYOR `presupuesto-mezclado` en la evaluación.
+- **Alternativas descartadas:** pedirle al modelo que calcule la diferencia con el monto del chat.
+- **Consecuencias:** corrida 5: `montos-800` 3/3 con "te faltarían S/ 84.86", sin respuestas seguras;
+  `montos-1000-tras-800` 3/3 (dos con una regeneración que quitó "S/ 800").
+
+<a id="d-044"></a>
+## D-044 · El filtro de salida marca nombres internos y respuestas a la corrección
+
+- **Fecha:** 2026-10-23 (`6a15358`). Amplía [D-034](#d-034).
+- **Estado:** vigente.
+- **Contexto:** en la corrida 2006, 2 de 4 regeneraciones le contestaban a la corrección ("Tienes razón, me
+  confundí") o nombraban campos ("CONTEXTO.derivados.horasSinCadaCurso") ([F-036](fallos.md#f-036)).
+- **Decisión:** `mensajeCorreccion` termina con "Escribe de nuevo tu respuesta para el alumno, como si fuera la
+  primera: no menciones esta corrección, ni CONTEXTO, ni nombres de campos." Chequeo `nombre-interno` del filtro
+  (regenera): "CONTEXTO", "derivados", "perfil.", "proximoPeriodo", palabras en camelCase o con punto que sean claves
+  del contexto, y "tienes razón, corrijo", "me confundí" o "corrijo:" al inicio si el alumno no señaló un error. El
+  mismo chequeo, MAYOR, en la evaluación.
+- **Alternativas descartadas:** quitar la regeneración (más respuestas seguras).
+- **Consecuencias:** un título de sección con el nombre de un tipo ("whatIf") también se marca. Corrida 5: 0
+  `nombre-interno`.
+
+<a id="d-045"></a>
+## D-045 · Bika y trika: hasta 100 palabras
+
+- **Fecha:** 2026-10-23 (`c702cc9`, `b2c1a79`). Amplía [D-042](#d-042).
+- **Estado:** vigente.
+- **Contexto:** la regla 8 pide ventana, riesgo según la ley, priorizar, menos carga y tutoría (y en la trika, el
+  retiro definitivo y Servicios Académicos): no entra en 80 palabras (83 a 88 en la corrida 2006).
+- **Decisión:** regla 8: "En bika y trika puedes usar hasta 100 palabras." El chequeo `chat-largo` usa 100 si el
+  alumno dice bika o trika y 80 en el resto.
+- **Alternativas descartadas:** acortar el texto de la trika en la regla 8.
+- **Consecuencias:** corrida 5: 0 `chat-largo`.
