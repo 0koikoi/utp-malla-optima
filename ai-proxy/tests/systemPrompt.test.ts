@@ -37,7 +37,7 @@ describe('prompt del sistema', () => {
     // Cambios del 2026-10-23 (corrida 3): pago único, electivos en créditos, regla 7, regla 14 y ejemplo 2.
     expect(regla1).toContain("El pago único se paga todo junto al inicio del ciclo: nunca lo presentes como cuota mensual ni digas que 'alcanza al mes'. Para compararlo con el presupuesto, usa solo CONTEXTO.derivados.pagoUnico.");
     expect(regla1).toContain('CONTEXTO.derivados.creditosElectivosFaltantes');
-    expect(lineas.find((linea) => linea.startsWith('7. '))).toContain('ofrece lo que sí puedes: las horas de cada curso, orden de cursos');
+    expect(lineas.find((linea) => linea.startsWith('7. '))).toContain('las horas de cada curso, orden de cursos');
     expect(lineas.find((linea) => linea.startsWith('14. '))).toContain('y ofrece ayuda con su plan, sin cifras.');
     expect(SYSTEM_PROMPT).not.toContain('carga en horas');
     expect(SYSTEM_PROMPT).not.toContain('no te pases de carga');
@@ -49,7 +49,12 @@ describe('prompt del sistema', () => {
     // Corrida 4: jalado primero (regla 3), bika con un jalado (regla 8), créditos para egresar (regla 1), ejemplo 6.
     expect(lineas.find((linea) => linea.startsWith('3. '))!.endsWith('Cuando hables del próximo periodo, nombra primero el curso jalado y su ventana. Si todavía no está en su ventana, di que primero debe agregarlo y que los demás cursos de ese periodo quedan bloqueados hasta entonces. Para horas y costos con el jalado incluido, usa CONTEXTO.derivados.proximoPeriodoConJalados.')).toBe(true);
     expect(lineas.find((linea) => linea.startsWith('8. '))!.startsWith('8. Si el alumno dice bika o trika, aplica esta regla aunque CONTEXTO solo marque el curso como jalado, y en la misma respuesta incluye: su ventana, el riesgo según la ley, priorizar ese curso, llevar menos carga y pedir tutoría.')).toBe(true);
-    expect(regla1.endsWith('Para lo que falta para egresar, usa CONTEXTO.derivados.creditos.faltanParaEgresar; perfil.creditos.pendientesEnMalla incluye todos los electivos ofrecidos y no sirve para eso.')).toBe(true);
+    expect(regla1).toContain('Para lo que falta para egresar, usa CONTEXTO.derivados.creditos.faltanParaEgresar; perfil.creditos.pendientesEnMalla incluye todos los electivos ofrecidos y no sirve para eso.');
+    // Corrida 5: monto del alumno (regla 1), sin total ni nivel de carga (reglas 7 y 10), 100 palabras en bika y trika (regla 8).
+    expect(regla1.endsWith('Si el alumno menciona un monto, ese es su presupuesto para esa pregunta: no menciones otro presupuesto.')).toBe(true);
+    expect(lineas.find((linea) => linea.startsWith('7. '))).toContain('ofrece lo que sí puedes, sin dar el total de horas del periodo ni su nivel de carga: las horas de cada curso');
+    expect(lineas.find((linea) => linea.startsWith('10. '))).toContain('luego ayúdalo con lo práctico, sin cifras: puedes sugerir soltar un curso, pero sin citar horas ni nivel de carga.');
+    expect(lineas.find((linea) => linea.startsWith('8. '))).toContain('En bika y trika puedes usar hasta 100 palabras.');
     for (const linea of ['Alumno: "hice bika en estadística"', 'Respuesta (modo chat):', '{"texto":"Gracias por contármelo; tiene salida. Estadística I va primero: llévala en su ventana, el Verano 4 o el Ciclo 5. Cuídala, porque según la Ley Universitaria 30220 (art. 102) una tercera desaprobación del mismo curso lleva a una separación temporal de un año. Ese periodo lleva menos cursos para enfocarte en ella y, antes de matricularte, pide tutoría o asesoría.","cursos":["CODIGO-EJEMPLO-2"],"preguntasSugeridas":["¿Qué cursos dejo para después?","¿Cuánto pagaría con menos cursos?"]}']) expect(lineas).toContain(linea);
     // Huella del texto completo: cualquier cambio de redacción debe ser intencional.
     expect(createHash('sha256').update(SYSTEM_PROMPT).digest('hex')).toMatchSnapshot();
