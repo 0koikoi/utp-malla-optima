@@ -6,6 +6,8 @@ import { parseUTPExcel } from '../../src/adapters/utpExcelAdapter';
 import { AIContextSchema } from '../../src/application/ai/contracts';
 import { buildAIContext, calcularCarga } from '../../src/application/ai/buildAIContext';
 import { crearPeriodoRegular } from '../../src/domain/rules/academicPeriodRules';
+import { UniversityFinancialRulesProvider } from '../../src/financial/rules/UniversityFinancialRulesProvider';
+import { FinancialPlanningService } from '../../src/financial/services/FinancialPlanningService';
 import { FinancialConfigurationProvider } from '../../src/infrastructure/configuration/FinancialConfigurationProvider';
 import { createAcademicStore } from '../../src/store/createAcademicStore';
 import { crearRepositoriosEnMemoria } from '../helpers/memoryRepositories';
@@ -36,9 +38,81 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(contexto).toMatchSnapshot();
   });
 
+  it('derivados: horas sobre el tope y las 24 h, diferencia por escenario, créditos para egresar (D-001)', () => {
+    const { derivados, financiero, ruta } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
+    expect(derivados.horas).toEqual({
+      proximoPeriodo: 25, topeEscala: 22, sobreTopeEscala: 3, margenTopeEscala: 0, recomendadas: 24, sobreRecomendadas: 1, margenRecomendadas: 0,
+    });
+    // BCP / BBVA: cuota 908.14 contra 900 → faltan 8.14 al mes y 40.70 en las 5 cuotas.
+    expect(derivados.presupuesto?.find((item) => item.id === 'bcp_bbva')).toEqual({
+      id: 'bcp_bbva', alcanza: false, diferenciaMes: -8.14, faltaPorMes: 8.14, sobraPorMes: 0, diferenciaCiclo: -40.7, faltaPorCiclo: 40.7, sobraPorCiclo: 0,
+    });
+    for (const escenario of financiero!.proximoPeriodo.filter((item) => item.id !== 'pago_unico')) {
+      expect(derivados.presupuesto?.find((item) => item.id === escenario.id)?.diferenciaMes).toBe(escenario.diferenciaPresupuesto);
+    }
+    // Pago único: sin diferencia mensual; pensión 4307.86 al inicio, ahorro 5055.15 - 4705.86 y comparación
+    // referencial 900 × 5 - 4307.86.
+    expect(derivados.presupuesto?.map((item) => item.id)).toEqual(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']);
+    expect(derivados.pagoUnico).toEqual({
+      pensionAlInicio: 4307.86, matricula: 398, totalCiclo: 4705.86, ahorroVsSinDescuento: 349.29,
+      diferenciaVsPresupuestoDelCiclo: 192.14, comparacion: 'comparación referencial',
+    });
+    expect(buildAIContext(store.getState()).derivados.pagoUnico).toMatchObject({ diferenciaVsPresupuestoDelCiclo: null, comparacion: null });
+    // Ciclo 8 con 25 h y tope de 22 h: sin un curso de 4 h queda en 21 h (bajo el tope); sin uno de 2 h, en 23 h.
+    expect(derivados.horasSinCadaCurso.find((curso) => curso.codigo === '100000I62N')).toEqual({
+      codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', horasSinElCurso: 21, quedaBajoTopeEscala: true,
+    });
+    expect(derivados.horasSinCadaCurso.find((curso) => curso.codigo === '100000S71T')).toMatchObject({ horasSinElCurso: 23, quedaBajoTopeEscala: false });
+    expect(derivados.horasSinCadaCurso).toHaveLength(7);
+    // Ningún electivo aprobado: faltan los 3 créditos del mínimo.
+    expect(derivados.creditosElectivosFaltantes).toBe(3);
+    // 197 obligatorios + 3 electivos mínimos (academic.json); 121 aprobados o convalidados; 19 en curso.
+    expect(derivados.creditos).toEqual({
+      totalMalla: 210, obligatorios: 197, electivosMinimos: 3, paraEgresar: 200, aprobadosQueCuentan: 121, enCurso: 19,
+      faltanParaEgresar: 79, faltanSiApruebaEnCurso: 60, ciclosRestantes: ruta.ciclosRestantes,
+    });
+    expect(derivados.cursosProximoPeriodo.map((curso) => curso.codigo)).toEqual(CURSOS_OCTAVO);
+    expect(derivados.cursosProximoPeriodo[0]).toMatchObject({ creditos: 3, horas: 4, estado: 'PENDIENTE', jalado: false, sePuedeMover: true, bloquearia: [] });
+    expect(buildAIContext(store.getState()).derivados.presupuesto).toBeNull();
+  });
+
+  it('derivados: el próximo periodo con el jalado fuera de su ventana, con el mismo motor, y los planificados que bloquea', async () => {
+    expect(buildAIContext(store.getState()).derivados).toMatchObject({ proximoPeriodoConJalados: null, planificadosBloqueadosPorJalado: [] });
+    expect(await store.getState().marcarComoJalado('100000S61T')).not.toBeNull();
+    const { derivados, jalados } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
+    expect(jalados).toMatchObject([{ codigo: '100000S61T', ventana: ['ciclo-8'], enVentana: false }]);
+    const conJalados = derivados.proximoPeriodoConJalados!;
+    // 25 h + 4 h de HERRAMIENTAS DE DESARROLLO; 21 + 3 créditos.
+    expect(conJalados).toMatchObject({
+      periodoId: 'ciclo-8', jalados: ['100000S61T'], horas: 29, creditos: 24,
+      superaTopeEscala: true, horasSobreTopeEscala: 7, superaRecomendadas: true, horasSobreRecomendadas: 5,
+    });
+    // Mismo motor que la Simulación de cuotas con el jalado en el Ciclo 8.
+    const service = new FinancialPlanningService(new UniversityFinancialRulesProvider());
+    const conElJalado = store.getState().cursos.map((curso) => curso.codigo === '100000S61T'
+      ? { ...curso, ciclo: 8, tipoPeriodo: 'REGULAR' as const, ubicacion: 'periodo' as const } : curso);
+    const sinDescuento = service.calcular(conElJalado, store.getState().tarifario!, store.getState().disciplinaActiva, { metodoPago: 'sin_descuento', cicloActual: 7 })
+      .periodos.find((periodo) => periodo.id === 'ciclo-8')!.resumen;
+    expect(conJalados.escenarios[0]).toEqual({
+      id: 'sin_descuento', nombre: 'Sin descuento', cuotaMensual: sinDescuento.montoPorCuota, total: sinDescuento.costoTotalCiclo,
+      diferenciaMes: Math.round((900 - sinDescuento.montoPorCuota) * 100) / 100,
+    });
+    expect(conJalados.escenarios.map((escenario) => escenario.id)).toEqual(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']);
+    expect(conJalados.pagoUnico).toMatchObject({ matricula: 398, comparacion: 'comparación referencial' });
+    // planificadosSinJalado: los 7 cursos del Ciclo 8 quedan bloqueados hasta agregar el jalado.
+    expect(derivados.planificadosBloqueadosPorJalado.map((curso) => curso.codigo)).toEqual(CURSOS_OCTAVO);
+  });
+
+  it('derivados: un curso que es prerrequisito de otro planificado después no se puede mover', async () => {
+    const dependiente = store.getState().cursos.find((curso) => curso.estado === 'PENDIENTE' && curso.prerrequisitos.includes('100000S06I'))!;
+    expect(await store.getState().moverCursoAPeriodo(dependiente.codigo, crearPeriodoRegular(9))).toBe(true);
+    const s06i = buildAIContext(store.getState()).derivados.cursosProximoPeriodo.find((curso) => curso.codigo === '100000S06I');
+    expect(s06i).toMatchObject({ sePuedeMover: false, bloquearia: [dependiente.codigo] });
+  });
+
   it('calcula perfil, próximo periodo y carga', () => {
     const { perfil, proximoPeriodo, carga } = buildAIContext(store.getState());
-    expect(perfil).toMatchObject({ periodoIngreso: 'marzo', cicloActual: 7, creditos: { enCurso: 19, pendientes: 70 } });
+    expect(perfil).toMatchObject({ periodoIngreso: 'marzo', cicloActual: 7, creditos: { enCurso: 19, pendientesEnMalla: 70 } });
     expect(perfil.electivos).toEqual({ cubiertos: 0, minimo: 3, faltantes: 3 });
     expect(proximoPeriodo).toMatchObject({ id: 'ciclo-8', etiqueta: 'Ciclo 8', totalHoras: 25, totalCreditos: 21, horasExceso: 3 });
     expect(proximoPeriodo!.cursos.map((curso) => curso.codigo).sort()).toEqual([...CURSOS_OCTAVO].sort());
@@ -55,12 +129,13 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(financiero!.costoHoraAdicional).toBe(38.81);
   });
 
-  it('con presupuesto mensual informa la diferencia contra cada cuota', () => {
+  it('con presupuesto mensual informa la diferencia contra cada cuota (el pago único no tiene cuota mensual)', () => {
     const { financiero } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
     expect(financiero!.presupuestoMensual).toBe(900);
-    for (const escenario of financiero!.proximoPeriodo) {
-      expect(escenario.diferenciaPresupuesto).toBeCloseTo(900 - escenario.cuotaMensual, 2);
+    for (const escenario of financiero!.proximoPeriodo.filter((item) => item.id !== 'pago_unico')) {
+      expect(escenario.diferenciaPresupuesto).toBeCloseTo(900 - escenario.cuotaMensual!, 2);
     }
+    expect(financiero!.proximoPeriodo.find((item) => item.id === 'pago_unico')).toMatchObject({ cuotaMensual: null, diferenciaPresupuesto: null, total: 4705.86 });
     expect(buildAIContext(store.getState()).financiero!.proximoPeriodo[0].diferenciaPresupuesto).toBeNull();
   });
 

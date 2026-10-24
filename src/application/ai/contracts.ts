@@ -54,10 +54,10 @@ const EscenarioPeriodoSchema = z.object({
   nombre: z.string(),
   matricula: monto,
   numeroCuotas: z.number().int(),
-  /** Cuota mensual; en pago único es el equivalente mensual del pago. */
-  cuotaMensual: monto,
+  /** Cuota mensual; null en pago único (se pagan todas las pensiones juntas al inicio: no hay cuota mensual). */
+  cuotaMensual: monto.nullable(),
   total: monto,
-  /** presupuestoMensual - cuotaMensual (negativo = no alcanza). */
+  /** presupuestoMensual - cuotaMensual (negativo = no alcanza); null sin presupuesto y en pago único. */
   diferenciaPresupuesto: monto.nullable(),
 });
 
@@ -85,6 +85,122 @@ const PeriodoResumenSchema = z.object({
   cursos: z.array(z.string()),
   horas: z.number(),
   creditos: z.number(),
+});
+
+/** Pago único: todas las pensiones juntas al inicio, con descuento. */
+const PagoUnicoSchema = z.object({
+  /** Pensión total del ciclo con el descuento, pagada al inicio. */
+  pensionAlInicio: monto,
+  matricula: monto,
+  totalCiclo: monto,
+  /** Total sin descuento - total con pago único. */
+  ahorroVsSinDescuento: monto,
+  /** Comparación referencial: presupuestoMensual × número de cuotas - pensionAlInicio; null sin presupuesto. */
+  diferenciaVsPresupuestoDelCiclo: monto.nullable(),
+  comparacion: z.literal('comparación referencial').nullable(),
+});
+
+/**
+ * Restas y totales que la IA no debe hacer (D-001): todo lo que puede necesitar para responder
+ * "cuánto me falta" o "cuánto me paso" ya viene calculado aquí.
+ */
+const DerivadosSchema = z.object({
+  /** Horas del próximo periodo frente al tope de la escala y a las 24 h recomendadas (0 si no se pasa). */
+  horas: z.object({
+    proximoPeriodo: z.number(),
+    topeEscala: z.number().nullable(),
+    sobreTopeEscala: z.number(),
+    margenTopeEscala: z.number(),
+    recomendadas: z.number(),
+    sobreRecomendadas: z.number(),
+    margenRecomendadas: z.number(),
+  }),
+  /** Cada escenario mensual del próximo periodo contra el presupuesto (sin pago único); null sin presupuesto. */
+  presupuesto: z.array(z.object({
+    id: z.enum(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva', 'pago_unico']),
+    alcanza: z.boolean(),
+    /** presupuesto - cuotaMensual (negativo = no alcanza). */
+    diferenciaMes: monto,
+    /** Lo que falta (> 0 si no alcanza) o sobra cada mes, en positivo. */
+    faltaPorMes: monto,
+    sobraPorMes: monto,
+    /** diferenciaMes × numeroCuotas: las cuotas del ciclo (la matrícula se paga aparte). */
+    diferenciaCiclo: monto,
+    faltaPorCiclo: monto,
+    sobraPorCiclo: monto,
+  })).nullable(),
+  /**
+   * Pago único del próximo periodo: todas las pensiones juntas al inicio, con descuento. No tiene cuota mensual.
+   * null si no hay próximo periodo o tarifario.
+   */
+  pagoUnico: PagoUnicoSchema.nullable(),
+  /** Horas del próximo periodo si se quita cada curso, y si así quedaría dentro del tope de la escala (null sin tope). */
+  horasSinCadaCurso: z.array(z.object({
+    codigo: z.string(),
+    nombre: z.string(),
+    horasSinElCurso: z.number(),
+    quedaBajoTopeEscala: z.boolean().nullable(),
+  })),
+  /**
+   * El próximo periodo con los jalados que están fuera de su ventana y deben ir en él (D-001): horas, créditos,
+   * topes y costos calculados con el mismo motor financiero. null si no hay jalados que agregar al próximo periodo.
+   */
+  proximoPeriodoConJalados: z.object({
+    periodoId: PeriodoIdSchema,
+    /** Jalados agregados al periodo. */
+    jalados: z.array(z.string()),
+    horas: z.number(),
+    creditos: z.number(),
+    /** null sin escala de pensión. */
+    superaTopeEscala: z.boolean().nullable(),
+    horasSobreTopeEscala: z.number(),
+    superaRecomendadas: z.boolean(),
+    horasSobreRecomendadas: z.number(),
+    /** Escenarios mensuales (sin pago único): cuota y total con los jalados incluidos. */
+    escenarios: z.array(z.object({
+      id: z.enum(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']),
+      nombre: z.string(),
+      cuotaMensual: monto,
+      total: monto,
+      /** presupuesto - cuotaMensual; null sin presupuesto. */
+      diferenciaMes: monto.nullable(),
+    })),
+    /** Mismo bloque que derivados.pagoUnico, con los jalados incluidos. */
+    pagoUnico: PagoUnicoSchema.nullable(),
+  }).nullable(),
+  /** Cursos del próximo periodo que quedan bloqueados hasta que se agregue el jalado (planificadosSinJalado). */
+  planificadosBloqueadosPorJalado: z.array(z.object({ codigo: z.string(), nombre: z.string() })),
+  /** Créditos de electivos que faltan aprobar para el mínimo (los electivos se cuentan en créditos, no en cursos). */
+  creditosElectivosFaltantes: z.number(),
+  creditos: z.object({
+    /** Suma de los créditos de todos los cursos de la malla (incluye todos los electivos ofrecidos). */
+    totalMalla: z.number(),
+    obligatorios: z.number(),
+    /** Créditos electivos mínimos (academic.json, creditosMinimosElectivos). */
+    electivosMinimos: z.number(),
+    /** obligatorios + electivosMinimos. */
+    paraEgresar: z.number(),
+    /** Aprobados o convalidados que cuentan: obligatorios + electivos hasta el mínimo. */
+    aprobadosQueCuentan: z.number(),
+    enCurso: z.number(),
+    /** paraEgresar - aprobadosQueCuentan (incluye lo que está en curso). */
+    faltanParaEgresar: z.number(),
+    /** faltanParaEgresar - créditos obligatorios en curso: lo que faltaría si aprueba todo lo que lleva. */
+    faltanSiApruebaEnCurso: z.number(),
+    ciclosRestantes: z.number().int(),
+  }),
+  /** Cursos del próximo periodo: si se puede mover sin dejar inválidos otros cursos planificados. */
+  cursosProximoPeriodo: z.array(z.object({
+    codigo: z.string(),
+    nombre: z.string(),
+    creditos: z.number(),
+    horas: z.number(),
+    estado: z.enum(['APROBADO', 'CONVALIDADO', 'EN_CURSO', 'PENDIENTE']),
+    jalado: z.boolean(),
+    sePuedeMover: z.boolean(),
+    /** Cursos planificados que quedarían sin su prerrequisito si se mueve. */
+    bloquearia: z.array(z.string()),
+  })),
 });
 
 const WhatIfSchema = z.object({
@@ -132,7 +248,8 @@ export const AIContextSchema = z.object({
     cicloActual: z.number().int().nullable(),
     totalCiclos: z.number().int(),
     disciplina: z.string(),
-    creditos: z.object({ aprobados: z.number(), enCurso: z.number(), pendientes: z.number() }),
+    /** pendientesEnMalla: todos los cursos pendientes, incluidos todos los electivos ofrecidos (no es lo que falta para egresar). */
+    creditos: z.object({ aprobados: z.number(), enCurso: z.number(), pendientesEnMalla: z.number() }),
     electivos: z.object({ cubiertos: z.number(), minimo: z.number(), faltantes: z.number() }),
   }),
   catalogo: z.array(CursoCatalogoSchema),
@@ -158,6 +275,8 @@ export const AIContextSchema = z.object({
     metodoPagoElegido: z.object({ id: z.string(), nombre: z.string() }),
     costoHoraAdicional: monto.nullable(),
     presupuestoMensual: monto.nullable(),
+    /** "plan": el presupuesto del alumno en MallaU; "mensaje": el monto que escribió en su último mensaje. */
+    presupuestoFuente: z.enum(['plan', 'mensaje']).nullable(),
     proximoPeriodo: z.array(EscenarioPeriodoSchema),
     planCompleto: z.array(EscenarioPlanSchema),
   }).nullable(),
@@ -189,8 +308,10 @@ export const AIContextSchema = z.object({
     topeEscalaPension: z.number().nullable(),
   }),
   foco: z.discriminatedUnion('tipo', [z.object({ tipo: z.literal('plan') }), FocoCicloSchema, FocoCursoSchema]).nullable(),
+  derivados: DerivadosSchema,
 });
 export type AIContext = z.infer<typeof AIContextSchema>;
+export type AIDerivados = z.infer<typeof DerivadosSchema>;
 export type AICursoPlanificado = z.infer<typeof CursoPlanificadoSchema>;
 export type AIEscenarioPeriodo = z.infer<typeof EscenarioPeriodoSchema>;
 export type AICarga = z.infer<typeof CargaSchema>;
@@ -225,7 +346,8 @@ export type AIRequest = z.infer<typeof AIRequestSchema>;
 // Respuestas (lo que devuelve la IA)
 // ==========================================
 
-export const TIPOS_SECCION = ['financiero', 'carga', 'ruta', 'whatIf', 'electivos'] as const;
+/** Las 5 secciones del análisis, en el orden obligatorio. */
+export const TIPOS_SECCION = ['carga', 'financiero', 'ruta', 'whatIf', 'electivos'] as const;
 
 export const AISeccionSchema = z.object({
   tipo: z.enum(TIPOS_SECCION),
@@ -237,12 +359,21 @@ export const AISeccionSchema = z.object({
 });
 export type AISeccion = z.infer<typeof AISeccionSchema>;
 
+const seccionDe = <T extends typeof TIPOS_SECCION[number]>(tipo: T) => AISeccionSchema.extend({ tipo: z.literal(tipo) });
+
+/** Contrato del análisis: exactamente 5 secciones, una de cada tipo, en el orden de TIPOS_SECCION. */
 export const AIAnalisisResponseSchema = z.object({
   resumen: z.string(),
-  secciones: z.array(AISeccionSchema),
+  secciones: z.tuple([seccionDe('carga'), seccionDe('financiero'), seccionDe('ruta'), seccionDe('whatIf'), seccionDe('electivos')]),
   preguntasSugeridas: z.array(z.string()).max(MAX_PREGUNTAS),
 });
-export type AIAnalisisResponse = z.infer<typeof AIAnalisisResponseSchema>;
+
+/**
+ * La misma forma con las secciones en cualquier cantidad u orden. Solo la usa el proxy al leer la respuesta del
+ * modelo, para que el filtro de salida pida corregir las secciones con el error concreto.
+ */
+export const AIAnalisisLibreSchema = AIAnalisisResponseSchema.extend({ secciones: z.array(AISeccionSchema) });
+export type AIAnalisisResponse = z.infer<typeof AIAnalisisLibreSchema>;
 
 export const AIChatResponseSchema = z.object({
   texto: z.string(),
@@ -258,12 +389,23 @@ export type AIRespuesta = AIAnalisisResponse | AIChatResponse;
 // ==========================================
 
 export const CODIGOS_ERROR = [
-  'SIN_SALDO', 'LIMITE', 'PROVEEDOR_CAIDO', 'ENTRADA_INVALIDA', 'RESPUESTA_INVALIDA', 'SIN_CONEXION',
+  'SIN_SALDO', 'LIMITE', 'PROVEEDOR_CAIDO', 'ENTRADA_INVALIDA', 'RESPUESTA_INVALIDA', 'SIN_CONEXION', 'PAUSADO',
+  'RESPUESTA_LARGA', 'RESPUESTA_NO_VERIFICADA',
 ] as const;
 export const AIErrorCodigoSchema = z.enum(CODIGOS_ERROR);
 export type AIErrorCodigo = z.infer<typeof AIErrorCodigoSchema>;
 
-export const AIErrorResponseSchema = z.object({ error: AIErrorCodigoSchema });
+export const MENSAJE_LIMITE = 'Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato.';
+/** Respuesta segura fija cuando el filtro de salida del proxy no pudo verificar los datos. */
+export const MENSAJE_NO_VERIFICADA = 'No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.';
+
+/** `reintentarEn` (ISO) llega con LIMITE cuando el tope es del proxy: inicio de la ventana siguiente. */
+export const AIErrorResponseSchema = z.object({
+  error: AIErrorCodigoSchema,
+  mensaje: z.string().max(200).optional(),
+  reintentarEn: z.iso.datetime().optional(),
+});
+export type AIErrorResponse = z.infer<typeof AIErrorResponseSchema>;
 
 /** Esquema JSON (para el prompt) de la respuesta de cada modo. */
 export const esquemaRespuesta = (modo: AIRequest['modo']) =>
@@ -278,14 +420,30 @@ export const codigosDelContexto = (contexto: AIContext): Set<string> =>
 
 const filtrar = (codigos: string[], validos: Set<string>) => [...new Set(codigos.filter((codigo) => validos.has(codigo)))];
 
-/** Valida la respuesta del modo y descarta los códigos de curso que no existan en el contexto. */
-export function parsearRespuesta(modo: 'analisis', datos: unknown, contexto: AIContext): AIAnalisisResponse;
-export function parsearRespuesta(modo: 'chat', datos: unknown, contexto: AIContext): AIChatResponse;
-export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext): AIRespuesta;
-export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext): AIRespuesta {
+/** "Faltan las secciones whatIf.", etc.; null si son exactamente las 5, una de cada tipo, en orden. */
+export const errorSecciones = (tipos: string[]): string | null => {
+  if (tipos.length === TIPOS_SECCION.length && tipos.every((tipo, indice) => tipo === TIPOS_SECCION[indice])) return null;
+  const faltan = TIPOS_SECCION.filter((tipo) => !tipos.includes(tipo));
+  const sobran = tipos.filter((tipo, indice) => tipos.indexOf(tipo) !== indice || !(TIPOS_SECCION as readonly string[]).includes(tipo));
+  const partes = [
+    ...(faltan.length ? [`Faltan las secciones ${faltan.join(', ')}.`] : []),
+    ...(sobran.length ? [`Sobran las secciones ${[...new Set(sobran)].join(', ')}.`] : []),
+    ...(!faltan.length && !sobran.length ? ['Las secciones no están en el orden pedido.'] : []),
+  ];
+  return `${partes.join(' ')} Incluye exactamente 5 secciones, en este orden: ${TIPOS_SECCION.join(', ')}.`;
+};
+
+/**
+ * Valida la respuesta del modo y descarta los códigos de curso que no existan en el contexto.
+ * `seccionesLibres` (solo el proxy) acepta un análisis con otras secciones para que el filtro lo corrija.
+ */
+export function parsearRespuesta(modo: 'analisis', datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIAnalisisResponse;
+export function parsearRespuesta(modo: 'chat', datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIChatResponse;
+export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIRespuesta;
+export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext, seccionesLibres = false): AIRespuesta {
   const validos = codigosDelContexto(contexto);
   if (modo === 'analisis') {
-    const respuesta = AIAnalisisResponseSchema.parse(datos);
+    const respuesta: AIAnalisisResponse = (seccionesLibres ? AIAnalisisLibreSchema : AIAnalisisResponseSchema).parse(datos);
     return {
       ...respuesta,
       secciones: respuesta.secciones.map((seccion) => ({ ...seccion, cursos: filtrar(seccion.cursos, validos) })),

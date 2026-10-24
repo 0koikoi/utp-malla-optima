@@ -30,3 +30,7 @@ dist-ssr
 
 # Vercel (vercel link / vercel dev)
 .vercel
+
+# Documentación local: no se versiona
+/docs/
+/CLAUDE.md

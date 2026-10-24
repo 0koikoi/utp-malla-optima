@@ -16,7 +16,7 @@ const peticion = (cambios: Partial<AIRequest> = {}): AIRequest => ({ modo: 'anal
 const crear = (cambios: Partial<ConfigProxy> = {}) => {
   const registros: unknown[] = [];
   const config = leerConfig(
-    { DEEPSEEK_API_KEY: 'sk-prueba', ALLOWED_ORIGINS: `${ORIGEN},http://localhost:5173` },
+    { DEEPSEEK_API_KEY: 'sk-prueba', ALLOWED_ORIGINS: `${ORIGEN},http://localhost:5173`, VERCEL_ENV: 'production' },
     { esperaMockMs: 0, registrar: (entrada) => registros.push(entrada), ...cambios },
   );
   return { ...crearHandlers(config), registros };
@@ -32,9 +32,14 @@ const respuestaDeepSeek = (contenido: unknown, status = 200) => new Response(JSO
   choices: [{ message: { content: typeof contenido === 'string' ? contenido : JSON.stringify(contenido) } }],
 }), { status });
 
+// Título visible: el tipo ("whatIf") es un nombre interno y el filtro de salida lo marca.
+const otraSeccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: `Sobre tu plan (${tipo.length})`, detalle: 'Bien.', acciones: [], cursos: [] });
 const analisisValido = {
   resumen: 'Tu plan está cargado.',
-  secciones: [{ tipo: 'carga', nivel: 'riesgo', titulo: 'Carga', detalle: '25 h', acciones: ['Mueve un curso.'], cursos: ['100000I62N', 'FALSO'] }],
+  secciones: [
+    { tipo: 'carga', nivel: 'riesgo', titulo: 'Carga', detalle: 'Revisa la carga.', acciones: ['Mueve un curso.'], cursos: ['100000I62N', 'FALSO'] },
+    ...['financiero', 'ruta', 'whatIf', 'electivos'].map(otraSeccion),
+  ],
   preguntasSugeridas: ['¿Estoy sobrecargado?'],
 };
 
@@ -87,7 +92,7 @@ describe('proxy - validación de entrada', () => {
 });
 
 describe('proxy - llamada a DeepSeek', () => {
-  it('envía system (prompt + esquema), user con el CONTEXTO y el historial; sin herramientas', async () => {
+  it('envía system (prompt + esquema), system con el CONTEXTO entre delimitadores y el historial; sin herramientas', async () => {
     const fetch = vi.fn(async () => respuestaDeepSeek(analisisValido));
     const historial = [{ rol: 'user' as const, texto: 'Hola' }, { rol: 'assistant' as const, texto: '¿En qué te ayudo?' }];
     const respuesta = await crear({ fetch, modelo: 'deepseek-flash' }).POST(post(peticion({ mensajes: historial })));
@@ -96,14 +101,16 @@ describe('proxy - llamada a DeepSeek', () => {
     expect(url).toBe(DEEPSEEK_URL);
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-prueba');
     const cuerpo = JSON.parse(String(init.body));
-    expect(cuerpo).toMatchObject({ model: 'deepseek-flash', response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1200 });
+    expect(cuerpo).toMatchObject({ model: 'deepseek-flash', response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1800, thinking: { type: 'disabled' } });
     expect(cuerpo.tools).toBeUndefined();
+    expect(cuerpo.tool_choice).toBeUndefined();
     expect(cuerpo.messages[0].role).toBe('system');
     expect(cuerpo.messages[0].content.startsWith(SYSTEM_PROMPT)).toBe(true);
     expect(cuerpo.messages[0].content).toContain('preguntasSugeridas');
-    expect(cuerpo.messages[1].role).toBe('user');
-    expect(cuerpo.messages[1].content.startsWith('CONTEXTO:\n')).toBe(true);
-    expect(JSON.parse(cuerpo.messages[1].content.slice('CONTEXTO:\n'.length))).toEqual(contexto);
+    expect(cuerpo.messages[1].role).toBe('system');
+    expect(cuerpo.messages[1].content.startsWith('<<CONTEXTO_MALLAU>>\n')).toBe(true);
+    expect(cuerpo.messages[1].content.endsWith('\n<<FIN_CONTEXTO_MALLAU>>')).toBe(true);
+    expect(JSON.parse(cuerpo.messages[1].content.slice('<<CONTEXTO_MALLAU>>\n'.length, -'\n<<FIN_CONTEXTO_MALLAU>>'.length))).toEqual(contexto);
     expect(cuerpo.messages[1].content).toContain('"foco":{"tipo":"curso"');
     expect(cuerpo.messages.slice(2)).toEqual([{ role: 'user', content: 'Hola' }, { role: 'assistant', content: '¿En qué te ayudo?' }]);
   });
@@ -161,23 +168,37 @@ describe('proxy - llamada a DeepSeek', () => {
     expect(await respuesta.json()).toEqual({ error: 'PROVEEDOR_CAIDO' });
   });
 
-  it('registra solo resultado, modo y duración; nunca el contexto ni los mensajes', async () => {
+  it('registra una sola línea por petición; nunca el contexto ni los mensajes (detalle en consumo.test.ts)', async () => {
     const { POST, registros } = crear({ fetch: vi.fn(async () => respuestaDeepSeek(analisisValido)) });
     await POST(post(peticion({ mensajes: [{ rol: 'user', texto: 'mi secreto' }] })));
     expect(registros).toHaveLength(1);
-    expect(Object.keys(registros[0] as object).sort()).toEqual(['mock', 'modo', 'ms', 'resultado']);
     expect(JSON.stringify(registros)).not.toContain('secreto');
     expect(JSON.stringify(registros)).not.toContain('100000');
   });
 });
 
 describe('proxy - modo mock', () => {
-  it('sin clave fuera de producción usa mock; en producción solo con AI_MOCK=true', () => {
+  it('fuera de producción (previews, local) usa siempre el mock, aunque haya clave; en producción solo con AI_MOCK=true', () => {
     expect(leerConfig({}).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'preview' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'development' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', NODE_ENV: 'production' }).mock).toBe(true);
+    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk', VERCEL_ENV: 'production' }).mock).toBe(false);
     expect(leerConfig({ VERCEL_ENV: 'production' }).mock).toBe(false);
     expect(leerConfig({ VERCEL_ENV: 'production', AI_MOCK: 'true' }).mock).toBe(true);
-    expect(leerConfig({ DEEPSEEK_API_KEY: 'sk' }).mock).toBe(false);
     expect(leerConfig({}).modelo).toBe('deepseek-flash');
+  });
+
+  it('una preview con clave responde con mock y nunca llama a DeepSeek', async () => {
+    const fetch = vi.fn();
+    const config = leerConfig(
+      { DEEPSEEK_API_KEY: 'sk-prueba', VERCEL_ENV: 'preview', ALLOWED_ORIGINS: ORIGEN },
+      { fetch, esperaMockMs: 0, registrar: () => undefined },
+    );
+    const respuesta = await crearHandlers(config).POST(post(peticion()));
+    expect(respuesta.status).toBe(200);
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('en producción sin clave ni mock responde PROVEEDOR_CAIDO sin llamar a nadie', async () => {

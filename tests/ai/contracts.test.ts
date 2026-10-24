@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  AIContextSchema, AIRequestSchema, esquemaRespuesta, MAX_TEXTO_MENSAJE, parsearRespuesta,
+  AIContextSchema, AIRequestSchema, errorSecciones, esquemaRespuesta, MAX_TEXTO_MENSAJE, parsearRespuesta, TIPOS_SECCION,
 } from '../../src/application/ai/contracts';
 import { crearContextoMinimo } from '../helpers/aiContexto';
 
@@ -43,9 +43,32 @@ describe('Contratos IA - respuestas', () => {
     acciones: ['a'], cursos: ['100000I62N', 'INVENTADO', '100000I62N'],
   };
 
+  const resto = ['financiero', 'ruta', 'whatIf', 'electivos'].map((tipo) => ({ ...seccion, tipo, cursos: [] }));
+
   it('el análisis descarta códigos inexistentes y duplicados', () => {
-    const respuesta = parsearRespuesta('analisis', { resumen: 'r', secciones: [seccion], preguntasSugeridas: [] }, contexto);
+    const respuesta = parsearRespuesta('analisis', { resumen: 'r', secciones: [seccion, ...resto], preguntasSugeridas: [] }, contexto);
     expect(respuesta.secciones[0].cursos).toEqual(['100000I62N']);
+  });
+
+  it('el análisis exige exactamente 5 secciones, una de cada tipo, en orden: carga, financiero, ruta, whatIf, electivos', () => {
+    expect(TIPOS_SECCION).toEqual(['carga', 'financiero', 'ruta', 'whatIf', 'electivos']);
+    const analisis = (secciones: unknown[]) => ({ resumen: 'r', secciones, preguntasSugeridas: [] });
+    expect(() => parsearRespuesta('analisis', analisis([seccion, ...resto.slice(0, 3)]), contexto)).toThrow();
+    expect(() => parsearRespuesta('analisis', analisis([resto[0], seccion, ...resto.slice(1)]), contexto)).toThrow();
+    expect(() => parsearRespuesta('analisis', analisis([seccion, ...resto, seccion]), contexto)).toThrow();
+    // El proxy lee con secciones libres para que el filtro de salida pida corregirlas.
+    expect(parsearRespuesta('analisis', analisis([seccion]), contexto, true).secciones).toHaveLength(1);
+    const prefijos = (esquemaRespuesta('analisis') as { properties: { secciones: { prefixItems: { properties: { tipo: { const: string } } }[] } } })
+      .properties.secciones.prefixItems.map((item) => item.properties.tipo.const);
+    expect(prefijos).toEqual(['carga', 'financiero', 'ruta', 'whatIf', 'electivos']);
+  });
+
+  it('errorSecciones nombra lo que falta, lo que sobra o el orden', () => {
+    const orden = 'Incluye exactamente 5 secciones, en este orden: carga, financiero, ruta, whatIf, electivos.';
+    expect(errorSecciones(['carga', 'financiero', 'ruta', 'whatIf', 'electivos'])).toBeNull();
+    expect(errorSecciones(['carga', 'financiero', 'ruta', 'electivos'])).toBe(`Faltan las secciones whatIf. ${orden}`);
+    expect(errorSecciones(['carga', 'financiero', 'ruta', 'whatIf', 'electivos', 'carga'])).toBe(`Sobran las secciones carga. ${orden}`);
+    expect(errorSecciones(['financiero', 'carga', 'ruta', 'whatIf', 'electivos'])).toBe(`Las secciones no están en el orden pedido. ${orden}`);
   });
 
   it('el chat descarta códigos inexistentes', () => {
@@ -55,13 +78,13 @@ describe('Contratos IA - respuestas', () => {
 
   it('rechaza más de 3 acciones o 3 preguntas sugeridas', () => {
     const muchas = { ...seccion, acciones: ['1', '2', '3', '4'] };
-    expect(() => parsearRespuesta('analisis', { resumen: 'r', secciones: [muchas], preguntasSugeridas: [] }, contexto)).toThrow();
+    expect(() => parsearRespuesta('analisis', { resumen: 'r', secciones: [muchas, ...resto], preguntasSugeridas: [] }, contexto)).toThrow();
     expect(() => parsearRespuesta('chat', { texto: 't', cursos: [], preguntasSugeridas: ['1', '2', '3', '4'] }, contexto)).toThrow();
   });
 
   it('rechaza un tipo de sección o nivel desconocido', () => {
     const mala = { ...seccion, nivel: 'grave' };
-    expect(() => parsearRespuesta('analisis', { resumen: 'r', secciones: [mala], preguntasSugeridas: [] }, contexto)).toThrow();
+    expect(() => parsearRespuesta('analisis', { resumen: 'r', secciones: [mala, ...resto], preguntasSugeridas: [] }, contexto)).toThrow();
   });
 
   it('genera el esquema JSON de cada modo para el prompt', () => {

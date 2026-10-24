@@ -5,7 +5,9 @@ import electivosAreas from '../../data/universidades/pe-utp/electivosAreas.json'
 import { ACADEMIC_LIMITS } from '../../config/academicLimits';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
-import { esCursoJalado, estaEnVentana, nombrePeriodoCorto, ventanaDesdeCiclo, ventanaJalado } from '../../domain/rules/jaladoRules';
+import {
+  esCursoJalado, estaEnVentana, jaladosFaltantes, nombrePeriodoCorto, planificadosSinJalado, ventanaDesdeCiclo, ventanaJalado,
+} from '../../domain/rules/jaladoRules';
 import { calcularHorasEfectivas, MINIMO_CREDITOS_ELECTIVOS, obtenerHorasSinRecargo } from '../../domain/rules/planningRules';
 import { calcularPrioridadesPendientes } from '../../domain/services/recommendationService';
 import { simularJalado } from '../../domain/services/whatIfService';
@@ -13,8 +15,9 @@ import { FinancialPlanningService } from '../../financial/services/FinancialPlan
 import { UniversityFinancialRulesProvider } from '../../financial/rules/UniversityFinancialRulesProvider';
 import { generateOptimalPlanUseCase } from '../usecases/generateOptimalPlanUseCase';
 import type {
-  AICarga, AIContext, AICursoPlanificado, AIEscenarioPeriodo, AIFoco, AIFocoContexto, AIWhatIf,
+  AICarga, AIContext, AICursoPlanificado, AIDerivados, AIEscenarioPeriodo, AIFoco, AIFocoContexto, AIWhatIf,
 } from './contracts';
+import { pagoUnicoDe, positivo, presupuestoPorEscenario, r2 } from './presupuesto';
 
 /**
  * Contexto del asistente IA. Función PURA: lee el estado del store y devuelve
@@ -39,7 +42,6 @@ const AREAS: Record<string, { area: string; confirmado: boolean }> = electivosAr
 const COMPLETADOS = new Set(['APROBADO', 'CONVALIDADO']);
 const ESCENARIOS = ['sin_descuento', 'interbank_scotiabank', 'bcp_bbva', 'pago_unico'] as const;
 
-const r2 = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
 const sumar = (cursos: Curso[], campo: 'creditos' | 'horasSemanales') => r2(cursos.reduce((suma, curso) => suma + curso[campo], 0));
 const ubicacionDe = (curso: Curso) => curso.ubicacion === 'banco' ? 'banco' : obtenerPeriodoCurso(curso).id;
 
@@ -188,8 +190,8 @@ const escenariosPeriodo = (periodoId: string, entorno: EntornoFinanciero): AIEsc
     const periodo = calcularEscenario(id, entorno).periodos.find((item) => item.id === periodoId);
     if (!periodo) return [];
     const { resumen } = periodo;
-    // En pago único se informa el equivalente mensual del pago de la enseñanza.
-    const cuotaMensual = resumen.pagoUnico ? r2(resumen.costoEnsenanzaTotal / resumen.numeroCuotas) : resumen.montoPorCuota;
+    // El pago único no es mensual: todas las pensiones se pagan juntas al inicio (derivados.pagoUnico).
+    const cuotaMensual = resumen.pagoUnico ? null : resumen.montoPorCuota;
     return [{
       id,
       nombre: nombreEscenario(id, entorno.tarifario),
@@ -197,9 +199,13 @@ const escenariosPeriodo = (periodoId: string, entorno: EntornoFinanciero): AIEsc
       numeroCuotas: resumen.numeroCuotas,
       cuotaMensual,
       total: resumen.costoTotalCiclo,
-      diferenciaPresupuesto: entorno.presupuesto === null ? null : r2(entorno.presupuesto - cuotaMensual),
+      diferenciaPresupuesto: entorno.presupuesto === null || cuotaMensual === null ? null : r2(entorno.presupuesto - cuotaMensual),
     }];
   });
+
+/** Pensión del ciclo con pago único (la que ya calcula FinancialPlanningService), para derivados.pagoUnico. */
+const pensionPagoUnico = (periodoId: string, entorno: EntornoFinanciero) =>
+  calcularEscenario('pago_unico', entorno).periodos.find((item) => item.id === periodoId)?.resumen.costoEnsenanzaTotal ?? null;
 
 const construirFoco = (
   foco: AIFoco | undefined, estado: EstadoContextoIA, prioridades: Map<string, { impacto: number; longitudCadena: number }>,
@@ -252,6 +258,110 @@ const construirFoco = (
   };
 };
 
+
+/**
+ * CONTEXTO.derivados: las restas y totales que la IA no debe hacer (D-001).
+ * Créditos para egresar = obligatorios + el mínimo de electivos de academic.json (creditosMinimosElectivos);
+ * los electivos aprobados cuentan solo hasta ese mínimo.
+ */
+export const calcularDerivados = (
+  cursos: Curso[], carga: AICarga, escenarios: AIEscenarioPeriodo[], presupuesto: number | null,
+  cursosProximos: Curso[], whatIfProximos: Omit<AIWhatIf, 'origen'>[], ciclosRestantes: number,
+  pensionAlInicio: number | null = null, tipoProximo: PeriodoAcademico['tipo'] = 'REGULAR',
+): Omit<AIDerivados, 'proximoPeriodoConJalados' | 'planificadosBloqueadosPorJalado'> => {
+  const tope = carga.topeEscala;
+  const obligatorios = cursos.filter((curso) => curso.tipo === 'OBLIGATORIO');
+  const electivosAprobados = sumar(cursos.filter((curso) => curso.tipo === 'ELECTIVO' && COMPLETADOS.has(curso.estado)), 'creditos');
+  const paraEgresar = r2(sumar(obligatorios, 'creditos') + MINIMO_CREDITOS_ELECTIVOS);
+  const aprobadosQueCuentan = r2(sumar(obligatorios.filter((curso) => COMPLETADOS.has(curso.estado)), 'creditos')
+    + Math.min(electivosAprobados, MINIMO_CREDITOS_ELECTIVOS));
+  const faltanParaEgresar = positivo(paraEgresar - aprobadosQueCuentan);
+  const obligatoriosEnCurso = sumar(obligatorios.filter((curso) => curso.estado === 'EN_CURSO'), 'creditos');
+  const bloqueos = new Map(whatIfProximos.map((item) => [item.codigo, item.planificadosInvalidos.map((afectado) => afectado.codigo)]));
+  return {
+    horas: {
+      proximoPeriodo: carga.horas,
+      topeEscala: tope,
+      sobreTopeEscala: tope === null ? 0 : positivo(carga.horas - tope),
+      margenTopeEscala: tope === null ? 0 : positivo(tope - carga.horas),
+      recomendadas: carga.limiteRecomendado,
+      sobreRecomendadas: positivo(carga.horas - carga.limiteRecomendado),
+      margenRecomendadas: positivo(carga.limiteRecomendado - carga.horas),
+    },
+    presupuesto: presupuestoPorEscenario(escenarios, presupuesto),
+    pagoUnico: pagoUnicoDe(escenarios, presupuesto, pensionAlInicio),
+    // "Si sacas X bajas a N h": la resta la hace el código, con las horas efectivas del periodo.
+    horasSinCadaCurso: cursosProximos.map((curso) => {
+      const horasSinElCurso = r2(calcularHorasEfectivas(cursosProximos.filter((otro) => otro.codigo !== curso.codigo), tipoProximo));
+      return { codigo: curso.codigo, nombre: curso.nombre, horasSinElCurso, quedaBajoTopeEscala: tope === null ? null : horasSinElCurso <= tope };
+    }),
+    creditosElectivosFaltantes: positivo(MINIMO_CREDITOS_ELECTIVOS - electivosAprobados),
+    creditos: {
+      totalMalla: sumar(cursos, 'creditos'),
+      obligatorios: sumar(obligatorios, 'creditos'),
+      electivosMinimos: MINIMO_CREDITOS_ELECTIVOS,
+      paraEgresar,
+      aprobadosQueCuentan,
+      enCurso: sumar(cursos.filter((curso) => curso.estado === 'EN_CURSO'), 'creditos'),
+      faltanParaEgresar,
+      faltanSiApruebaEnCurso: positivo(faltanParaEgresar - obligatoriosEnCurso),
+      ciclosRestantes,
+    },
+    cursosProximoPeriodo: cursosProximos.map((curso) => {
+      const bloquearia = bloqueos.get(curso.codigo) ?? [];
+      return {
+        codigo: curso.codigo,
+        nombre: curso.nombre,
+        creditos: curso.creditos,
+        horas: curso.horasSemanales,
+        estado: curso.estado,
+        jalado: esCursoJalado(curso),
+        sePuedeMover: bloquearia.length === 0,
+        bloquearia,
+      };
+    }),
+  };
+};
+
+/**
+ * derivados.proximoPeriodoConJalados: los jalados fuera de su ventana cuya ventana incluye el próximo periodo, puestos
+ * en él; horas, créditos, topes y costos con el mismo motor (calcularHorasEfectivas, FinancialPlanningService).
+ */
+const proximoPeriodoConJalados = (
+  estado: EstadoContextoIA, siguiente: { periodo: PeriodoAcademico; cursos: Curso[] } | undefined,
+  topeEscala: number | null, entorno: EntornoFinanciero | null,
+): AIDerivados['proximoPeriodoConJalados'] => {
+  if (!siguiente) return null;
+  const contexto = { cicloActual: estado.cicloActual, periodoIngreso: estado.periodoIngreso };
+  const agregar = jaladosFaltantes(estado.cursos, contexto)
+    .filter((jalado) => ventanaJalado(jalado, estado.cursos, contexto).some((periodo) => periodo.id === siguiente.periodo.id));
+  if (!agregar.length) return null;
+  const codigos = new Set(agregar.map((jalado) => jalado.codigo));
+  const { periodo } = siguiente;
+  const cursos = estado.cursos.map((curso) => codigos.has(curso.codigo)
+    ? { ...curso, ciclo: periodo.cicloReferencia, tipoPeriodo: periodo.tipo, ubicacion: 'periodo' as const } : curso);
+  const enPeriodo = [...siguiente.cursos, ...cursos.filter((curso) => codigos.has(curso.codigo))];
+  const horas = r2(calcularHorasEfectivas(enPeriodo, periodo.tipo));
+  const recomendadas = ACADEMIC_LIMITS.horasRecomendadasPeriodo;
+  const conJalados = entorno ? { ...entorno, estado: { ...estado, cursos } } : null;
+  const escenarios = conJalados ? escenariosPeriodo(periodo.id, conJalados) : [];
+  return {
+    periodoId: periodo.id,
+    jalados: agregar.map((jalado) => jalado.codigo),
+    horas,
+    creditos: sumar(enPeriodo, 'creditos'),
+    superaTopeEscala: topeEscala === null ? null : horas > topeEscala,
+    horasSobreTopeEscala: topeEscala === null ? 0 : positivo(horas - topeEscala),
+    superaRecomendadas: horas > recomendadas,
+    horasSobreRecomendadas: positivo(horas - recomendadas),
+    escenarios: escenarios.flatMap((escenario) => escenario.cuotaMensual === null || escenario.id === 'pago_unico' ? [] : [{
+      id: escenario.id, nombre: escenario.nombre, cuotaMensual: escenario.cuotaMensual, total: escenario.total,
+      diferenciaMes: conJalados?.presupuesto === null || !conJalados ? null : r2(conJalados.presupuesto - escenario.cuotaMensual),
+    }]),
+    pagoUnico: conJalados ? pagoUnicoDe(escenarios, conJalados.presupuesto, pensionPagoUnico(periodo.id, conJalados)) : null,
+  };
+};
+
 export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesContextoIA = {}): AIContext => {
   const { cursos, tarifario, disciplinaActiva, cicloActual, periodoIngreso } = estado;
   const contextoJalados = { cicloActual, periodoIngreso };
@@ -287,6 +397,9 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     };
   })();
 
+  const carga = calcularCarga(cursosProximos, siguiente?.periodo.tipo ?? 'REGULAR', topeEscala, prioridades);
+  const escenariosProximos = siguiente && entorno ? escenariosPeriodo(siguiente.periodo.id, entorno) : [];
+  const whatIfProximos = cursosProximos.map((curso) => whatIfDe(curso, estado));
   const metodo = tarifario?.metodosPago?.[estado.metodoPago];
   const tarifas = tarifario ? tarifario.disciplinas[disciplinaActiva] ?? Object.values(tarifario.disciplinas)[0] : undefined;
 
@@ -300,7 +413,7 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
       creditos: {
         aprobados: sumar(conEstado('APROBADO', 'CONVALIDADO'), 'creditos'),
         enCurso: sumar(conEstado('EN_CURSO'), 'creditos'),
-        pendientes: sumar(conEstado('PENDIENTE'), 'creditos'),
+        pendientesEnMalla: sumar(conEstado('PENDIENTE'), 'creditos'),
       },
       electivos: {
         cubiertos: electivosCubiertos,
@@ -334,15 +447,16 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
       metodoPagoElegido: { id: estado.metodoPago, nombre: metodo?.nombre ?? estado.metodoPago },
       costoHoraAdicional: tarifas?.costoHoraAdicional ?? null,
       presupuestoMensual: presupuesto,
-      proximoPeriodo: siguiente ? escenariosPeriodo(siguiente.periodo.id, entorno) : [],
+      presupuestoFuente: presupuesto === null ? null : 'plan',
+      proximoPeriodo: escenariosProximos,
       planCompleto: ESCENARIOS.map((id) => ({
         id, nombre: nombreEscenario(id, tarifario), total: r2(calcularEscenario(id, entorno).totalGeneral),
       })),
     } : null,
-    carga: calcularCarga(cursosProximos, siguiente?.periodo.tipo ?? 'REGULAR', topeEscala, prioridades),
+    carga,
     whatIf: [
       ...conEstado('EN_CURSO').map((curso) => ({ ...whatIfDe(curso, estado), origen: 'EN_CURSO' as const })),
-      ...cursosProximos.map((curso) => ({ ...whatIfDe(curso, estado), origen: 'PROXIMO_PERIODO' as const })),
+      ...whatIfProximos.map((item) => ({ ...item, origen: 'PROXIMO_PERIODO' as const })),
     ],
     ruta,
     electivos: cursos.filter((curso) => curso.tipo === 'ELECTIVO' && curso.estado === 'PENDIENTE').map((curso) => ({
@@ -356,5 +470,16 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     })),
     limites: { ...ACADEMIC_LIMITS, topeEscalaPension: topeEscala },
     foco: construirFoco(opciones.foco, estado, prioridades, topeEscala, entorno),
+    derivados: {
+      ...calcularDerivados(
+        cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
+        siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null, siguiente?.periodo.tipo,
+      ),
+      proximoPeriodoConJalados: proximoPeriodoConJalados(estado, siguiente, topeEscala, entorno),
+      // La misma regla que la app: planificados que un jalado fuera de su ventana deja inválidos.
+      planificadosBloqueadosPorJalado: siguiente
+        ? planificadosSinJalado(cursos, contextoJalados).filter((curso) => siguiente.cursos.some((item) => item.codigo === curso.codigo))
+        : [],
+    },
   };
 };

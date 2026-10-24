@@ -5,7 +5,7 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
   version: 1,
   perfil: {
     periodoIngreso: 'marzo', cicloActual: 7, totalCiclos: 10, disciplina: 'Ingeniería y Arquitectura',
-    creditos: { aprobados: 120, enCurso: 19, pendientes: 60 },
+    creditos: { aprobados: 120, enCurso: 19, pendientesEnMalla: 60 },
     electivos: { cubiertos: 0, minimo: 3, faltantes: 3 },
   },
   catalogo: [
@@ -25,7 +25,7 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
   financiero: {
     moneda: 'PEN', referencia: 'Tarifario 2026 (referencial)',
     metodoPagoElegido: { id: 'sin_descuento', nombre: 'Sin descuento' },
-    costoHoraAdicional: 38.81, presupuestoMensual: null,
+    costoHoraAdicional: 38.81, presupuestoMensual: null, presupuestoFuente: null,
     proximoPeriodo: [{
       id: 'sin_descuento', nombre: 'Sin descuento', matricula: 398, numeroCuotas: 5,
       cuotaMensual: 407.5, total: 2435.5, diferenciaPresupuesto: null,
@@ -47,5 +47,22 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
     creditosMaximosVerano: 11, creditosMinimosElectivos: 3, factorHorasVerano: 2, topeEscalaPension: 22,
   },
   foco: null,
+  derivados: {
+    horas: { proximoPeriodo: 4, topeEscala: 22, sobreTopeEscala: 0, margenTopeEscala: 18, recomendadas: 24, sobreRecomendadas: 0, margenRecomendadas: 20 },
+    presupuesto: null,
+    pagoUnico: null,
+    horasSinCadaCurso: [{ codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', horasSinElCurso: 0, quedaBajoTopeEscala: true }],
+    creditosElectivosFaltantes: 3,
+    creditos: {
+      totalMalla: 10, obligatorios: 7, electivosMinimos: 3, paraEgresar: 10, aprobadosQueCuentan: 0, enCurso: 3,
+      faltanParaEgresar: 10, faltanSiApruebaEnCurso: 7, ciclosRestantes: 1,
+    },
+    cursosProximoPeriodo: [{
+      codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', creditos: 4, horas: 4, estado: 'PENDIENTE',
+      jalado: false, sePuedeMover: true, bloquearia: [],
+    }],
+    proximoPeriodoConJalados: null,
+    planificadosBloqueadosPorJalado: [],
+  },
   ...cambios,
 });

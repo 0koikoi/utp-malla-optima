@@ -1,5 +1,5 @@
 import {
-  AIErrorResponseSchema, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta,
+  AIErrorResponseSchema, MENSAJE_LIMITE, MENSAJE_NO_VERIFICADA, parsearRespuesta, type AIErrorCodigo, type AIRequest, type AIRespuesta,
 } from '../../application/ai/contracts';
 import { generarRespuestaMock } from '../../application/ai/mockRespuestas';
 
@@ -14,16 +14,30 @@ export interface AIClient {
 
 export const TIMEOUT_CLIENTE_MS = 35_000;
 
+/** SIN_SALDO usa el mismo aviso que la pausa: al alumno nunca se le dice que se acabó el saldo. */
+export const MENSAJE_PAUSA = 'El asistente está en pausa por mantenimiento. Vuelve a intentarlo más tarde.';
+
 export const MENSAJES_ERROR: Record<AIErrorCodigo, string> = {
   SIN_CONEXION: 'Sin conexión: el asistente necesita internet.',
-  SIN_SALDO: 'El servicio de IA no tiene saldo por ahora. Inténtalo más tarde.',
-  LIMITE: 'Hay muchas consultas en este momento. Espera un minuto e inténtalo de nuevo.',
+  SIN_SALDO: MENSAJE_PAUSA,
+  PAUSADO: MENSAJE_PAUSA,
+  LIMITE: MENSAJE_LIMITE,
   PROVEEDOR_CAIDO: 'El asistente no está disponible en este momento. Inténtalo en unos minutos.',
   ENTRADA_INVALIDA: 'No pude enviar tu consulta. Revisa el mensaje e inténtalo otra vez.',
   RESPUESTA_INVALIDA: 'La respuesta de la IA llegó incompleta. Toca Reintentar.',
+  RESPUESTA_LARGA: 'No pude terminar la respuesta, intenta preguntarlo más corto.',
+  RESPUESTA_NO_VERIFICADA: MENSAJE_NO_VERIFICADA,
 };
 
-const fallo = (error: AIErrorCodigo): ResultadoIA => ({ ok: false, error, mensaje: MENSAJES_ERROR[error] });
+const fallo = (error: AIErrorCodigo, mensaje = MENSAJES_ERROR[error]): ResultadoIA => ({ ok: false, error, mensaje });
+
+/** "17:00" en la hora del dispositivo (o en `zonaHoraria`, para los tests). */
+export const horaAproximada = (iso: string, zonaHoraria?: string): string =>
+  new Intl.DateTimeFormat('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: zonaHoraria }).format(new Date(iso));
+
+/** LIMITE del proxy trae `reintentarEn`: se agrega la hora aproximada en que se libera. */
+export const mensajeLimite = (reintentarEn: string | undefined, zonaHoraria?: string): string =>
+  reintentarEn ? `${MENSAJE_LIMITE} Se libera hacia las ${horaAproximada(reintentarEn, zonaHoraria)}.` : MENSAJE_LIMITE;
 
 const codigoPorStatus = (status: number): AIErrorCodigo =>
   status === 402 ? 'SIN_SALDO' : status === 429 ? 'LIMITE'
@@ -50,12 +64,13 @@ interface OpcionesHttp {
   fetch?: typeof fetch;
   timeoutMs?: number;
   enLinea?: () => boolean;
+  zonaHoraria?: string;
 }
 
 /** Cliente del proxy ai-proxy. Nunca envía el prompt del sistema: solo modo, contexto, foco y mensajes. */
 export class HttpAIClient implements AIClient {
   readonly esMock = false;
-  private readonly opciones: Required<OpcionesHttp>;
+  private readonly opciones: Required<Omit<OpcionesHttp, 'zonaHoraria'>> & Pick<OpcionesHttp, 'zonaHoraria'>;
 
   constructor(opciones: OpcionesHttp) {
     this.opciones = {
@@ -64,7 +79,7 @@ export class HttpAIClient implements AIClient {
   }
 
   async enviar(peticion: AIRequest): Promise<ResultadoIA> {
-    const { endpoint, fetch, timeoutMs, enLinea } = this.opciones;
+    const { endpoint, fetch, timeoutMs, enLinea, zonaHoraria } = this.opciones;
     if (!enLinea()) return fallo('SIN_CONEXION');
     if (!endpoint) return fallo('PROVEEDOR_CAIDO');
 
@@ -80,7 +95,10 @@ export class HttpAIClient implements AIClient {
       const datos: unknown = await respuesta.json().catch(() => null);
       if (!respuesta.ok) {
         const error = AIErrorResponseSchema.safeParse(datos);
-        return fallo(error.success ? error.data.error : codigoPorStatus(respuesta.status));
+        if (!error.success) return fallo(codigoPorStatus(respuesta.status));
+        return error.data.error === 'LIMITE'
+          ? fallo('LIMITE', mensajeLimite(error.data.reintentarEn, zonaHoraria))
+          : fallo(error.data.error);
       }
       try {
         return { ok: true, respuesta: parsearRespuesta(peticion.modo, datos, peticion.contexto) };
@@ -113,8 +131,12 @@ export class MockAIClient implements AIClient {
   }
 }
 
-/** VITE_AI_ENDPOINT vacío en desarrollo → MockAIClient; en producción → HttpAIClient (sin endpoint falla con aviso). */
-export const crearAIClient = (env: { VITE_AI_ENDPOINT?: string; DEV?: boolean } = import.meta.env): AIClient => {
+/**
+ * VITE_AI_MOCK=true (previews de Vercel) o VITE_AI_ENDPOINT vacío en desarrollo → MockAIClient;
+ * si no → HttpAIClient (sin endpoint falla con aviso).
+ */
+export const crearAIClient = (env: { VITE_AI_ENDPOINT?: string; VITE_AI_MOCK?: string; DEV?: boolean } = import.meta.env): AIClient => {
   const endpoint = env.VITE_AI_ENDPOINT?.trim() ?? '';
+  if (env.VITE_AI_MOCK === 'true') return new MockAIClient();
   return !endpoint && env.DEV ? new MockAIClient() : new HttpAIClient({ endpoint });
 };

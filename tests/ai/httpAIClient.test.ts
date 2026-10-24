@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AIRequest } from '../../src/application/ai/contracts';
 import {
-  crearAIClient, escucharConexion, HttpAIClient, MENSAJES_ERROR, MockAIClient, TIMEOUT_CLIENTE_MS,
+  crearAIClient, escucharConexion, HttpAIClient, MENSAJE_PAUSA, MENSAJES_ERROR, mensajeLimite, MockAIClient, TIMEOUT_CLIENTE_MS,
 } from '../../src/infrastructure/ai/HttpAIClient';
 import { crearContextoMinimo } from '../helpers/aiContexto';
 
@@ -50,6 +50,8 @@ describe('HttpAIClient', () => {
     [{ error: 'SIN_SALDO' }, 402, 'SIN_SALDO'],
     [{ error: 'LIMITE' }, 429, 'LIMITE'],
     [{ error: 'RESPUESTA_INVALIDA' }, 502, 'RESPUESTA_INVALIDA'],
+    [{ error: 'RESPUESTA_LARGA' }, 502, 'RESPUESTA_LARGA'],
+    [{ error: 'RESPUESTA_NO_VERIFICADA', mensaje: 'No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.' }, 422, 'RESPUESTA_NO_VERIFICADA'],
     [{ error: 'ENTRADA_INVALIDA' }, 400, 'ENTRADA_INVALIDA'],
     ['<html>', 504, 'PROVEEDOR_CAIDO'],
     ['<html>', 429, 'LIMITE'],
@@ -57,6 +59,11 @@ describe('HttpAIClient', () => {
     const fetch = vi.fn(async () => typeof cuerpo === 'string' ? new Response(cuerpo, { status }) : json(cuerpo, status));
     const resultado = await new HttpAIClient({ endpoint: ENDPOINT, fetch, enLinea: () => true }).enviar(peticion);
     expect(resultado).toEqual({ ok: false, error: codigo, mensaje: MENSAJES_ERROR[codigo] });
+  });
+
+  it('RESPUESTA_LARGA pide preguntar más corto; RESPUESTA_NO_VERIFICADA muestra la respuesta segura fija', () => {
+    expect(MENSAJES_ERROR.RESPUESTA_LARGA).toBe('No pude terminar la respuesta, intenta preguntarlo más corto.');
+    expect(MENSAJES_ERROR.RESPUESTA_NO_VERIFICADA).toBe('No pude verificar esos datos con seguridad. Revisa la pestaña Simulación de cuotas o pregúntame de otra forma.');
   });
 
   it('una respuesta 200 fuera del contrato → RESPUESTA_INVALIDA', async () => {
@@ -85,6 +92,11 @@ describe('MockAIClient y crearAIClient', () => {
     expect(crearAIClient({ VITE_AI_ENDPOINT: '', DEV: true })).toBeInstanceOf(MockAIClient);
     expect(crearAIClient({ VITE_AI_ENDPOINT: ENDPOINT, DEV: true })).toBeInstanceOf(HttpAIClient);
     expect(crearAIClient({ VITE_AI_ENDPOINT: '', DEV: false })).toBeInstanceOf(HttpAIClient);
+  });
+
+  it('VITE_AI_MOCK=true (previews de Vercel) usa el mock aunque haya endpoint: nunca llama al proxy real', () => {
+    expect(crearAIClient({ VITE_AI_ENDPOINT: ENDPOINT, VITE_AI_MOCK: 'true', DEV: false })).toBeInstanceOf(MockAIClient);
+    expect(crearAIClient({ VITE_AI_ENDPOINT: ENDPOINT, VITE_AI_MOCK: 'false', DEV: false })).toBeInstanceOf(HttpAIClient);
   });
 
   it('en producción sin endpoint responde PROVEEDOR_CAIDO', async () => {
@@ -116,5 +128,35 @@ describe('escucharConexion', () => {
     dejar();
     eventos.dispatchEvent(new Event('offline'));
     expect(cambios).toEqual([false, true]);
+  });
+});
+
+describe('HttpAIClient - control de gasto', () => {
+  const enviarCon = async (cuerpo: unknown, status: number) => {
+    const fetch = vi.fn(async () => json(cuerpo, status));
+    return new HttpAIClient({ endpoint: ENDPOINT, fetch, enLinea: () => true, zonaHoraria: 'America/Lima' }).enviar(peticion);
+  };
+
+  it('PAUSADO y SIN_SALDO muestran el mismo aviso de pausa; nunca se habla de saldo', async () => {
+    for (const [codigo, status] of [['PAUSADO', 503], ['SIN_SALDO', 402]] as const) {
+      const resultado = await enviarCon({ error: codigo }, status);
+      expect(resultado).toEqual({ ok: false, error: codigo, mensaje: MENSAJE_PAUSA });
+    }
+    expect(MENSAJE_PAUSA).toBe('El asistente está en pausa por mantenimiento. Vuelve a intentarlo más tarde.');
+    expect(Object.values(MENSAJES_ERROR).join(' ')).not.toMatch(/saldo/i);
+  });
+
+  it('LIMITE del proxy muestra la hora aproximada en que se libera', async () => {
+    // 22:00 UTC = 17:00 en Lima.
+    const resultado = await enviarCon({ error: 'LIMITE', mensaje: 'x', reintentarEn: '2026-10-23T22:00:00.000Z' }, 429);
+    expect(resultado).toEqual({
+      ok: false, error: 'LIMITE',
+      mensaje: 'Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato. Se libera hacia las 17:00.',
+    });
+  });
+
+  it('LIMITE sin hora (por ejemplo, el 429 de DeepSeek) muestra solo el mensaje', async () => {
+    expect(await enviarCon({ error: 'LIMITE' }, 429)).toMatchObject({ mensaje: MENSAJES_ERROR.LIMITE });
+    expect(mensajeLimite(undefined)).toBe('Llegaste al límite de consultas por ahora. Intenta de nuevo en un rato.');
   });
 });
