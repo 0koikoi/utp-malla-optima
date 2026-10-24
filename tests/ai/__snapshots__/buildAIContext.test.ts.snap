@@ -950,7 +950,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
     "creditos": {
       "aprobados": 121,
       "enCurso": 16,
-      "pendientes": 73,
+      "pendientesEnMalla": 73,
     },
     "disciplina": "Ingeniería y Arquitectura",
     "electivos": {
@@ -2172,7 +2172,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
     "creditos": {
       "aprobados": 121,
       "enCurso": 19,
-      "pendientes": 70,
+      "pendientesEnMalla": 70,
     },
     "disciplina": "Ingeniería y Arquitectura",
     "electivos": {

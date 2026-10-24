@@ -5,7 +5,7 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
   version: 1,
   perfil: {
     periodoIngreso: 'marzo', cicloActual: 7, totalCiclos: 10, disciplina: 'Ingeniería y Arquitectura',
-    creditos: { aprobados: 120, enCurso: 19, pendientes: 60 },
+    creditos: { aprobados: 120, enCurso: 19, pendientesEnMalla: 60 },
     electivos: { cubiertos: 0, minimo: 3, faltantes: 3 },
   },
   catalogo: [

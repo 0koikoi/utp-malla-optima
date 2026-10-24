@@ -443,7 +443,7 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
       creditos: {
         aprobados: sumar(conEstado('APROBADO', 'CONVALIDADO'), 'creditos'),
         enCurso: sumar(conEstado('EN_CURSO'), 'creditos'),
-        pendientes: sumar(conEstado('PENDIENTE'), 'creditos'),
+        pendientesEnMalla: sumar(conEstado('PENDIENTE'), 'creditos'),
       },
       electivos: {
         cubiertos: electivosCubiertos,

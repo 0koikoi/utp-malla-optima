@@ -112,7 +112,7 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
 
   it('calcula perfil, próximo periodo y carga', () => {
     const { perfil, proximoPeriodo, carga } = buildAIContext(store.getState());
-    expect(perfil).toMatchObject({ periodoIngreso: 'marzo', cicloActual: 7, creditos: { enCurso: 19, pendientes: 70 } });
+    expect(perfil).toMatchObject({ periodoIngreso: 'marzo', cicloActual: 7, creditos: { enCurso: 19, pendientesEnMalla: 70 } });
     expect(perfil.electivos).toEqual({ cubiertos: 0, minimo: 3, faltantes: 3 });
     expect(proximoPeriodo).toMatchObject({ id: 'ciclo-8', etiqueta: 'Ciclo 8', totalHoras: 25, totalCreditos: 21, horasExceso: 3 });
     expect(proximoPeriodo!.cursos.map((curso) => curso.codigo).sort()).toEqual([...CURSOS_OCTAVO].sort());

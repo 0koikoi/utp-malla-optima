@@ -248,7 +248,8 @@ export const AIContextSchema = z.object({
     cicloActual: z.number().int().nullable(),
     totalCiclos: z.number().int(),
     disciplina: z.string(),
-    creditos: z.object({ aprobados: z.number(), enCurso: z.number(), pendientes: z.number() }),
+    /** pendientesEnMalla: todos los cursos pendientes, incluidos todos los electivos ofrecidos (no es lo que falta para egresar). */
+    creditos: z.object({ aprobados: z.number(), enCurso: z.number(), pendientesEnMalla: z.number() }),
     electivos: z.object({ cubiertos: z.number(), minimo: z.number(), faltantes: z.number() }),
   }),
   catalogo: z.array(CursoCatalogoSchema),
