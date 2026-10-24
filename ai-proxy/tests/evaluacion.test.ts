@@ -34,8 +34,8 @@ describe('evaluación - casos', () => {
       expect(preguntas).toContain(pregunta);
     }
     expect(CASOS.filter((caso) => caso.esperado.formal)).toHaveLength(3);
-    // Los 38 casos de la primera evaluación se mantienen; se agregaron 4, luego 1 (pago único) y luego 1 (trika con jalado).
-    expect(CASOS).toHaveLength(44);
+    // Los 38 casos de la primera evaluación se mantienen; se agregaron 4, luego 1 (pago único), 1 (trika con jalado) y 1 (1000 tras 800).
+    expect(CASOS).toHaveLength(45);
     expect(CASOS.find((caso) => caso.id === 'bika-inteligencia')).toMatchObject({ fixture: 'contexto-plan1-jalado' });
     expect(CASOS.filter((caso) => caso.esperado.montosFalsos)).toHaveLength(2);
   });
@@ -157,6 +157,36 @@ describe('evaluación - chequeos', () => {
     expect(conJalado('Tu Ciclo 8 suma 25 h y cuesta S/ 931.43 al mes.')).toEqual(['MAYOR:numero-sin-fuente']);
     expect(fallosDe('Te faltan 79 créditos para egresar.', { creditosFaltantes: true })).toEqual([]);
     expect(fallosDe('Te faltan 70 créditos pendientes.', { creditosFaltantes: true })).toEqual(['MAYOR:creditos-faltantes']);
+  });
+
+  it('MAYOR presupuesto-mezclado: con el monto del alumno, otro presupuesto (el del plan o uno anterior) no va', () => {
+    const con = (mensajes: string[]) => aplicarMontoDelAlumno(plan1, mensajes.at(-1)!);
+    const fallos = (texto: string, mensajes: string[]) => chequear({ modo: 'chat', contexto: con(mensajes), mensajes, esperado: {}, respuesta: chat(texto), presupuestoDelPlan: 900 })
+      .map((fallo) => `${fallo.severidad}:${fallo.chequeo}`);
+    // Frase real de la corrida 2006 (montos-800 #2): con 800 aplicado, "S/ 900" ya no está en el contexto (y el filtro regenera).
+    expect(fallos('Con S/ 800 al mes no te alcanza: te faltan S/ 84.86 con Interbank, y tu presupuesto de S/ 900 sí alcanza.', ['¿me alcanza con 800 al mes?']))
+      .toEqual(['CRITICO:monto-inexistente', 'MAYOR:presupuesto-mezclado']);
+    expect(fallos('Con S/ 800 al mes no te alcanza: te faltan S/ 84.86 con Interbank.', ['¿me alcanza con 800 al mes?'])).toEqual([]);
+    expect(fallos('Con S/ 1,000 sí te alcanza: te sobran S/ 68.57 sin descuento, no como con 800.', ['¿me alcanza con 800?', 'y con 1000 al mes?']))
+      .toEqual(['MAYOR:presupuesto-mezclado']);
+    expect(fallos('Con S/ 1,000 sí te alcanza: te sobran S/ 68.57 sin descuento.', ['¿me alcanza con 800?', 'y con 1000 al mes?'])).toEqual([]);
+  });
+
+  it('MAYOR nombre-interno y chat-largo de 100 palabras en bika y trika', () => {
+    expect(fallosDe('Según CONTEXTO.derivados.horasSinCadaCurso quedas en 23 h.')).toEqual(['MAYOR:nombre-interno']);
+    expect(fallosDe('Tienes razón, me confundí. CÁLCULO II está aprobado.', {}, ['¿convalidé cálculo II?'])).toEqual(['MAYOR:nombre-interno']);
+    expect(fallosDe(Array(90).fill('palabra').join(' '), {}, ['hice trika en cálculo'])).toEqual([]);
+    expect(fallosDe(Array(101).fill('palabra').join(' '), {}, ['hice bika en cálculo'])).toEqual(['MENOR:chat-largo']);
+  });
+
+  it('repite-carga acepta las cifras de proximoPeriodoConJalados si la pregunta nombra el jalado', () => {
+    const jalado = leerFixture('contexto-plan1-jalado');
+    const fallos = (texto: string, mensaje: string) => chequear({ modo: 'chat', contexto: jalado, mensajes: [mensaje], esperado: {}, respuesta: chat(texto) })
+      .map((fallo) => `${fallo.severidad}:${fallo.chequeo}`);
+    // Frase real de la corrida 2006 (jalado-postergar #2).
+    expect(fallos('No, no puedes dejarlo. Su ventana es el Ciclo 8. Si lo sumas, el periodo sube a 29 h.', '¿puedo dejar herramientas de desarrollo para el ciclo 10?')).toEqual([]);
+    expect(fallos('Su ventana es el Ciclo 8. Tu Ciclo 8 suma 25 h.', '¿puedo dejar herramientas de desarrollo para el ciclo 10?')).toEqual(['MENOR:repite-carga']);
+    expect(fallos('Hoy no puedo con eso. Tu Ciclo 8 subiría a 29 h.', 'hazme mi tarea')).toEqual(['MENOR:repite-carga']);
   });
 
   it('CRÍTICO pago-unico-mensual: el pago único junto a "al mes", "mensual", "cuota" o "te alcanza al mes"', () => {

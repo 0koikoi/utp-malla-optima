@@ -114,6 +114,7 @@ export const evaluar = async (opciones: OpcionesEvaluacion): Promise<ResultadoEv
             : chequear({
           // Lo mismo que ve el modelo: el monto del último mensaje como presupuesto (llamarConVerificacion).
           modo: caso.modo, contexto: caso.modo === 'chat' ? aplicarMontoDelAlumno(contexto, caso.mensajes.at(-1) ?? '') : contexto, mensajes: caso.mensajes, esperado: caso.esperado,
+          presupuestoDelPlan: contexto.financiero?.presupuestoMensual ?? null,
           respuesta: llamada.respuesta, codigosCrudos: codigosCrudos(llamada.crudo),
         });
       filas.push({ numero, ms, costoUsd, uso: llamada.uso, intentos: llamada.intentos, error: llamada.error, respuesta: llamada.respuesta, crudo: llamada.crudo, detalle: llamada.detalle ?? [], verificacion: llamada.verificacion ?? null, chequeosFiltro: llamada.chequeosFiltro ?? [], fallos });

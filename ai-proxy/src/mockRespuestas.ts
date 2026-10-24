@@ -204,7 +204,7 @@ const detectarTema = (texto: string): Tema => {
   if (/cachimbo|primer ciclo/.test(t)) return 'cachimbo';
   if (/convalid|\baprobe\b|ya (lo )?lleve|ya (lo )?aprobe/.test(t)) return 'estadoCurso';
   if (/creditos? (me )?faltan|faltan .*creditos|creditos .*egresar/.test(t)) return 'creditos';
-  if (/presupuesto|alcanza|cuesta|costo|pagar|pago|cuota|precio|pension|descuento|plata|dinero|matricula|\bbcp\b|bbva|interbank|scotiabank|llegar a \d/.test(t)) return 'financiero';
+  if (/presupuesto|alcanza|cuesta|costo|pagar|pago|cuota|precio|pension|descuento|plata|dinero|matricula|\bbcp\b|bbva|interbank|scotiabank|llegar a \d|al mes|soles|mensual/.test(t)) return 'financiero';
   if (/jal|desaprueb|repruebo/.test(t)) return 'whatIf';
   if (/sobrecarg|carga|cargo|horas|pesado|cansad|chamba|trabaj/.test(t)) return 'carga';
   if (/electivo/.test(t)) return 'electivos';

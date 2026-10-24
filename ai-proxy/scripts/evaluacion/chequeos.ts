@@ -1,6 +1,7 @@
 import { errorSecciones, type AIContext, type AIRespuesta } from '../../src/contracts.js';
+import { montoDelMensaje } from '../../src/presupuesto.js';
 import {
-  atributosDeCursos, atributosIncorrectos, cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
+  atributosDeCursos, atributosIncorrectos, cerca, hablaACorreccion, nombresInternos, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
 } from '../../src/verificacion.js';
 
 // Los chequeos de datos son los mismos del filtro de salida del proxy (src/verificacion.ts).
@@ -137,10 +138,19 @@ export interface EntradaChequeo {
   respuesta: AIRespuesta | null;
   /** Códigos de curso que la respuesta traía antes de filtrarlos (si se conocen). */
   codigosCrudos?: string[];
+  /** Presupuesto del plan antes de aplicar el monto del alumno (para presupuesto-mezclado). */
+  presupuestoDelPlan?: number | null;
 }
 
+/** "900", "S/ 900", "S/ 900.00" o "1,000" como número suelto en el texto. */
+const mencionaMonto = (t: string, monto: number) => {
+  const entero = Math.trunc(monto);
+  const formas = [String(entero), entero.toLocaleString('en-US')].map((forma) => forma.replace(/,/g, ','));
+  return formas.some((forma) => new RegExp(`(?<![\\d,.])${forma}(?:\\.00)?(?![\\d,]|\\.\\d)`).test(t));
+};
+
 /** Todos los chequeos de una respuesta. Devuelve solo los que fallaron. */
-export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigosCrudos = [] }: EntradaChequeo): Fallo[] => {
+export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigosCrudos = [], presupuestoDelPlan = null }: EntradaChequeo): Fallo[] => {
   const fallos: Fallo[] = [];
   const fallar = (severidad: Severidad, chequeo: string, detalle: string) => fallos.push({ severidad, chequeo, detalle });
 
@@ -196,6 +206,19 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
   const falsos = (esperado.montosFalsos ?? []).filter((falso) => montosEn(texto).some((monto) => cerca(monto, falso)) || texto.includes(falso.toFixed(2)));
   if (falsos.length) fallar('CRITICO', 'usa-contexto-falso', `Usa montos del contexto falso: ${falsos.join(', ')}.`);
   if (esperado.jalado && POSTERGA.test(t)) fallar('CRITICO', 'posterga-jalado', 'Sugiere postergar un curso jalado.');
+
+  // MAYOR: presupuesto mezclado (el del plan o uno anterior del alumno) y nombres internos.
+  if (contexto.financiero?.presupuestoFuente === 'mensaje') {
+    const actual = contexto.financiero.presupuestoMensual;
+    const otros = [presupuestoDelPlan, ...mensajes.slice(0, -1).map(montoDelMensaje)]
+      .filter((monto): monto is number => monto !== null && monto !== actual);
+    const mezclados = [...new Set(otros)].filter((monto) => mencionaMonto(texto, monto));
+    if (mezclados.length) fallar('MAYOR', 'presupuesto-mezclado', `Menciona otro presupuesto (${mezclados.join(', ')}) además del que escribió el alumno (${actual}).`);
+  }
+  const internos = nombresInternos(texto, contexto);
+  if (internos.length || hablaACorreccion(respuesta, mensajes)) {
+    fallar('MAYOR', 'nombre-interno', internos.length ? `Nombres internos: ${internos.join(', ')}.` : 'Le habla a una corrección que el alumno no hizo.');
+  }
 
   // MAYOR.
   if (esperado.ventana && !esperado.ventana.some((periodo) => t.includes(normalizar(periodo)))) {
@@ -264,11 +287,16 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
     const acciones = texto.split('\n').filter((linea) => /^\s*([•\-*]|\d+[.)])\s+/.test(linea)).length;
     if (acciones > 3) fallar('MENOR', 'mas-de-3-acciones', `${acciones} acciones.`);
     if (texto.length > 900) fallar('MENOR', 'respuesta-larga', `${texto.length} caracteres (máximo 900).`);
+    // Regla 8: hasta 100 palabras en bika y trika.
+    const maximo = /\b(bika|trika)\b/.test(normalizar(alumno)) ? 100 : 80;
     const total = palabras(texto);
-    if (total > 80) fallar('MENOR', 'chat-largo', `${total} palabras (máximo 80).`);
+    if (total > maximo) fallar('MENOR', 'chat-largo', `${total} palabras (máximo ${maximo}).`);
     // La carga del próximo periodo: sus cifras (horas, nivel, número de cursos) o mencionarla / ofrecer revisarla.
     // "Lleva menos carga" es un consejo: con ALUMNO_CUENTA se permite si no cita cifras; la presentación también.
-    const horasCarga = [contexto.carga.horas, contexto.derivados.proximoPeriodoConJalados?.horas].filter((n): n is number => n !== undefined);
+    // Si la pregunta nombra un curso jalado, las cifras de proximoPeriodoConJalados son las de la regla 3.
+    const conJalados = contexto.derivados.proximoPeriodoConJalados;
+    const nombraJalado = contexto.jalados.some((jalado) => normalizar(alumno).includes(normalizar(jalado.nombre)) || alumno.includes(jalado.codigo));
+    const horasCarga = [contexto.carga.horas, ...(conJalados && !nombraJalado ? [conJalados.horas] : [])];
     const citaCifras = horasCarga.some((n) => new RegExp(`\\b${n} ?(h|horas)\\b`).test(t)) || /nivel de carga|\bnivel (de )?(riesgo|atencion)\b|carga (en|de) riesgo/.test(t)
       || (contexto.proximoPeriodo ? new RegExp(`\\b${contexto.proximoPeriodo.cursos.length} cursos\\b`).test(t) : false);
     const mencionaCarga = /tu carga|carga (del|de tu|de este|de ese|esta|es)\b|sobrecarg/.test(t);

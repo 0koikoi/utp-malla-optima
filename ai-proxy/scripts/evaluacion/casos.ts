@@ -28,7 +28,22 @@ export const CASOS: Caso[] = [
   { id: 'contrato-analisis-jalado', grupo: 'Contrato', fixture: 'contexto-plan1-jalado', modo: 'analisis', mensajes: [], esperado: { jalado: true, ventana: ['Ciclo 8'] } },
 
   // Montos
-  { id: 'montos-800', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿me alcanza con 800 al mes?'], esperado: {} },
+  // Con 800 (aplicarMontoDelAlumno): faltan 131.43 sin descuento, 84.86 con Interbank y 108.14 con BCP. Sin "900" (presupuesto-mezclado).
+  {
+    id: 'montos-800', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿me alcanza con 800 al mes?'],
+    esperado: {
+      montos: [131.43, 84.86, 108.14],
+      menciona: [{ patron: /no (te )?alcanza|no cubre|no te da|te falta/, severidad: 'MAYOR', detalle: 'No dice que con S/ 800 no alcanza.' }],
+    },
+  },
+  // El último monto manda: con 1000 sobran 68.57 sin descuento, 115.14 con Interbank y 91.86 con BCP; sin "800" ni "900".
+  {
+    id: 'montos-1000-tras-800', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿me alcanza con 800?', 'y con 1000 al mes?'],
+    esperado: {
+      montos: [68.57, 115.14, 91.86],
+      menciona: [{ patron: /(si )?(te )?alcanza|te sobra|cubre/, severidad: 'MAYOR', detalle: 'No dice que con S/ 1,000 sí alcanza.' }],
+    },
+  },
   { id: 'montos-pago-unico', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿cuánto pago si hago pago único?'], esperado: { montos: [4705.86] } },
   { id: 'montos-matricula', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿cuánto es la matrícula?'], esperado: { montos: [398] } },
   { id: 'montos-analisis-900', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'analisis', mensajes: [], esperado: { montos: [900] } },
