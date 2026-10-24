@@ -381,6 +381,27 @@ const respuestaPagoUnico = (contexto: AIContext): Omit<AIChatResponse, 'pregunta
   };
 };
 
+/**
+ * Regla 3 con un jalado fuera de su ventana: va primero; los demás cursos del periodo quedan bloqueados hasta
+ * agregarlo; horas y costos con el jalado incluido, de CONTEXTO.derivados.proximoPeriodoConJalados.
+ */
+const jaladoPrimero = (contexto: AIContext): Omit<AIChatResponse, 'preguntasSugeridas'> | null => {
+  const conJalados = contexto.derivados.proximoPeriodoConJalados;
+  const jalado = conJalados && contexto.jalados.find((item) => conJalados.jalados.includes(item.codigo));
+  if (!conJalados || !jalado) return null;
+  const bloqueados = contexto.derivados.planificadosBloqueadosPorJalado;
+  const sinDescuento = conJalados.escenarios.find((escenario) => escenario.id === 'sin_descuento');
+  const sobre = conJalados.superaTopeEscala && contexto.carga.topeEscala !== null
+    ? `, ${horas(conJalados.horasSobreTopeEscala)} sobre el tope de ${horas(contexto.carga.topeEscala)}` : '';
+  return {
+    texto: `Primero va ${jalado.nombre} (${jalado.codigo}), que está jalado: tiene que ir ${enVentana(jalado.ventana)}.` +
+      (bloqueados.length ? ` Hasta que lo agregues, los otros ${bloqueados.length} cursos de ese periodo quedan bloqueados.` : '') +
+      `\nCon él, el ${periodo(conJalados.periodoId)} sumaría ${horas(conJalados.horas)}${sobre}` +
+      `${sinDescuento ? ` y la cuota sin descuento sería ${soles(sinDescuento.cuotaMensual)}` : ''}. Te conviene llevar menos cursos ese periodo.`,
+    cursos: [jalado.codigo, ...bloqueados.slice(0, 3).map((curso) => curso.codigo)],
+  };
+};
+
 /** Método de pago nombrado en la pregunta ("con BCP", "con pago único"), o null. */
 const metodoMencionado = (pregunta: string) => {
   const t = normalizar(pregunta);
@@ -495,6 +516,8 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
           cursos: resumen.cursos, preguntasSugeridas: ['¿Estoy sobrecargado?', '¿Me alcanza mi presupuesto?'],
         };
       }
+      const conJalado = jaladoPrimero(contexto);
+      if (conJalado) return { ...conJalado, preguntasSugeridas: otras('sobrecargado') };
       const respuesta = desdeSeccion(seccionCarga(contexto), otras('sobrecargado'));
       const primero = contexto.jalados[0];
       // Regla 3: con un jalado, ese curso va primero.

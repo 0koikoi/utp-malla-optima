@@ -6,6 +6,8 @@ import { parseUTPExcel } from '../../src/adapters/utpExcelAdapter';
 import { AIContextSchema } from '../../src/application/ai/contracts';
 import { buildAIContext, calcularCarga } from '../../src/application/ai/buildAIContext';
 import { crearPeriodoRegular } from '../../src/domain/rules/academicPeriodRules';
+import { UniversityFinancialRulesProvider } from '../../src/financial/rules/UniversityFinancialRulesProvider';
+import { FinancialPlanningService } from '../../src/financial/services/FinancialPlanningService';
 import { FinancialConfigurationProvider } from '../../src/infrastructure/configuration/FinancialConfigurationProvider';
 import { createAcademicStore } from '../../src/store/createAcademicStore';
 import { crearRepositoriosEnMemoria } from '../helpers/memoryRepositories';
@@ -72,6 +74,33 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(derivados.cursosProximoPeriodo.map((curso) => curso.codigo)).toEqual(CURSOS_OCTAVO);
     expect(derivados.cursosProximoPeriodo[0]).toMatchObject({ creditos: 3, horas: 4, estado: 'PENDIENTE', jalado: false, sePuedeMover: true, bloquearia: [] });
     expect(buildAIContext(store.getState()).derivados.presupuesto).toBeNull();
+  });
+
+  it('derivados: el próximo periodo con el jalado fuera de su ventana, con el mismo motor, y los planificados que bloquea', async () => {
+    expect(buildAIContext(store.getState()).derivados).toMatchObject({ proximoPeriodoConJalados: null, planificadosBloqueadosPorJalado: [] });
+    expect(await store.getState().marcarComoJalado('100000S61T')).not.toBeNull();
+    const { derivados, jalados } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
+    expect(jalados).toMatchObject([{ codigo: '100000S61T', ventana: ['ciclo-8'], enVentana: false }]);
+    const conJalados = derivados.proximoPeriodoConJalados!;
+    // 25 h + 4 h de HERRAMIENTAS DE DESARROLLO; 21 + 3 créditos.
+    expect(conJalados).toMatchObject({
+      periodoId: 'ciclo-8', jalados: ['100000S61T'], horas: 29, creditos: 24,
+      superaTopeEscala: true, horasSobreTopeEscala: 7, superaRecomendadas: true, horasSobreRecomendadas: 5,
+    });
+    // Mismo motor que la Simulación de cuotas con el jalado en el Ciclo 8.
+    const service = new FinancialPlanningService(new UniversityFinancialRulesProvider());
+    const conElJalado = store.getState().cursos.map((curso) => curso.codigo === '100000S61T'
+      ? { ...curso, ciclo: 8, tipoPeriodo: 'REGULAR' as const, ubicacion: 'periodo' as const } : curso);
+    const sinDescuento = service.calcular(conElJalado, store.getState().tarifario!, store.getState().disciplinaActiva, { metodoPago: 'sin_descuento', cicloActual: 7 })
+      .periodos.find((periodo) => periodo.id === 'ciclo-8')!.resumen;
+    expect(conJalados.escenarios[0]).toEqual({
+      id: 'sin_descuento', nombre: 'Sin descuento', cuotaMensual: sinDescuento.montoPorCuota, total: sinDescuento.costoTotalCiclo,
+      diferenciaMes: Math.round((900 - sinDescuento.montoPorCuota) * 100) / 100,
+    });
+    expect(conJalados.escenarios.map((escenario) => escenario.id)).toEqual(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']);
+    expect(conJalados.pagoUnico).toMatchObject({ matricula: 398, comparacion: 'comparación referencial' });
+    // planificadosSinJalado: los 7 cursos del Ciclo 8 quedan bloqueados hasta agregar el jalado.
+    expect(derivados.planificadosBloqueadosPorJalado.map((curso) => curso.codigo)).toEqual(CURSOS_OCTAVO);
   });
 
   it('derivados: un curso que es prerrequisito de otro planificado después no se puede mover', async () => {

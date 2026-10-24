@@ -1362,6 +1362,8 @@
         "sePuedeMover": true,
         "bloquearia": []
       }
-    ]
+    ],
+    "proximoPeriodoConJalados": null,
+    "planificadosBloqueadosPorJalado": []
   }
 }

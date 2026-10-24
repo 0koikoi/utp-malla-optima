@@ -137,6 +137,11 @@ describe('mocks - tono del asesor', () => {
     const { texto, cursos } = mockChat(contextoJalado, '¿qué llevo el próximo ciclo?');
     expect(texto).toMatch(/^Primero va HERRAMIENTAS DE DESARROLLO \(100000S61T\)/);
     expect(cursos[0]).toBe('100000S61T');
+    // Bloqueo y cifras con el jalado incluido (derivados.proximoPeriodoConJalados): 29 h, 7 h sobre el tope.
+    expect(texto).toContain('los otros 7 cursos de ese periodo quedan bloqueados');
+    expect(texto).toContain('sumaría 29 h, 7 h sobre el tope de 22 h');
+    expect(texto).not.toContain('25 h');
+    verificarDatos(contextoJalado, texto);
   });
 
   it('foco en un ciclo: "¿cuánto me cuesta este ciclo?" usa los escenarios de ese ciclo', () => {

@@ -61,6 +61,8 @@ export const crearContextoMinimo = (cambios: Partial<AIContext> = {}): AIContext
       codigo: '100000I62N', nombre: 'INTELIGENCIA DE NEGOCIOS', creditos: 4, horas: 4, estado: 'PENDIENTE',
       jalado: false, sePuedeMover: true, bloquearia: [],
     }],
+    proximoPeriodoConJalados: null,
+    planificadosBloqueadosPorJalado: [],
   },
   ...cambios,
 });

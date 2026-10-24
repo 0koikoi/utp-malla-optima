@@ -5,7 +5,9 @@ import electivosAreas from '../../data/universidades/pe-utp/electivosAreas.json'
 import { ACADEMIC_LIMITS } from '../../config/academicLimits';
 import { obtenerPeriodoCurso } from '../../domain/rules/academicPeriodRules';
 import { periodoBloqueadoPorCicloActual } from '../../domain/rules/academicContextRules';
-import { esCursoJalado, estaEnVentana, nombrePeriodoCorto, ventanaDesdeCiclo, ventanaJalado } from '../../domain/rules/jaladoRules';
+import {
+  esCursoJalado, estaEnVentana, jaladosFaltantes, nombrePeriodoCorto, planificadosSinJalado, ventanaDesdeCiclo, ventanaJalado,
+} from '../../domain/rules/jaladoRules';
 import { calcularHorasEfectivas, MINIMO_CREDITOS_ELECTIVOS, obtenerHorasSinRecargo } from '../../domain/rules/planningRules';
 import { calcularPrioridadesPendientes } from '../../domain/services/recommendationService';
 import { simularJalado } from '../../domain/services/whatIfService';
@@ -282,7 +284,7 @@ export const calcularDerivados = (
   cursos: Curso[], carga: AICarga, escenarios: AIEscenarioPeriodo[], presupuesto: number | null,
   cursosProximos: Curso[], whatIfProximos: Omit<AIWhatIf, 'origen'>[], ciclosRestantes: number,
   pensionAlInicio: number | null = null, tipoProximo: PeriodoAcademico['tipo'] = 'REGULAR',
-): AIDerivados => {
+): Omit<AIDerivados, 'proximoPeriodoConJalados' | 'planificadosBloqueadosPorJalado'> => {
   const tope = carga.topeEscala;
   const obligatorios = cursos.filter((curso) => curso.tipo === 'OBLIGATORIO');
   const electivosAprobados = sumar(cursos.filter((curso) => curso.tipo === 'ELECTIVO' && COMPLETADOS.has(curso.estado)), 'creditos');
@@ -348,6 +350,45 @@ export const calcularDerivados = (
         bloquearia,
       };
     }),
+  };
+};
+
+/**
+ * derivados.proximoPeriodoConJalados: los jalados fuera de su ventana cuya ventana incluye el próximo periodo, puestos
+ * en él; horas, créditos, topes y costos con el mismo motor (calcularHorasEfectivas, FinancialPlanningService).
+ */
+const proximoPeriodoConJalados = (
+  estado: EstadoContextoIA, siguiente: { periodo: PeriodoAcademico; cursos: Curso[] } | undefined,
+  topeEscala: number | null, entorno: EntornoFinanciero | null,
+): AIDerivados['proximoPeriodoConJalados'] => {
+  if (!siguiente) return null;
+  const contexto = { cicloActual: estado.cicloActual, periodoIngreso: estado.periodoIngreso };
+  const agregar = jaladosFaltantes(estado.cursos, contexto)
+    .filter((jalado) => ventanaJalado(jalado, estado.cursos, contexto).some((periodo) => periodo.id === siguiente.periodo.id));
+  if (!agregar.length) return null;
+  const codigos = new Set(agregar.map((jalado) => jalado.codigo));
+  const { periodo } = siguiente;
+  const cursos = estado.cursos.map((curso) => codigos.has(curso.codigo)
+    ? { ...curso, ciclo: periodo.cicloReferencia, tipoPeriodo: periodo.tipo, ubicacion: 'periodo' as const } : curso);
+  const enPeriodo = [...siguiente.cursos, ...cursos.filter((curso) => codigos.has(curso.codigo))];
+  const horas = r2(calcularHorasEfectivas(enPeriodo, periodo.tipo));
+  const recomendadas = ACADEMIC_LIMITS.horasRecomendadasPeriodo;
+  const conJalados = entorno ? { ...entorno, estado: { ...estado, cursos } } : null;
+  const escenarios = conJalados ? escenariosPeriodo(periodo.id, conJalados) : [];
+  return {
+    periodoId: periodo.id,
+    jalados: agregar.map((jalado) => jalado.codigo),
+    horas,
+    creditos: sumar(enPeriodo, 'creditos'),
+    superaTopeEscala: topeEscala === null ? null : horas > topeEscala,
+    horasSobreTopeEscala: topeEscala === null ? 0 : positivo(horas - topeEscala),
+    superaRecomendadas: horas > recomendadas,
+    horasSobreRecomendadas: positivo(horas - recomendadas),
+    escenarios: escenarios.flatMap((escenario) => escenario.cuotaMensual === null || escenario.id === 'pago_unico' ? [] : [{
+      id: escenario.id, nombre: escenario.nombre, cuotaMensual: escenario.cuotaMensual, total: escenario.total,
+      diferenciaMes: conJalados?.presupuesto === null || !conJalados ? null : r2(conJalados.presupuesto - escenario.cuotaMensual),
+    }]),
+    pagoUnico: conJalados ? pagoUnicoDe(escenarios, conJalados.presupuesto, pensionPagoUnico(periodo.id, conJalados)) : null,
   };
 };
 
@@ -458,9 +499,16 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     })),
     limites: { ...ACADEMIC_LIMITS, topeEscalaPension: topeEscala },
     foco: construirFoco(opciones.foco, estado, prioridades, topeEscala, entorno),
-    derivados: calcularDerivados(
-      cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
-      siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null, siguiente?.periodo.tipo,
-    ),
+    derivados: {
+      ...calcularDerivados(
+        cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
+        siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null, siguiente?.periodo.tipo,
+      ),
+      proximoPeriodoConJalados: proximoPeriodoConJalados(estado, siguiente, topeEscala, entorno),
+      // La misma regla que la app: planificados que un jalado fuera de su ventana deja inválidos.
+      planificadosBloqueadosPorJalado: siguiente
+        ? planificadosSinJalado(cursos, contextoJalados).filter((curso) => siguiente.cursos.some((item) => item.codigo === curso.codigo))
+        : [],
+    },
   };
 };

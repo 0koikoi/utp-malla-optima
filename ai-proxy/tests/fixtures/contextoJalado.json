@@ -1175,6 +1175,79 @@
     "sePuedeMover": true,
     "bloquearia": []
    }
+  ],
+  "proximoPeriodoConJalados": {
+   "periodoId": "ciclo-8",
+   "jalados": [
+    "100000S61T"
+   ],
+   "horas": 29,
+   "creditos": 24,
+   "superaTopeEscala": true,
+   "horasSobreTopeEscala": 7,
+   "superaRecomendadas": true,
+   "horasSobreRecomendadas": 5,
+   "escenarios": [
+    {
+     "id": "sin_descuento",
+     "nombre": "Sin descuento",
+     "cuotaMensual": 1086.67,
+     "total": 5831.35,
+     "diferenciaMes": null
+    },
+    {
+     "id": "interbank_scotiabank",
+     "nombre": "Interbank / Scotiabank — pronto pago",
+     "cuotaMensual": 1032.34,
+     "total": 5559.7,
+     "diferenciaMes": null
+    },
+    {
+     "id": "bcp_bbva",
+     "nombre": "BCP / BBVA — pronto pago",
+     "cuotaMensual": 1059.5,
+     "total": 5695.5,
+     "diferenciaMes": null
+    }
+   ],
+   "pagoUnico": {
+    "pensionAlInicio": 5025.85,
+    "matricula": 398,
+    "totalCiclo": 5423.85,
+    "ahorroVsSinDescuento": 407.5,
+    "diferenciaVsPresupuestoDelCiclo": null,
+    "comparacion": null
+   }
+  },
+  "planificadosBloqueadosPorJalado": [
+   {
+    "codigo": "100000S06I",
+    "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL"
+   },
+   {
+    "codigo": "100000S72T",
+    "nombre": "GESTIÓN DEL SERVICIO TI"
+   },
+   {
+    "codigo": "100000S73T",
+    "nombre": "HERRAMIENTAS DE PROTOTIPADO"
+   },
+   {
+    "codigo": "100000H01C",
+    "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA"
+   },
+   {
+    "codigo": "100000TD09",
+    "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL"
+   },
+   {
+    "codigo": "100000I62N",
+    "nombre": "INTELIGENCIA DE NEGOCIOS"
+   },
+   {
+    "codigo": "100000S71T",
+    "nombre": "NEGOCIACIÓN Y NARRATIVA"
+   }
   ]
  }
 }

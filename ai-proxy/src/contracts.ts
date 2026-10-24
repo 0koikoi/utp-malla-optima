@@ -87,6 +87,19 @@ const PeriodoResumenSchema = z.object({
   creditos: z.number(),
 });
 
+/** Pago único: todas las pensiones juntas al inicio, con descuento. */
+const PagoUnicoSchema = z.object({
+  /** Pensión total del ciclo con el descuento, pagada al inicio. */
+  pensionAlInicio: monto,
+  matricula: monto,
+  totalCiclo: monto,
+  /** Total sin descuento - total con pago único. */
+  ahorroVsSinDescuento: monto,
+  /** Comparación referencial: presupuestoMensual × número de cuotas - pensionAlInicio; null sin presupuesto. */
+  diferenciaVsPresupuestoDelCiclo: monto.nullable(),
+  comparacion: z.literal('comparación referencial').nullable(),
+});
+
 /**
  * Restas y totales que la IA no debe hacer (D-001): todo lo que puede necesitar para responder
  * "cuánto me falta" o "cuánto me paso" ya viene calculado aquí.
@@ -120,17 +133,7 @@ const DerivadosSchema = z.object({
    * Pago único del próximo periodo: todas las pensiones juntas al inicio, con descuento. No tiene cuota mensual.
    * null si no hay próximo periodo o tarifario.
    */
-  pagoUnico: z.object({
-    /** Pensión total del ciclo con el descuento, pagada al inicio. */
-    pensionAlInicio: monto,
-    matricula: monto,
-    totalCiclo: monto,
-    /** Total sin descuento - total con pago único. */
-    ahorroVsSinDescuento: monto,
-    /** Comparación referencial: presupuestoMensual × número de cuotas - pensionAlInicio; null sin presupuesto. */
-    diferenciaVsPresupuestoDelCiclo: monto.nullable(),
-    comparacion: z.literal('comparación referencial').nullable(),
-  }).nullable(),
+  pagoUnico: PagoUnicoSchema.nullable(),
   /** Horas del próximo periodo si se quita cada curso, y si así quedaría dentro del tope de la escala (null sin tope). */
   horasSinCadaCurso: z.array(z.object({
     codigo: z.string(),
@@ -138,6 +141,35 @@ const DerivadosSchema = z.object({
     horasSinElCurso: z.number(),
     quedaBajoTopeEscala: z.boolean().nullable(),
   })),
+  /**
+   * El próximo periodo con los jalados que están fuera de su ventana y deben ir en él (D-001): horas, créditos,
+   * topes y costos calculados con el mismo motor financiero. null si no hay jalados que agregar al próximo periodo.
+   */
+  proximoPeriodoConJalados: z.object({
+    periodoId: PeriodoIdSchema,
+    /** Jalados agregados al periodo. */
+    jalados: z.array(z.string()),
+    horas: z.number(),
+    creditos: z.number(),
+    /** null sin escala de pensión. */
+    superaTopeEscala: z.boolean().nullable(),
+    horasSobreTopeEscala: z.number(),
+    superaRecomendadas: z.boolean(),
+    horasSobreRecomendadas: z.number(),
+    /** Escenarios mensuales (sin pago único): cuota y total con los jalados incluidos. */
+    escenarios: z.array(z.object({
+      id: z.enum(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']),
+      nombre: z.string(),
+      cuotaMensual: monto,
+      total: monto,
+      /** presupuesto - cuotaMensual; null sin presupuesto. */
+      diferenciaMes: monto.nullable(),
+    })),
+    /** Mismo bloque que derivados.pagoUnico, con los jalados incluidos. */
+    pagoUnico: PagoUnicoSchema.nullable(),
+  }).nullable(),
+  /** Cursos del próximo periodo que quedan bloqueados hasta que se agregue el jalado (planificadosSinJalado). */
+  planificadosBloqueadosPorJalado: z.array(z.object({ codigo: z.string(), nombre: z.string() })),
   /** Créditos de electivos que faltan aprobar para el mínimo (los electivos se cuentan en créditos, no en cursos). */
   creditosElectivosFaltantes: z.number(),
   creditos: z.object({

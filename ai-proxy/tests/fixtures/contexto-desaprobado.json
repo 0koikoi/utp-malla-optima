@@ -841,6 +841,8 @@
       "faltanSiApruebaEnCurso": 64,
       "ciclosRestantes": 3
     },
-    "cursosProximoPeriodo": []
+    "cursosProximoPeriodo": [],
+    "proximoPeriodoConJalados": null,
+    "planificadosBloqueadosPorJalado": []
   }
 }

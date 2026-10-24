@@ -740,7 +740,80 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       "pensionAlInicio": 4307.86,
       "totalCiclo": 4705.86,
     },
+    "planificadosBloqueadosPorJalado": [
+      {
+        "codigo": "100000S06I",
+        "nombre": "DISEÑO E IMPLEMENTACIÓN DE ARQUITECTURA EMPRESARIAL",
+      },
+      {
+        "codigo": "100000S72T",
+        "nombre": "GESTIÓN DEL SERVICIO TI",
+      },
+      {
+        "codigo": "100000S73T",
+        "nombre": "HERRAMIENTAS DE PROTOTIPADO",
+      },
+      {
+        "codigo": "100000H01C",
+        "nombre": "HERRAMIENTAS PARA LA COMUNICACIÓN EFECTIVA",
+      },
+      {
+        "codigo": "100000TD09",
+        "nombre": "INNOVACIÓN Y TRANSFORMACIÓN DIGITAL",
+      },
+      {
+        "codigo": "100000I62N",
+        "nombre": "INTELIGENCIA DE NEGOCIOS",
+      },
+      {
+        "codigo": "100000S71T",
+        "nombre": "NEGOCIACIÓN Y NARRATIVA",
+      },
+    ],
     "presupuesto": null,
+    "proximoPeriodoConJalados": {
+      "creditos": 24,
+      "escenarios": [
+        {
+          "cuotaMensual": 1086.67,
+          "diferenciaMes": null,
+          "id": "sin_descuento",
+          "nombre": "Sin descuento",
+          "total": 5831.35,
+        },
+        {
+          "cuotaMensual": 1032.34,
+          "diferenciaMes": null,
+          "id": "interbank_scotiabank",
+          "nombre": "Interbank / Scotiabank — pronto pago",
+          "total": 5559.7,
+        },
+        {
+          "cuotaMensual": 1059.5,
+          "diferenciaMes": null,
+          "id": "bcp_bbva",
+          "nombre": "BCP / BBVA — pronto pago",
+          "total": 5695.5,
+        },
+      ],
+      "horas": 29,
+      "horasSobreRecomendadas": 5,
+      "horasSobreTopeEscala": 7,
+      "jalados": [
+        "100000S61T",
+      ],
+      "pagoUnico": {
+        "ahorroVsSinDescuento": 407.5,
+        "comparacion": null,
+        "diferenciaVsPresupuestoDelCiclo": null,
+        "matricula": 398,
+        "pensionAlInicio": 5025.85,
+        "totalCiclo": 5423.85,
+      },
+      "periodoId": "ciclo-8",
+      "superaRecomendadas": true,
+      "superaTopeEscala": true,
+    },
   },
   "electivos": [
     {
@@ -1970,7 +2043,9 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       "pensionAlInicio": 4307.86,
       "totalCiclo": 4705.86,
     },
+    "planificadosBloqueadosPorJalado": [],
     "presupuesto": null,
+    "proximoPeriodoConJalados": null,
   },
   "electivos": [
     {
