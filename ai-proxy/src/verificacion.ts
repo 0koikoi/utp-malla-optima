@@ -184,7 +184,7 @@ export const atributosIncorrectos = (texto: string, contexto: AIContext): Atribu
 // Filtro de salida
 // ==========================================
 
-export type ChequeoSalida = 'monto' | 'codigo' | 'atributo-curso' | 'delimitador' | 'prompt' | 'secciones';
+export type ChequeoSalida = 'monto' | 'codigo' | 'atributo-curso' | 'delimitador' | 'prompt' | 'secciones' | 'nombre-interno';
 
 export interface ProblemaSalida {
   chequeo: ChequeoSalida;
@@ -192,10 +192,47 @@ export interface ProblemaSalida {
   detalle: string;
 }
 
+/** Todas las claves de un objeto, a cualquier profundidad (los nombres de campo del contexto). */
+const clavesDe = (valor: unknown, claves = new Set<string>()): Set<string> => {
+  if (Array.isArray(valor)) for (const item of valor) clavesDe(item, claves);
+  else if (valor && typeof valor === 'object') {
+    for (const [clave, item] of Object.entries(valor)) {
+      claves.add(clave);
+      clavesDe(item, claves);
+    }
+  }
+  return claves;
+};
+
+/**
+ * Nombres internos en el texto: "CONTEXTO", "derivados", "perfil.", "proximoPeriodo" y cualquier palabra con forma de
+ * campo (camelCase o con punto) que sea una clave del contexto ("CONTEXTO.derivados.horasSinCadaCurso").
+ */
+export const nombresInternos = (texto: string, contexto: AIContext): string[] => {
+  const claves = clavesDe(contexto);
+  const encontrados = [
+    ...(texto.match(/\bCONTEXTO\b|\bderivados\b|\bperfil\.|\bproximoPeriodo\b/gi) ?? []).filter((nombre) => nombre !== 'contexto'),
+    ...(texto.match(/\b[a-z]+(?:[A-Z][a-zA-Z]*)+\b/g) ?? []).filter((palabra) => claves.has(palabra)),
+    ...(texto.match(/\b[a-zA-Z]+(?:\.[a-zA-Z]+)+\b/g) ?? []).filter((palabra) => palabra.split('.').some((parte) => claves.has(parte))),
+  ];
+  return [...new Set(encontrados)];
+};
+
+/** El alumno señaló un error: ahí "tienes razón" sí responde a algo que dijo. */
+const ALUMNO_SENALA_ERROR = /error|equivoca|\bmal\b|no es asi|incorrect|confundiste|corrige|no es cierto/;
+/** "Tienes razón, corrijo", "me confundí", "corrijo:" al inicio: le habla al mensaje de corrección, no al alumno. */
+const RESPUESTA_A_CORRECCION = /^\s*(tienes razon[,.:;]?\s*(me confundi|corrijo)|me confundi\b|corrijo\s*:)/;
+
+/** Primeras palabras visibles de la respuesta (el texto del chat o el resumen del análisis). */
+const inicioDe = (respuesta: AIRespuesta) => normalizar('texto' in respuesta ? respuesta.texto : respuesta.resumen);
+
+export const hablaACorreccion = (respuesta: AIRespuesta, mensajesAlumno: string[]): boolean =>
+  RESPUESTA_A_CORRECCION.test(inicioDe(respuesta)) && !ALUMNO_SENALA_ERROR.test(normalizar(mensajesAlumno.at(-1) ?? ''));
+
 const soles = (monto: number) => `S/ ${monto.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 
 /** Lo que el filtro exige a cada respuesta real antes de devolverla. */
-export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext): ProblemaSalida[] => {
+export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext, mensajesAlumno: string[] = []): ProblemaSalida[] => {
   const texto = textoDe(respuesta);
   const problemas: ProblemaSalida[] = [];
   if ('secciones' in respuesta) {
@@ -218,6 +255,13 @@ export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext): Pr
       detalle: `Dijiste ${item.dicho} para ${item.nombre} (${item.codigo}); en CONTEXTO: ${item.enContexto}.`,
     });
   }
+  const internos = nombresInternos(texto, contexto);
+  if (internos.length) {
+    problemas.push({ chequeo: 'nombre-interno', detalle: `Tu respuesta menciona nombres internos (${internos.join(', ')}); el alumno no los conoce.` });
+  }
+  if (hablaACorreccion(respuesta, mensajesAlumno)) {
+    problemas.push({ chequeo: 'nombre-interno', detalle: 'Tu respuesta le habla a una corrección: el alumno no señaló ningún error.' });
+  }
   if (DELIMITADORES.some((delimitador) => texto.includes(delimitador))) {
     problemas.push({ chequeo: 'delimitador', detalle: 'Tu respuesta incluye los delimitadores del contexto.' });
   } else if (revelaPrompt(texto)) {
@@ -228,4 +272,7 @@ export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext): Pr
 
 /** Mensaje del sistema para la única regeneración: el error concreto y la instrucción de corregir. */
 export const mensajeCorreccion = (problemas: ProblemaSalida[]) =>
-  `${[...new Set(problemas.map((problema) => problema.detalle))].join(' ')} Corrige usando solo CONTEXTO.`;
+  `${[...new Set(problemas.map((problema) => problema.detalle))].join(' ')} Corrige usando solo CONTEXTO. ${FIN_CORRECCION}`;
+
+/** Cierre del mensaje de corrección: sin él, la respuesta regenerada le contestaba a la corrección (F-036). */
+export const FIN_CORRECCION = 'Escribe de nuevo tu respuesta para el alumno, como si fuera la primera: no menciones esta corrección, ni CONTEXTO, ni nombres de campos.';

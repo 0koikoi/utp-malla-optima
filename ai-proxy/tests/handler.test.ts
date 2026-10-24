@@ -32,7 +32,8 @@ const respuestaDeepSeek = (contenido: unknown, status = 200) => new Response(JSO
   choices: [{ message: { content: typeof contenido === 'string' ? contenido : JSON.stringify(contenido) } }],
 }), { status });
 
-const otraSeccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: tipo, detalle: 'Bien.', acciones: [], cursos: [] });
+// Título visible: el tipo ("whatIf") es un nombre interno y el filtro de salida lo marca.
+const otraSeccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: `Sobre tu plan (${tipo.length})`, detalle: 'Bien.', acciones: [], cursos: [] });
 const analisisValido = {
   resumen: 'Tu plan está cargado.',
   secciones: [

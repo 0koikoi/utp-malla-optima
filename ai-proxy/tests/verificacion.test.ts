@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { MENSAJE_NO_VERIFICADA, type AIChatResponse, type AIContext, type AIRequest } from '../src/contracts.js';
+import { MENSAJE_NO_VERIFICADA, TIPOS_SECCION, type AIChatResponse, type AIContext, type AIRequest } from '../src/contracts.js';
 import { crearHandlers, leerConfig, type RegistroAsistente } from '../src/handler.js';
 import { crearLimitadorMemoria } from '../src/limites.js';
 import { SYSTEM_PROMPT } from '../src/systemPrompt.js';
 import { aplicarMontoDelAlumno } from '../src/presupuesto.js';
-import { atributosIncorrectos, mensajeCorreccion, verificarSalida } from '../src/verificacion.js';
+import { atributosIncorrectos, mensajeCorreccion, nombresInternos, verificarSalida } from '../src/verificacion.js';
 
 const plan1: AIContext = JSON.parse(readFileSync(new URL('./fixtures/contexto-plan1.json', import.meta.url), 'utf8'));
 const chat = (texto: string, cursos: string[] = []): AIChatResponse => ({ texto, cursos, preguntasSugeridas: [] });
@@ -65,8 +65,23 @@ describe('filtro de salida - delimitadores y prompt', () => {
     expect(chequeos('Según la Ley Universitaria 30220 (art. 102) desaprobar la misma materia por tercera vez lleva a una separación temporal de un año.')).toEqual([]);
   });
 
-  it('el mensaje de corrección nombra el error concreto', () => {
-    expect(mensajeCorreccion(verificarSalida(chat('Pagarías S/ 1,111.11.'), plan1))).toBe('Usaste S/ 1,111.11, que no está en CONTEXTO. Corrige usando solo CONTEXTO.');
+  it('el mensaje de corrección nombra el error concreto y pide reescribir para el alumno', () => {
+    expect(mensajeCorreccion(verificarSalida(chat('Pagarías S/ 1,111.11.'), plan1))).toBe(
+      'Usaste S/ 1,111.11, que no está en CONTEXTO. Corrige usando solo CONTEXTO. Escribe de nuevo tu respuesta para el alumno, como si fuera la primera: no menciones esta corrección, ni CONTEXTO, ni nombres de campos.',
+    );
+  });
+
+  it('nombres internos y respuestas a la corrección: las dos respuestas reales de la corrida 2006', () => {
+    const real1 = 'Tienes razón, me confundí. En tu plan, Cálculo II (100000I1N0) figura como APROBADO. ¿Quieres que revisemos qué cursos te tocan el próximo ciclo?';
+    const real2 = 'Tienes razón, corrijo: sin NEGOCIACIÓN Y NARRATIVA (100000S71T) quedarías en 23 h, según CONTEXTO.derivados.horasSinCadaCurso, y ese dato no baja del tope de 22 h de la escala. Para bajar más, sacar un curso de 4 h te deja en 21 h. ¿Te digo cuál conviene mover?';
+    expect(verificarSalida(chat(real1), plan1, ['¿convalidé cálculo II?']).map((p) => p.detalle)).toEqual(['Tu respuesta le habla a una corrección: el alumno no señaló ningún error.']);
+    expect(nombresInternos(real2, plan1)).toEqual(['CONTEXTO', 'derivados', 'horasSinCadaCurso', 'CONTEXTO.derivados.horasSinCadaCurso']);
+    expect(verificarSalida(chat(real2), plan1, ['¿estoy sobrecargado?']).map((p) => p.chequeo)).toEqual(['nombre-interno', 'nombre-interno']);
+    // Si el alumno sí señaló un error, "tienes razón" responde a lo que dijo.
+    expect(verificarSalida(chat(real1), plan1, ['te equivocaste, no lo convalidé'])).toEqual([]);
+    // Palabras comunes, "contexto" en minúscula o una clave sin forma de campo no cuentan.
+    expect(nombresInternos('En este contexto, tu plan y el total de créditos están bien.', plan1)).toEqual([]);
+    expect(nombresInternos('Mira perfil.creditos y proximoPeriodo y faltanParaEgresar.', plan1)).toEqual(['perfil.', 'proximoPeriodo', 'faltanParaEgresar', 'perfil.creditos']);
   });
 });
 
@@ -89,7 +104,8 @@ describe('filtro de salida - en el proxy', () => {
   const cuerpoDe = (fetch: ReturnType<typeof vi.fn>, llamada: number) => JSON.parse(String((fetch.mock.calls[llamada] as unknown as [string, RequestInit])[1].body));
 
   it('análisis con una sección de menos: UNA regeneración con el error concreto de las secciones', async () => {
-    const seccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: tipo, detalle: 'Bien.', acciones: [], cursos: [] });
+    // Títulos visibles (el tipo "whatIf" es un nombre interno y no va en el texto).
+    const seccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: `Sección ${TIPOS_SECCION.indexOf(tipo as never) + 1}`, detalle: 'Bien.', acciones: [], cursos: [] });
     const analisis = (tipos: string[]) => new Response(JSON.stringify({
       choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ resumen: 'Revisé tu plan.', secciones: tipos.map(seccion), preguntasSugeridas: [] }) } }],
       usage: { prompt_tokens: 100, completion_tokens: 50 },
@@ -106,7 +122,7 @@ describe('filtro de salida - en el proxy', () => {
     expect((await resultado.json()).secciones.map((item: { tipo: string }) => item.tipo)).toEqual(['carga', 'financiero', 'ruta', 'whatIf', 'electivos']);
     expect(cuerpoDe(fetch, 1).messages.at(-1)).toEqual({
       role: 'system',
-      content: 'Faltan las secciones whatIf. Incluye exactamente 5 secciones, en este orden: carga, financiero, ruta, whatIf, electivos. Corrige usando solo CONTEXTO.',
+      content: 'Faltan las secciones whatIf. Incluye exactamente 5 secciones, en este orden: carga, financiero, ruta, whatIf, electivos. Corrige usando solo CONTEXTO. Escribe de nuevo tu respuesta para el alumno, como si fuera la primera: no menciones esta corrección, ni CONTEXTO, ni nombres de campos.',
     });
     expect(registros[0]).toMatchObject({ verificacion: 'regenerada', chequeos_fallidos: ['secciones'] });
   });
@@ -145,7 +161,10 @@ describe('filtro de salida - en el proxy', () => {
     const segunda = cuerpoDe(fetch, 1);
     expect(segunda.messages.slice(0, -2)).toEqual(cuerpoDe(fetch, 0).messages);
     expect(segunda.messages.at(-2)).toMatchObject({ role: 'assistant' });
-    expect(segunda.messages.at(-1)).toEqual({ role: 'system', content: 'Usaste S/ 1,111.11, que no está en CONTEXTO. Corrige usando solo CONTEXTO.' });
+    expect(segunda.messages.at(-1)).toEqual({
+      role: 'system',
+      content: 'Usaste S/ 1,111.11, que no está en CONTEXTO. Corrige usando solo CONTEXTO. Escribe de nuevo tu respuesta para el alumno, como si fuera la primera: no menciones esta corrección, ni CONTEXTO, ni nombres de campos.',
+    });
     expect(registros[0]).toMatchObject({ codigo: 'ok', verificacion: 'regenerada', chequeos_fallidos: ['monto'] });
   });
 
