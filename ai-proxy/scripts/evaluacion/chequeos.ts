@@ -1,4 +1,4 @@
-import { TIPOS_SECCION, type AIContext, type AIRespuesta } from '../../src/contracts.js';
+import { errorSecciones, type AIContext, type AIRespuesta } from '../../src/contracts.js';
 import {
   atributosIncorrectos, cerca, codigosEn, montosEn, normalizar, numerosDe, numerosDelTexto, numerosPorClave, revelaPrompt, textoDe,
 } from '../../src/verificacion.js';
@@ -103,9 +103,9 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
     return fallos;
   }
   if (modo === 'analisis' && 'secciones' in respuesta) {
-    const tipos = new Set(respuesta.secciones.map((seccion) => seccion.tipo));
-    const faltan = TIPOS_SECCION.filter((tipo) => !tipos.has(tipo));
-    if (faltan.length) fallar('CRITICO', 'secciones', `Faltan secciones: ${faltan.join(', ')}.`);
+    // Las 5 secciones, una de cada tipo y en orden (el mismo chequeo que el filtro de salida).
+    const error = errorSecciones(respuesta.secciones.map((seccion) => seccion.tipo));
+    if (error) fallar('CRITICO', 'secciones', error);
   }
 
   const texto = textoDe(respuesta);

@@ -1,4 +1,4 @@
-import type { AIContext, AIRespuesta } from './contracts.js';
+import { errorSecciones, type AIContext, type AIRespuesta } from './contracts.js';
 import { SYSTEM_PROMPT } from './systemPrompt.js';
 
 /**
@@ -181,7 +181,7 @@ export const atributosIncorrectos = (texto: string, contexto: AIContext): Atribu
 // Filtro de salida
 // ==========================================
 
-export type ChequeoSalida = 'monto' | 'codigo' | 'atributo-curso' | 'delimitador' | 'prompt';
+export type ChequeoSalida = 'monto' | 'codigo' | 'atributo-curso' | 'delimitador' | 'prompt' | 'secciones';
 
 export interface ProblemaSalida {
   chequeo: ChequeoSalida;
@@ -202,6 +202,10 @@ export const montosDelAlumno = (mensajes: string[]): number[] =>
 export const verificarSalida = (respuesta: AIRespuesta, contexto: AIContext, mensajesAlumno: string[] = []): ProblemaSalida[] => {
   const texto = textoDe(respuesta);
   const problemas: ProblemaSalida[] = [];
+  if ('secciones' in respuesta) {
+    const error = errorSecciones(respuesta.secciones.map((seccion) => seccion.tipo));
+    if (error) problemas.push({ chequeo: 'secciones', detalle: error });
+  }
   const permitidos = [...numerosDe(contexto), ...montosDelAlumno(mensajesAlumno)];
   for (const monto of [...new Set(montosEn(texto))]) {
     if (!permitidos.some((numero) => cerca(numero, monto))) problemas.push({ chequeo: 'monto', detalle: `Usaste ${soles(monto)}, que no está en CONTEXTO.` });

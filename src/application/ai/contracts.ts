@@ -304,7 +304,8 @@ export type AIRequest = z.infer<typeof AIRequestSchema>;
 // Respuestas (lo que devuelve la IA)
 // ==========================================
 
-export const TIPOS_SECCION = ['financiero', 'carga', 'ruta', 'whatIf', 'electivos'] as const;
+/** Las 5 secciones del análisis, en el orden obligatorio. */
+export const TIPOS_SECCION = ['carga', 'financiero', 'ruta', 'whatIf', 'electivos'] as const;
 
 export const AISeccionSchema = z.object({
   tipo: z.enum(TIPOS_SECCION),
@@ -316,12 +317,21 @@ export const AISeccionSchema = z.object({
 });
 export type AISeccion = z.infer<typeof AISeccionSchema>;
 
+const seccionDe = <T extends typeof TIPOS_SECCION[number]>(tipo: T) => AISeccionSchema.extend({ tipo: z.literal(tipo) });
+
+/** Contrato del análisis: exactamente 5 secciones, una de cada tipo, en el orden de TIPOS_SECCION. */
 export const AIAnalisisResponseSchema = z.object({
   resumen: z.string(),
-  secciones: z.array(AISeccionSchema),
+  secciones: z.tuple([seccionDe('carga'), seccionDe('financiero'), seccionDe('ruta'), seccionDe('whatIf'), seccionDe('electivos')]),
   preguntasSugeridas: z.array(z.string()).max(MAX_PREGUNTAS),
 });
-export type AIAnalisisResponse = z.infer<typeof AIAnalisisResponseSchema>;
+
+/**
+ * La misma forma con las secciones en cualquier cantidad u orden. Solo la usa el proxy al leer la respuesta del
+ * modelo, para que el filtro de salida pida corregir las secciones con el error concreto.
+ */
+export const AIAnalisisLibreSchema = AIAnalisisResponseSchema.extend({ secciones: z.array(AISeccionSchema) });
+export type AIAnalisisResponse = z.infer<typeof AIAnalisisLibreSchema>;
 
 export const AIChatResponseSchema = z.object({
   texto: z.string(),
@@ -368,14 +378,30 @@ export const codigosDelContexto = (contexto: AIContext): Set<string> =>
 
 const filtrar = (codigos: string[], validos: Set<string>) => [...new Set(codigos.filter((codigo) => validos.has(codigo)))];
 
-/** Valida la respuesta del modo y descarta los códigos de curso que no existan en el contexto. */
-export function parsearRespuesta(modo: 'analisis', datos: unknown, contexto: AIContext): AIAnalisisResponse;
-export function parsearRespuesta(modo: 'chat', datos: unknown, contexto: AIContext): AIChatResponse;
-export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext): AIRespuesta;
-export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext): AIRespuesta {
+/** "Faltan las secciones whatIf.", etc.; null si son exactamente las 5, una de cada tipo, en orden. */
+export const errorSecciones = (tipos: string[]): string | null => {
+  if (tipos.length === TIPOS_SECCION.length && tipos.every((tipo, indice) => tipo === TIPOS_SECCION[indice])) return null;
+  const faltan = TIPOS_SECCION.filter((tipo) => !tipos.includes(tipo));
+  const sobran = tipos.filter((tipo, indice) => tipos.indexOf(tipo) !== indice || !(TIPOS_SECCION as readonly string[]).includes(tipo));
+  const partes = [
+    ...(faltan.length ? [`Faltan las secciones ${faltan.join(', ')}.`] : []),
+    ...(sobran.length ? [`Sobran las secciones ${[...new Set(sobran)].join(', ')}.`] : []),
+    ...(!faltan.length && !sobran.length ? ['Las secciones no están en el orden pedido.'] : []),
+  ];
+  return `${partes.join(' ')} Incluye exactamente 5 secciones, en este orden: ${TIPOS_SECCION.join(', ')}.`;
+};
+
+/**
+ * Valida la respuesta del modo y descarta los códigos de curso que no existan en el contexto.
+ * `seccionesLibres` (solo el proxy) acepta un análisis con otras secciones para que el filtro lo corrija.
+ */
+export function parsearRespuesta(modo: 'analisis', datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIAnalisisResponse;
+export function parsearRespuesta(modo: 'chat', datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIChatResponse;
+export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext, seccionesLibres?: boolean): AIRespuesta;
+export function parsearRespuesta(modo: AIRequest['modo'], datos: unknown, contexto: AIContext, seccionesLibres = false): AIRespuesta {
   const validos = codigosDelContexto(contexto);
   if (modo === 'analisis') {
-    const respuesta = AIAnalisisResponseSchema.parse(datos);
+    const respuesta: AIAnalisisResponse = (seccionesLibres ? AIAnalisisLibreSchema : AIAnalisisResponseSchema).parse(datos);
     return {
       ...respuesta,
       secciones: respuesta.secciones.map((seccion) => ({ ...seccion, cursos: filtrar(seccion.cursos, validos) })),

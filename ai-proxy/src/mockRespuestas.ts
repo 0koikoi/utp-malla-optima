@@ -164,9 +164,15 @@ const seccionElectivos = (contexto: AIContext): AISeccion => {
   };
 };
 
+/** Sección de reemplazo cuando no hay datos: el contrato exige las 5 secciones. */
+const sinDatosDe = (tipo: 'financiero' | 'whatIf'): AISeccion => tipo === 'financiero'
+  ? { tipo, nivel: 'atencion', titulo: 'Costo del próximo periodo', detalle: 'Planifica tus cursos del próximo periodo para ver su costo.', acciones: ['Ubica tus cursos en un ciclo.'], cursos: [] }
+  : { tipo, nivel: 'ok', titulo: 'Si jalas un curso', detalle: 'Ningún curso actual bloquea a otros si lo jalas.', acciones: [], cursos: [] };
+
 export const mockAnalisis = (contexto: AIContext): AIAnalisisResponse => {
-  const secciones = [seccionFinanciera(contexto), seccionCarga(contexto), seccionRuta(contexto),
-    seccionWhatIf(contexto), seccionElectivos(contexto)].filter((seccion): seccion is AISeccion => seccion !== null);
+  // Orden del contrato: carga, financiero, ruta, whatIf, electivos.
+  const secciones = [seccionCarga(contexto), seccionFinanciera(contexto) ?? sinDatosDe('financiero'), seccionRuta(contexto),
+    seccionWhatIf(contexto) ?? sinDatosDe('whatIf'), seccionElectivos(contexto)];
   const riesgos = secciones.filter((seccion) => seccion.nivel === 'riesgo').map((seccion) => seccion.titulo.toLowerCase());
   const resumen = riesgos.length
     ? `Revisé tu plan. Hay ${riesgos.length === 1 ? 'un punto' : `${riesgos.length} puntos`} de riesgo: ${listar(riesgos)}.`

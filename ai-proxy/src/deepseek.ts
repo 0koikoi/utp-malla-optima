@@ -122,7 +122,8 @@ const intentar = async (peticion: AIRequest, opciones: OpcionesLlamada, extra: M
       razonamiento: Boolean(eleccion?.message?.reasoning_content), contenido,
     });
     if (eleccion?.finish_reason === 'length') return { tipo: 'cortada' };
-    return { tipo: 'ok', respuesta: parsearRespuesta(peticion.modo, JSON.parse(contenido), peticion.contexto) };
+    // Secciones libres: si faltan o sobran, el filtro de salida (verificacion.ts) pide corregirlas.
+    return { tipo: 'ok', respuesta: parsearRespuesta(peticion.modo, JSON.parse(contenido), peticion.contexto, true) };
   } catch {
     if (opciones.signal.aborted) throw new ErrorProveedor('PROVEEDOR_CAIDO', 504);
     return { tipo: 'invalida' };

@@ -80,6 +80,29 @@ describe('filtro de salida - en el proxy', () => {
   });
   const cuerpoDe = (fetch: ReturnType<typeof vi.fn>, llamada: number) => JSON.parse(String((fetch.mock.calls[llamada] as unknown as [string, RequestInit])[1].body));
 
+  it('análisis con una sección de menos: UNA regeneración con el error concreto de las secciones', async () => {
+    const seccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: tipo, detalle: 'Bien.', acciones: [], cursos: [] });
+    const analisis = (tipos: string[]) => new Response(JSON.stringify({
+      choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ resumen: 'Revisé tu plan.', secciones: tipos.map(seccion), preguntasSugeridas: [] }) } }],
+      usage: { prompt_tokens: 100, completion_tokens: 50 },
+    }));
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(analisis(['carga', 'financiero', 'ruta', 'electivos']))
+      .mockResolvedValueOnce(analisis(['carga', 'financiero', 'ruta', 'whatIf', 'electivos']));
+    const { POST, registros } = crear(fetch);
+    const resultado = await POST(new Request('https://proxy/api/asistente', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: ORIGEN },
+      body: JSON.stringify({ modo: 'analisis', contexto: plan1, mensajes: [] }),
+    }));
+    expect(resultado.status).toBe(200);
+    expect((await resultado.json()).secciones.map((item: { tipo: string }) => item.tipo)).toEqual(['carga', 'financiero', 'ruta', 'whatIf', 'electivos']);
+    expect(cuerpoDe(fetch, 1).messages.at(-1)).toEqual({
+      role: 'system',
+      content: 'Faltan las secciones whatIf. Incluye exactamente 5 secciones, en este orden: carga, financiero, ruta, whatIf, electivos. Corrige usando solo CONTEXTO.',
+    });
+    expect(registros[0]).toMatchObject({ verificacion: 'regenerada', chequeos_fallidos: ['secciones'] });
+  });
+
   it('pasa a la primera: una sola llamada', async () => {
     const fetch = vi.fn(async () => respuesta('Pagarías S/ 4,705.86 con pago único.'));
     const { POST, registros } = crear(fetch);

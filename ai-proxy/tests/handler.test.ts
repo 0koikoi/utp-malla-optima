@@ -32,9 +32,13 @@ const respuestaDeepSeek = (contenido: unknown, status = 200) => new Response(JSO
   choices: [{ message: { content: typeof contenido === 'string' ? contenido : JSON.stringify(contenido) } }],
 }), { status });
 
+const otraSeccion = (tipo: string) => ({ tipo, nivel: 'ok', titulo: tipo, detalle: 'Bien.', acciones: [], cursos: [] });
 const analisisValido = {
   resumen: 'Tu plan está cargado.',
-  secciones: [{ tipo: 'carga', nivel: 'riesgo', titulo: 'Carga', detalle: '25 h', acciones: ['Mueve un curso.'], cursos: ['100000I62N', 'FALSO'] }],
+  secciones: [
+    { tipo: 'carga', nivel: 'riesgo', titulo: 'Carga', detalle: 'Revisa la carga.', acciones: ['Mueve un curso.'], cursos: ['100000I62N', 'FALSO'] },
+    ...['financiero', 'ruta', 'whatIf', 'electivos'].map(otraSeccion),
+  ],
   preguntasSugeridas: ['¿Estoy sobrecargado?'],
 };
 
