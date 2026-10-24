@@ -740,9 +740,9 @@
         "nombre": "Pago único (7.5 % de descuento)",
         "matricula": 398,
         "numeroCuotas": 5,
-        "cuotaMensual": 861.57,
+        "cuotaMensual": null,
         "total": 4705.86,
-        "diferenciaPresupuesto": 38.43
+        "diferenciaPresupuesto": null
       }
     ],
     "planCompleto": [
@@ -1119,18 +1119,16 @@
         "diferenciaCiclo": -40.7,
         "faltaPorCiclo": 40.7,
         "sobraPorCiclo": 0
-      },
-      {
-        "id": "pago_unico",
-        "alcanza": true,
-        "diferenciaMes": 38.43,
-        "faltaPorMes": 0,
-        "sobraPorMes": 38.43,
-        "diferenciaCiclo": 192.15,
-        "faltaPorCiclo": 0,
-        "sobraPorCiclo": 192.15
       }
     ],
+    "pagoUnico": {
+      "pensionAlInicio": 4307.86,
+      "matricula": 398,
+      "totalCiclo": 4705.86,
+      "ahorroVsSinDescuento": 349.29,
+      "diferenciaVsPresupuestoDelCiclo": 192.14,
+      "comparacion": "comparación referencial"
+    },
     "creditos": {
       "totalMalla": 210,
       "obligatorios": 197,

@@ -740,7 +740,7 @@
         "nombre": "Pago único (7.5 % de descuento)",
         "matricula": 398,
         "numeroCuotas": 5,
-        "cuotaMensual": 861.57,
+        "cuotaMensual": null,
         "total": 4705.86,
         "diferenciaPresupuesto": null
       }
@@ -1047,6 +1047,14 @@
       "margenRecomendadas": 0
     },
     "presupuesto": null,
+    "pagoUnico": {
+      "pensionAlInicio": 4307.86,
+      "matricula": 398,
+      "totalCiclo": 4705.86,
+      "ahorroVsSinDescuento": 349.29,
+      "diferenciaVsPresupuestoDelCiclo": null,
+      "comparacion": null
+    },
     "creditos": {
       "totalMalla": 210,
       "obligatorios": 197,

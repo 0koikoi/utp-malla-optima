@@ -55,12 +55,26 @@ export function PeriodFinancialCard({
             <span>Cuota con descuento:</span> {money(resumen.montoPorCuota)}
           </p>
         )}
-        <p>
-          <span>Cuotas:</span> {resumen.numeroCuotas}
-        </p>
-        <p className="period-payment-total">
-          <span>Total de pago en cuotas:</span> {money(resumen.costoEnsenanzaTotal)}
-        </p>
+        {/* El pago único no es mensual: se pagan todas las pensiones del ciclo juntas, al inicio. */}
+        {resumen.pagoUnico ? (
+          <>
+            <p>
+              <span>Forma de pago:</span> una sola vez, al inicio del ciclo
+            </p>
+            <p className="period-payment-total">
+              <span>Pensión del ciclo (pago único):</span> {money(resumen.costoEnsenanzaTotal)}
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              <span>Cuotas:</span> {resumen.numeroCuotas}
+            </p>
+            <p className="period-payment-total">
+              <span>Total de pago en cuotas:</span> {money(resumen.costoEnsenanzaTotal)}
+            </p>
+          </>
+        )}
         {!esVerano && resumen.descuentoPorcentaje > 0 && (
           <p className="period-discount-line">
             <span>{resumen.pagoUnico ? 'Pago único:' : 'Pronto pago:'}</span>{' '}

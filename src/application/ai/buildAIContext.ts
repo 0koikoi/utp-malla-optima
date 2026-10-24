@@ -188,8 +188,8 @@ const escenariosPeriodo = (periodoId: string, entorno: EntornoFinanciero): AIEsc
     const periodo = calcularEscenario(id, entorno).periodos.find((item) => item.id === periodoId);
     if (!periodo) return [];
     const { resumen } = periodo;
-    // En pago único se informa el equivalente mensual del pago de la enseñanza.
-    const cuotaMensual = resumen.pagoUnico ? r2(resumen.costoEnsenanzaTotal / resumen.numeroCuotas) : resumen.montoPorCuota;
+    // El pago único no es mensual: todas las pensiones se pagan juntas al inicio (derivados.pagoUnico).
+    const cuotaMensual = resumen.pagoUnico ? null : resumen.montoPorCuota;
     return [{
       id,
       nombre: nombreEscenario(id, entorno.tarifario),
@@ -197,9 +197,13 @@ const escenariosPeriodo = (periodoId: string, entorno: EntornoFinanciero): AIEsc
       numeroCuotas: resumen.numeroCuotas,
       cuotaMensual,
       total: resumen.costoTotalCiclo,
-      diferenciaPresupuesto: entorno.presupuesto === null ? null : r2(entorno.presupuesto - cuotaMensual),
+      diferenciaPresupuesto: entorno.presupuesto === null || cuotaMensual === null ? null : r2(entorno.presupuesto - cuotaMensual),
     }];
   });
+
+/** Pensión del ciclo con pago único (la que ya calcula FinancialPlanningService), para derivados.pagoUnico. */
+const pensionPagoUnico = (periodoId: string, entorno: EntornoFinanciero) =>
+  calcularEscenario('pago_unico', entorno).periodos.find((item) => item.id === periodoId)?.resumen.costoEnsenanzaTotal ?? null;
 
 const construirFoco = (
   foco: AIFoco | undefined, estado: EstadoContextoIA, prioridades: Map<string, { impacto: number; longitudCadena: number }>,
@@ -254,6 +258,21 @@ const construirFoco = (
 
 const positivo = (valor: number) => r2(Math.max(0, valor));
 
+/** derivados.pagoUnico: solo restas hechas en código sobre los montos de FinancialPlanningService. */
+const pagoUnicoDe = (escenarios: AIEscenarioPeriodo[], presupuesto: number | null, pensionAlInicio: number | null): AIDerivados['pagoUnico'] => {
+  const unico = escenarios.find((escenario) => escenario.id === 'pago_unico');
+  const sinDescuento = escenarios.find((escenario) => escenario.id === 'sin_descuento');
+  if (!unico || !sinDescuento || pensionAlInicio === null) return null;
+  return {
+    pensionAlInicio,
+    matricula: unico.matricula,
+    totalCiclo: unico.total,
+    ahorroVsSinDescuento: r2(sinDescuento.total - unico.total),
+    diferenciaVsPresupuestoDelCiclo: presupuesto === null ? null : r2(presupuesto * unico.numeroCuotas - pensionAlInicio),
+    comparacion: presupuesto === null ? null : 'comparación referencial',
+  };
+};
+
 /**
  * CONTEXTO.derivados: las restas y totales que la IA no debe hacer (D-001).
  * Créditos para egresar = obligatorios + el mínimo de electivos de academic.json (creditosMinimosElectivos);
@@ -262,6 +281,7 @@ const positivo = (valor: number) => r2(Math.max(0, valor));
 export const calcularDerivados = (
   cursos: Curso[], carga: AICarga, escenarios: AIEscenarioPeriodo[], presupuesto: number | null,
   cursosProximos: Curso[], whatIfProximos: Omit<AIWhatIf, 'origen'>[], ciclosRestantes: number,
+  pensionAlInicio: number | null = null,
 ): AIDerivados => {
   const tope = carga.topeEscala;
   const obligatorios = cursos.filter((curso) => curso.tipo === 'OBLIGATORIO');
@@ -282,10 +302,11 @@ export const calcularDerivados = (
       sobreRecomendadas: positivo(carga.horas - carga.limiteRecomendado),
       margenRecomendadas: positivo(carga.limiteRecomendado - carga.horas),
     },
-    presupuesto: presupuesto === null ? null : escenarios.map((escenario) => {
+    presupuesto: presupuesto === null ? null : escenarios.flatMap((escenario) => {
+      if (escenario.cuotaMensual === null) return [];
       const diferenciaMes = r2(presupuesto - escenario.cuotaMensual);
       const diferenciaCiclo = r2(diferenciaMes * escenario.numeroCuotas);
-      return {
+      return [{
         id: escenario.id,
         alcanza: diferenciaMes >= 0,
         diferenciaMes,
@@ -294,8 +315,9 @@ export const calcularDerivados = (
         diferenciaCiclo,
         faltaPorCiclo: positivo(-diferenciaCiclo),
         sobraPorCiclo: positivo(diferenciaCiclo),
-      };
+      }];
     }),
+    pagoUnico: pagoUnicoDe(escenarios, presupuesto, pensionAlInicio),
     creditos: {
       totalMalla: sumar(cursos, 'creditos'),
       obligatorios: sumar(obligatorios, 'creditos'),
@@ -432,6 +454,7 @@ export const buildAIContext = (estado: EstadoContextoIA, opciones: OpcionesConte
     foco: construirFoco(opciones.foco, estado, prioridades, topeEscala, entorno),
     derivados: calcularDerivados(
       cursos, carga, escenariosProximos, entorno ? presupuesto : null, cursosProximos, whatIfProximos, ruta.ciclosRestantes,
+      siguiente && entorno ? pensionPagoUnico(siguiente.periodo.id, entorno) : null,
     ),
   };
 };

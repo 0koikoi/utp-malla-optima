@@ -827,6 +827,7 @@
       "margenRecomendadas": 24
     },
     "presupuesto": null,
+    "pagoUnico": null,
     "creditos": {
       "totalMalla": 210,
       "obligatorios": 197,

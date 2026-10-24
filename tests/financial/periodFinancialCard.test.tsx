@@ -19,9 +19,9 @@ beforeAll(async () => {
       ? { ...curso, ciclo: 8, tipoPeriodo: 'REGULAR' as const, ubicacion: 'periodo' as const } : curso);
 });
 
-const renderizar = (metodoPago: string) => {
+const renderizar = (metodoPago: string, pagoUnicoPorPeriodo: Record<string, boolean> = {}) => {
   const service = new FinancialPlanningService(new UniversityFinancialRulesProvider());
-  const resultado = service.calcular(cursos, FinancialConfigurationProvider.load(), 'Ingeniería y Arquitectura', { metodoPago });
+  const resultado = service.calcular(cursos, FinancialConfigurationProvider.load(), 'Ingeniería y Arquitectura', { metodoPago, pagoUnicoPorPeriodo });
   return { resultado, html: renderToStaticMarkup(<PeriodFinancialCard periodo={resultado.periodos[0]} />) };
 };
 
@@ -31,6 +31,19 @@ describe('Bug #6 - PeriodFinancialCard separa pensión base y cuota con descuent
     expect(html).toContain('Pensión base:</span> S/ 931.43');
     expect(html).toContain(`Cuota con descuento:</span> S/ ${resultado.periodos[0].resumen.montoPorCuota.toFixed(2)}`);
     expect(resultado.totalGeneral).toBe(4822.3);
+  });
+
+  it('pago único: se paga una sola vez al inicio, no en cuotas; los montos no cambian', () => {
+    const { resultado, html } = renderizar('sin_descuento', { 'ciclo-8': true });
+    const { resumen } = resultado.periodos[0];
+    expect(resumen.pagoUnico).toBe(true);
+    expect(html).toContain('Forma de pago:</span> una sola vez, al inicio del ciclo');
+    expect(html).toContain(`Pensión del ciclo (pago único):</span> S/ ${resumen.costoEnsenanzaTotal.toFixed(2)}`);
+    expect(resumen.costoEnsenanzaTotal).toBe(4307.86);
+    expect(html).not.toContain('Cuotas:');
+    expect(html).not.toContain('Total de pago en cuotas');
+    expect(html).not.toContain('Cuota con descuento');
+    expect(html).toContain(`Total periodo:</span> S/ ${resumen.costoTotalCiclo.toFixed(2)}`);
   });
 
   it('muestra las horas adicionales y su costo por cuota', () => {

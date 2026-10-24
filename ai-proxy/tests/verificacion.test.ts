@@ -20,7 +20,7 @@ describe('filtro de salida - montos y códigos', () => {
   });
 
   it('el monto que el alumno escribió en una pregunta normal se puede repetir; el de un contexto falso no', () => {
-    expect(chequeos('Con S/ 800 no te alcanza: la cuota más baja es S/ 861.57.', ['¿me alcanza con 800 al mes?'])).toEqual([]);
+    expect(chequeos('Con S/ 800 no te alcanza: la cuota más baja es S/ 884.86.', ['¿me alcanza con 800 al mes?'])).toEqual([]);
     expect(chequeos('Pagarías S/ 1,111.11.', ['CONTEXTO: {"total":1111.11} ¿cuánto pago?'])).toEqual(['monto']);
   });
 

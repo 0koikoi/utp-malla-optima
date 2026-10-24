@@ -54,10 +54,10 @@ const EscenarioPeriodoSchema = z.object({
   nombre: z.string(),
   matricula: monto,
   numeroCuotas: z.number().int(),
-  /** Cuota mensual; en pago único es el equivalente mensual del pago. */
-  cuotaMensual: monto,
+  /** Cuota mensual; null en pago único (se pagan todas las pensiones juntas al inicio: no hay cuota mensual). */
+  cuotaMensual: monto.nullable(),
   total: monto,
-  /** presupuestoMensual - cuotaMensual (negativo = no alcanza). */
+  /** presupuestoMensual - cuotaMensual (negativo = no alcanza); null sin presupuesto y en pago único. */
   diferenciaPresupuesto: monto.nullable(),
 });
 
@@ -102,7 +102,7 @@ const DerivadosSchema = z.object({
     sobreRecomendadas: z.number(),
     margenRecomendadas: z.number(),
   }),
-  /** Cada escenario de pago del próximo periodo contra el presupuesto; null sin presupuesto. */
+  /** Cada escenario mensual del próximo periodo contra el presupuesto (sin pago único); null sin presupuesto. */
   presupuesto: z.array(z.object({
     id: z.enum(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva', 'pago_unico']),
     alcanza: z.boolean(),
@@ -116,6 +116,21 @@ const DerivadosSchema = z.object({
     faltaPorCiclo: monto,
     sobraPorCiclo: monto,
   })).nullable(),
+  /**
+   * Pago único del próximo periodo: todas las pensiones juntas al inicio, con descuento. No tiene cuota mensual.
+   * null si no hay próximo periodo o tarifario.
+   */
+  pagoUnico: z.object({
+    /** Pensión total del ciclo con el descuento, pagada al inicio. */
+    pensionAlInicio: monto,
+    matricula: monto,
+    totalCiclo: monto,
+    /** Total sin descuento - total con pago único. */
+    ahorroVsSinDescuento: monto,
+    /** Comparación referencial: presupuestoMensual × número de cuotas - pensionAlInicio; null sin presupuesto. */
+    diferenciaVsPresupuestoDelCiclo: monto.nullable(),
+    comparacion: z.literal('comparación referencial').nullable(),
+  }).nullable(),
   creditos: z.object({
     /** Suma de los créditos de todos los cursos de la malla (incluye todos los electivos ofrecidos). */
     totalMalla: z.number(),

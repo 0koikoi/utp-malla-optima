@@ -687,6 +687,14 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
       "sobreTopeEscala": 3,
       "topeEscala": 22,
     },
+    "pagoUnico": {
+      "ahorroVsSinDescuento": 349.29,
+      "comparacion": null,
+      "diferenciaVsPresupuestoDelCiclo": null,
+      "matricula": 398,
+      "pensionAlInicio": 4307.86,
+      "totalCiclo": 4705.86,
+    },
     "presupuesto": null,
   },
   "electivos": [
@@ -786,7 +794,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > con S6
         "total": 4938.7,
       },
       {
-        "cuotaMensual": 861.57,
+        "cuotaMensual": null,
         "diferenciaPresupuesto": null,
         "id": "pago_unico",
         "matricula": 398,
@@ -1864,6 +1872,14 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
       "sobreTopeEscala": 3,
       "topeEscala": 22,
     },
+    "pagoUnico": {
+      "ahorroVsSinDescuento": 349.29,
+      "comparacion": null,
+      "diferenciaVsPresupuestoDelCiclo": null,
+      "matricula": 398,
+      "pensionAlInicio": 4307.86,
+      "totalCiclo": 4705.86,
+    },
     "presupuesto": null,
   },
   "electivos": [
@@ -1963,7 +1979,7 @@ exports[`buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado > cumple
         "total": 4938.7,
       },
       {
-        "cuotaMensual": 861.57,
+        "cuotaMensual": null,
         "diferenciaPresupuesto": null,
         "id": "pago_unico",
         "matricula": 398,

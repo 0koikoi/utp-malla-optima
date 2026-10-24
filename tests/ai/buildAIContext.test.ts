@@ -45,9 +45,17 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(derivados.presupuesto?.find((item) => item.id === 'bcp_bbva')).toEqual({
       id: 'bcp_bbva', alcanza: false, diferenciaMes: -8.14, faltaPorMes: 8.14, sobraPorMes: 0, diferenciaCiclo: -40.7, faltaPorCiclo: 40.7, sobraPorCiclo: 0,
     });
-    for (const escenario of financiero!.proximoPeriodo) {
+    for (const escenario of financiero!.proximoPeriodo.filter((item) => item.id !== 'pago_unico')) {
       expect(derivados.presupuesto?.find((item) => item.id === escenario.id)?.diferenciaMes).toBe(escenario.diferenciaPresupuesto);
     }
+    // Pago único: sin diferencia mensual; pensión 4307.86 al inicio, ahorro 5055.15 - 4705.86 y comparación
+    // referencial 900 × 5 - 4307.86.
+    expect(derivados.presupuesto?.map((item) => item.id)).toEqual(['sin_descuento', 'interbank_scotiabank', 'bcp_bbva']);
+    expect(derivados.pagoUnico).toEqual({
+      pensionAlInicio: 4307.86, matricula: 398, totalCiclo: 4705.86, ahorroVsSinDescuento: 349.29,
+      diferenciaVsPresupuestoDelCiclo: 192.14, comparacion: 'comparación referencial',
+    });
+    expect(buildAIContext(store.getState()).derivados.pagoUnico).toMatchObject({ diferenciaVsPresupuestoDelCiclo: null, comparacion: null });
     // 197 obligatorios + 3 electivos mínimos (academic.json); 121 aprobados o convalidados; 19 en curso.
     expect(derivados.creditos).toEqual({
       totalMalla: 210, obligatorios: 197, electivosMinimos: 3, paraEgresar: 200, aprobadosQueCuentan: 121, enCurso: 19,
@@ -84,12 +92,13 @@ describe('buildAIContext con Plan_de_Estudio_1.xlsx y el 8vo planificado', () =>
     expect(financiero!.costoHoraAdicional).toBe(38.81);
   });
 
-  it('con presupuesto mensual informa la diferencia contra cada cuota', () => {
+  it('con presupuesto mensual informa la diferencia contra cada cuota (el pago único no tiene cuota mensual)', () => {
     const { financiero } = buildAIContext(store.getState(), { presupuestoMensual: 900 });
     expect(financiero!.presupuestoMensual).toBe(900);
-    for (const escenario of financiero!.proximoPeriodo) {
-      expect(escenario.diferenciaPresupuesto).toBeCloseTo(900 - escenario.cuotaMensual, 2);
+    for (const escenario of financiero!.proximoPeriodo.filter((item) => item.id !== 'pago_unico')) {
+      expect(escenario.diferenciaPresupuesto).toBeCloseTo(900 - escenario.cuotaMensual!, 2);
     }
+    expect(financiero!.proximoPeriodo.find((item) => item.id === 'pago_unico')).toMatchObject({ cuotaMensual: null, diferenciaPresupuesto: null, total: 4705.86 });
     expect(buildAIContext(store.getState()).financiero!.proximoPeriodo[0].diferenciaPresupuesto).toBeNull();
   });
 

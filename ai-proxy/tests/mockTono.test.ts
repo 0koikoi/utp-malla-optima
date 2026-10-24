@@ -161,6 +161,17 @@ describe('mocks - tono del asesor', () => {
     verificarDatos(plan1, bcp);
   });
 
+  it('pago único: se paga todo al inicio, nunca como cuota mensual; montos de derivados.pagoUnico', () => {
+    const plan1 = leer('contexto-plan1.json');
+    const { texto } = mockChat(plan1, 'si hago pago único, ¿me alcanza con 900 al mes?');
+    expect(texto).toContain('El pago único no es mensual');
+    expect(texto).toContain('S/ 4,307.86 al inicio');
+    expect(texto).toContain('Te ahorras S/ 349.29');
+    expect(texto).toContain('Como comparación referencial');
+    expect(texto).not.toContain('861.57');
+    verificarDatos(plan1, texto);
+  });
+
   it('el análisis mock solo usa montos y códigos del contexto, con máximo 3 acciones por sección', () => {
     for (const ctx of [contexto, contextoJalado]) {
       const analisis = mockAnalisis(ctx);

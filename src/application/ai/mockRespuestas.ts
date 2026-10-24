@@ -1,5 +1,5 @@
 import type {
-  AIAnalisisResponse, AIChatResponse, AIContext, AIRequest, AIRespuesta, AISeccion, Nivel,
+  AIAnalisisResponse, AIChatResponse, AIContext, AIEscenarioPeriodo, AIRequest, AIRespuesta, AISeccion, Nivel,
 } from './contracts.js';
 
 /**
@@ -27,6 +27,11 @@ const conCodigo = (contexto: AIContext, codigo: string) => `${nombreDe(contexto,
 
 const PREGUNTAS_BASE = ['¿Me alcanza mi presupuesto?', '¿Estoy sobrecargado?', '¿Qué electivo me conviene?'];
 
+/** "5 cuotas de S/ 931.43", o en pago único (sin cuota mensual) "la pensión en un solo pago al inicio". */
+const formaDePago = (escenario: AIEscenarioPeriodo) => escenario.cuotaMensual === null
+  ? 'la pensión en un solo pago al inicio'
+  : `${escenario.numeroCuotas} cuotas de ${soles(escenario.cuotaMensual)}`;
+
 /** Diferencia contra el presupuesto ya calculada en CONTEXTO.derivados (el mock tampoco resta). */
 const derivadoPresupuesto = (contexto: AIContext, id: string) =>
   contexto.derivados.presupuesto?.find((item) => item.id === id) ?? null;
@@ -50,7 +55,7 @@ const seccionFinanciera = (contexto: AIContext): AISeccion | null => {
   const nivel: Nivel = derivado && !derivado.alcanza ? 'riesgo'
     : contexto.proximoPeriodo.horasExceso > 0 ? 'atencion' : 'ok';
   const partes = [
-    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
+    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${formaDePago(elegido)}.`,
   ];
   if (mejor.id !== elegido.id) partes.push(`La opción más barata es ${mejor.nombre}: ${soles(mejor.total)}.`);
   if (contexto.derivados.horas.sobreTopeEscala > 0 && financiero.costoHoraAdicional !== null) {
@@ -74,7 +79,7 @@ const chatFinanciero = (contexto: AIContext): string | null => {
   const elegido = escenarios.find((item) => item.id === financiero.metodoPagoElegido.id) ?? escenarios[0];
   const mejor = [...escenarios].sort((a, b) => a.total - b.total)[0];
   return [
-    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${elegido.numeroCuotas} cuotas de ${soles(elegido.cuotaMensual)}.`,
+    `En el ${contexto.proximoPeriodo.etiqueta} pagarías ${soles(elegido.total)} (${elegido.nombre}): matrícula de ${soles(elegido.matricula)} y ${formaDePago(elegido)}.`,
     frasePresupuesto(contexto, elegido.id) ?? 'Si me dices tu presupuesto mensual, te digo si te alcanza.',
     ...(mejor.id !== elegido.id ? [`Lo más barato es ${mejor.nombre}: ${soles(mejor.total)}.`] : []),
     'Son montos referenciales: verifícalos en el portal de la UTP.',
@@ -344,6 +349,27 @@ const respuestaCreditos = (contexto: AIContext): AIChatResponse => {
   };
 };
 
+/**
+ * Pago único: todas las pensiones juntas al inicio, nunca como cuota mensual. Montos de CONTEXTO.derivados.pagoUnico;
+ * la comparación con el presupuesto es referencial.
+ */
+const respuestaPagoUnico = (contexto: AIContext): Omit<AIChatResponse, 'preguntasSugeridas'> | null => {
+  const unico = contexto.derivados.pagoUnico;
+  if (!unico || !contexto.proximoPeriodo) return null;
+  const diferencia = unico.diferenciaVsPresupuestoDelCiclo;
+  const comparacion = diferencia === null ? ''
+    : diferencia >= 0
+      ? ` Como comparación referencial, tu presupuesto de los ${contexto.financiero?.proximoPeriodo[0]?.numeroCuotas ?? ''} meses supera esa pensión en ${soles(diferencia)}.`
+      : ` Como comparación referencial, tu presupuesto de los ${contexto.financiero?.proximoPeriodo[0]?.numeroCuotas ?? ''} meses queda ${soles(-diferencia)} por debajo de esa pensión.`;
+  const mensual = (contexto.financiero?.proximoPeriodo ?? []).filter((item) => item.cuotaMensual !== null)
+    .sort((a, b) => a.cuotaMensual! - b.cuotaMensual!)[0];
+  return {
+    texto: `El pago único no es mensual: pagas toda la pensión del ${contexto.proximoPeriodo.etiqueta} de una vez, ${soles(unico.pensionAlInicio)} al inicio, más la matrícula de ${soles(unico.matricula)} (${soles(unico.totalCiclo)} en total). Te ahorras ${soles(unico.ahorroVsSinDescuento)} frente a pagar sin descuento.${comparacion}` +
+      (mensual ? `\nSi prefieres pagar mes a mes, la cuota más baja es ${soles(mensual.cuotaMensual!)} (${mensual.nombre}).` : ''),
+    cursos: [],
+  };
+};
+
 /** Método de pago nombrado en la pregunta ("con BCP", "con pago único"), o null. */
 const metodoMencionado = (pregunta: string) => {
   const t = normalizar(pregunta);
@@ -397,15 +423,19 @@ export const mockChat = (contexto: AIContext, pregunta: string): AIChatResponse 
         const [base, ...otrosMetodos] = focoCiclo.escenarios;
         const masBarato = [...otrosMetodos].sort((a, b) => a.total - b.total)[0];
         return {
-          texto: `El ${focoCiclo.periodo.etiqueta} cuesta ${soles(base.total)} (${base.nombre}): matrícula de ${soles(base.matricula)} y ${base.numeroCuotas} cuotas de ${soles(base.cuotaMensual)}.` +
+          texto: `El ${focoCiclo.periodo.etiqueta} cuesta ${soles(base.total)} (${base.nombre}): matrícula de ${soles(base.matricula)} y ${formaDePago(base)}.` +
             (masBarato && masBarato.total < base.total ? ` Con ${masBarato.nombre} pagarías ${soles(masBarato.total)}.` : '') +
             ' Son montos referenciales: verifícalos en el portal de la UTP antes de pagar.',
           cursos: [], preguntasSugeridas: otras('presupuesto'),
         };
       }
       const metodo = metodoMencionado(pregunta);
-      const escenario = metodo && contexto.financiero?.proximoPeriodo.find((item) => item.id === metodo);
-      if (escenario) {
+      if (metodo === 'pago_unico') {
+        const unico = respuestaPagoUnico(contexto);
+        if (unico) return { ...unico, preguntasSugeridas: otras('presupuesto') };
+      }
+      const escenario = metodo && contexto.financiero?.proximoPeriodo.find((item) => item.id === metodo && item.cuotaMensual !== null);
+      if (escenario && escenario.cuotaMensual !== null) {
         const presupuesto = frasePresupuesto(contexto, escenario.id);
         return {
           texto: `Con ${escenario.nombre}, la cuota del ${contexto.proximoPeriodo?.etiqueta ?? 'próximo periodo'} es ${soles(escenario.cuotaMensual)} y el total ${soles(escenario.total)}.` +
