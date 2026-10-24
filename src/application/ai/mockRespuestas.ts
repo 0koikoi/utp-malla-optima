@@ -355,7 +355,7 @@ const respuestaEstadoCurso = (contexto: AIContext, pregunta: string): AIChatResp
 const respuestaCreditos = (contexto: AIContext): AIChatResponse => {
   const { creditos } = contexto.derivados;
   return {
-    texto: `Para egresar necesitas ${creditos.paraEgresar} créditos (${creditos.obligatorios} obligatorios y ${creditos.electivosMinimos} electivos como mínimo). Te faltan ${creditos.faltanParaEgresar}; si apruebas lo que llevas ahora, quedarían ${creditos.faltanSiApruebaEnCurso}, en ${creditos.ciclosRestantes} ciclos más según la propuesta del planificador.`,
+    texto: `Para egresar necesitas ${creditos.paraEgresar} créditos (${creditos.obligatorios} obligatorios y ${creditos.electivosMinimos} de electivos como mínimo). Te faltan ${creditos.faltanParaEgresar}; si apruebas lo que llevas ahora, quedarían ${creditos.faltanSiApruebaEnCurso}, en ${creditos.ciclosRestantes} ciclos más según la propuesta del planificador.`,
     cursos: [], preguntasSugeridas: ['🗺️ Mi ruta hasta egresar', '¿Qué electivo me conviene?'],
   };
 };

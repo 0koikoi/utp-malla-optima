@@ -76,6 +76,43 @@ const PREGUNTA_DE_CARGA = /carga|cargo|cargad|sobrecarg|horas|pesad|costo|cuesta
 const NUMERO_CON_UNIDAD = /(\d+(?:[.,]\d+)?)\s*(h|horas?|creditos?|cr|ciclos?)\b/g;
 const CAMPOS_POR_UNIDAD = (unidad: string): RegExp => /^h|^hora/.test(unidad) ? /hora|tope|limiteRecomendado|recomendadas|^carga$/i
   : /^c(r|redito)/.test(unidad) ? /credito/i : /ciclo/i;
+/**
+ * El pago único dicho como mensual en su misma cláusula ("junto a"), salvo negado ("no es mensual", "sin cuotas")
+ * o en contraste ("mes a mes", "en cuotas"). Las cláusulas se separan en " y ", ";", paréntesis o ", con/pero/…":
+ * "la cuota mensual más baja es S/ 884.86 (Interbank) y el pago único sería S/ 4,705.86 al inicio" compara dos
+ * métodos y no presenta el pago único como mensual (falso positivo de la corrida 2026-10-23-1922).
+ */
+const CLAUSULAS = /\s+y\s+|;|\(|\)|,\s+(?=(con|mientras|pero|o|si|en cambio)\s)/;
+const MENSUAL = /\bal mes\b|\bmensual(es|mente)?\b|\bpor mes\b|\bcada mes\b|\bcuotas?\b|\bmensualidad(es)?\b/g;
+const NO_MENSUAL = /(\b(no|sin|ni|nada de)\s+(\S+\s+){0,3}$)|(\ben\s+$)/;
+export const pagoUnicoMensual = (texto: string): string | null => {
+  for (const frase of normalizar(texto).split(/(?<=[.!?:;])\s+|\n+/)) {
+    for (const clausula of frase.split(CLAUSULAS).filter((parte): parte is string => Boolean(parte))) {
+      if (!/pago unico/.test(clausula)) continue;
+      const limpia = clausula.replace(/\bmes a mes\b/g, '');
+      for (const m of limpia.matchAll(MENSUAL)) {
+        if (!NO_MENSUAL.test(limpia.slice(Math.max(0, (m.index ?? 0) - 25), m.index))) return frase.trim();
+      }
+    }
+  }
+  return null;
+};
+
+const NUMEROS_EN_LETRAS: Record<string, number> = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 };
+/**
+ * "3 electivos" cuando 3 es un dato en créditos (mínimo, faltantes o cubiertos). Si el número coincide con la
+ * cantidad de cursos electivos disponibles, es un conteo de cursos y no cuenta.
+ */
+export const electivosComoCursos = (texto: string, contexto: AIContext): string | null => {
+  const creditos = new Set([contexto.derivados.creditosElectivosFaltantes, contexto.perfil.electivos.minimo,
+    contexto.perfil.electivos.faltantes, contexto.perfil.electivos.cubiertos].filter((n) => n > 0));
+  for (const m of normalizar(texto).matchAll(/\b(\d+|un|uno|una|dos|tres|cuatro|cinco|seis)\s+(cursos?\s+)?electivos?\b/g)) {
+    const n = /\d/.test(m[1]) ? Number(m[1]) : NUMEROS_EN_LETRAS[m[1]];
+    if (creditos.has(n) && n !== contexto.electivos.length) return m[0];
+  }
+  return null;
+};
+
 export const palabras = (texto: string) => texto.split(/\s+/).filter((palabra) => /[\p{L}\d]/u.test(palabra)).length;
 
 const DICHO_OK = /carga (es |esta )?(bien|equilibrada|tranquila|ligera|ok|adecuada|razonable|manejable|normal)|no estas sobrecargad|no es (mucha|demasiada)|estas dentro de lo recomendado/;
@@ -129,6 +166,12 @@ export const chequear = ({ modo, contexto, mensajes, esperado, respuesta, codigo
     return !fuente.some((n) => cerca(n, Number(m[1].replace(',', '.'))));
   }).map((m) => m[0]))];
   if (sinFuente.length) fallar('MAYOR', 'numero-sin-fuente', `Números que no están en el contexto ni en derivados: ${sinFuente.join(', ')}.`);
+
+  // CRÍTICO: pago único presentado como mensual y electivos contados en cursos.
+  const mensual = pagoUnicoMensual(texto);
+  if (mensual) fallar('CRITICO', 'pago-unico-mensual', `Presenta el pago único como mensual: "${mensual}".`);
+  const electivos = electivosComoCursos(texto, contexto);
+  if (electivos) fallar('CRITICO', 'electivos-como-cursos', `Dice "${electivos}" cuando el dato es de créditos.`);
 
   // CRÍTICO: horario o profesor inventado.
   const inventado = [DIAS, HORA_RELOJ].map((patron) => t.match(patron)?.[0]).find(Boolean) ?? texto.match(PROFESOR)?.[0];

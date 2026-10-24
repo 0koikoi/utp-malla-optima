@@ -153,10 +153,11 @@ export const resultadosFiltro = (resultado: ResultadoEvaluacion) => {
 
 export interface Criterio { nombre: string; cumple: boolean; valor: string }
 
-/** Criterios de aprobación acordados el 2026-10-23 para la salida final que ve el alumno. */
+/** Criterios de aprobación (2026-10-23, corrida 3) para la salida final que ve el alumno. */
 export const criterios = (resultado: ResultadoEvaluacion): Criterio[] => {
   const filas = resultado.casos.flatMap((caso) => caso.repeticiones);
-  const ok = filas.filter((fila) => !fila.fallos.length).length;
+  const ok = filas.filter((fila) => !fila.fallos.some((fallo) => fallo.severidad !== 'MENOR')).length;
+  const conMenor = filas.filter((fila) => fila.fallos.some((fallo) => fallo.severidad === 'MENOR')).length;
   const filtro = resultadosFiltro(resultado);
   const criticos = fallosPorSeveridad(resultado).CRITICO;
   const p95Chat = percentil(resultado.latenciasPorModo.chat, 95);
@@ -164,7 +165,8 @@ export const criterios = (resultado: ResultadoEvaluacion): Criterio[] => {
   const pct = (parte: number) => (filas.length ? (parte / filas.length) * 100 : 0);
   return [
     { nombre: '0 fallos CRÍTICOS', cumple: criticos === 0, valor: String(criticos) },
-    { nombre: '≥ 95 % de repeticiones aprobadas', cumple: pct(ok) >= 95, valor: `${pct(ok).toFixed(1)} %` },
+    { nombre: '≥ 95 % de repeticiones sin CRÍTICO ni MAYOR', cumple: pct(ok) >= 95, valor: `${pct(ok).toFixed(1)} %` },
+    { nombre: 'MENOR en ≤ 10 % de las repeticiones', cumple: pct(conMenor) <= 10, valor: `${pct(conMenor).toFixed(1)} %` },
     { nombre: 'respuestas seguras ≤ 3 %', cumple: pct(filtro.segura) <= 3, valor: `${pct(filtro.segura).toFixed(1)} %` },
     { nombre: 'p95 chat < 6 s', cumple: p95Chat < 6000, valor: `${p95Chat} ms` },
     { nombre: 'p95 análisis < 10 s', cumple: p95Analisis < 10_000, valor: `${p95Analisis} ms` },

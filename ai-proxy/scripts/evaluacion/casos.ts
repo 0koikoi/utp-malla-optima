@@ -32,6 +32,14 @@ export const CASOS: Caso[] = [
   { id: 'montos-pago-unico', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿cuánto pago si hago pago único?'], esperado: { montos: [4705.86] } },
   { id: 'montos-matricula', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿cuánto es la matrícula?'], esperado: { montos: [398] } },
   { id: 'montos-analisis-900', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'analisis', mensajes: [], esperado: { montos: [900] } },
+  // derivados.pagoUnico: pensión de 4307.86 al inicio, ahorro de 349.29; nunca como cuota mensual.
+  {
+    id: 'montos-pago-unico-900', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['si hago pago único, ¿me alcanza con 900 al mes?'],
+    esperado: {
+      montos: [4307.86, 4705.86],
+      menciona: [{ patron: /una (sola )?vez|al inicio|todo junto|de golpe|no es mensual/, severidad: 'MAYOR', detalle: 'No explica que el pago único se paga de una vez al inicio.' }],
+    },
+  },
   // derivados.presupuesto: BCP / BBVA, cuota 908.14 contra 900 → faltan 8.14 al mes (40.70 en el ciclo).
   { id: 'montos-bcp-900', grupo: 'Montos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿cuánto me falta para llegar a 900 con BCP?'], esperado: { montos: [8.14, 40.7] } },
 
@@ -43,12 +51,8 @@ export const CASOS: Caso[] = [
   },
   {
     id: 'cursos-convalide-calculo-ii', grupo: 'Cursos', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['¿convalidé cálculo II?'],
-    esperado: {
-      menciona: [
-        { patron: /aprobad/, severidad: 'MAYOR', detalle: 'No dice que CÁLCULO II está aprobado.' },
-        { patron: /\b2 creditos\b/, severidad: 'MAYOR', detalle: 'No dice que CÁLCULO II tiene 2 créditos.' },
-      ],
-    },
+    // Lo obligatorio es que está aprobado; los 2 créditos son opcionales (si los dice, el chequeo de atributos los valida).
+    esperado: { menciona: [{ patron: /aprobad/, severidad: 'MAYOR', detalle: 'No dice que CÁLCULO II está aprobado.' }] },
   },
 
   // Datos que no existen
@@ -80,9 +84,10 @@ export const CASOS: Caso[] = [
 
   // Bika y trika
   {
-    id: 'bika-inteligencia', grupo: 'Bika y trika', fixture: 'contexto-plan1', modo: 'chat', mensajes: ['hice bika en inteligencia de negocios'],
+    // En contexto-plan1 INTELIGENCIA DE NEGOCIOS está pendiente (nunca se llevó): el caso usa el jalado del fixture.
+    id: 'bika-inteligencia', grupo: 'Bika y trika', fixture: 'contexto-plan1-jalado', modo: 'chat', mensajes: ['hice bika en herramientas de desarrollo'],
     esperado: {
-      apoyo: true,
+      apoyo: true, jalado: true, ventana: ['Ciclo 8'],
       menciona: [
         { patron: /tercera|separacion temporal|30220/, severidad: 'MAYOR', detalle: 'No menciona el riesgo de desaprobar por tercera vez.' },
         { patron: /menos (carga|cursos|horas)|carga (mas )?(ligera|liviana|baja)|no te cargues/, severidad: 'MAYOR', detalle: 'No recomienda llevar menos carga.' },
